@@ -16,9 +16,8 @@ from techreq.forms import TechReqForm
 @requires_course_staff_by_slug
 def manage_techreqs(request, course_slug):
 	course = get_object_or_404(CourseOffering, slug=course_slug)
-	if not Member.objects.filter(offering=course, person__userid=request.user.username, role="INST"):
-		# should be instructors and TAs (maybe tech people as well), I'll figure that out later
-		return ForbiddenResponse(request, "Only instructors can manage course technical requirements")
+	if not Member.objects.filter(offering=course, person__userid=request.user.username, role__in=["INST", "TA"]):
+		return ForbiddenResponse(request, "Only instructors and TAs can manage course technical requirements")
 
 	if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='add':
 		form = TechReqForm(course_offering=course, data=request.POST)
@@ -28,7 +27,7 @@ def manage_techreqs(request, course_slug):
 
 			#LOG EVENT#
 			l = LogEntry(userid=request.user.username, 
-				description=("Tech Requirement added by instructor: %s for %s") % (request.user.username, course),
+				description=("Tech Requirement added by instructor/TA: %s for %s") % (request.user.username, course),
 				related_object=t)
 			l.save()
 			messages.success(request, 'Added %s as a Tech Requirement.' % (t.name))
@@ -42,7 +41,7 @@ def manage_techreqs(request, course_slug):
 			techreq.delete()
 			#LOG EVENT#
 			l = LogEntry(userid=request.user.username,
-				description=("Tech Requirement removed by instructor: %s for %s") % (request.user.username, course),
+				description=("Tech Requirement removed by instructor/TA: %s for %s") % (request.user.username, course),
 				related_object=techreq)
 			l.save()
 			messages.success(request, 'Removed the Tech Requirement %s.' % (techreq_name))
