@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{# This grade_student thing is for the activity_field in the form, this may not be the best way to get that functionality #}
+{% load grade_student %}
+
+{% block h1 %}{{course.name}} Tech Requirements{% endblock %}
+{% block title %}{{course.name}} Tech Requirements{% endblock %}
+
+{# head extra javascript for the table #}
+
+{% block subbreadcrumbs %}<li>&gt; <a href="{% url grades.views.course_info course_slug=course.slug %}">{{ course.name }}</a></li><li>&gt; <a href="{% url grades.views.course_config course_slug=course.slug %}">Setup</a></li><li>&gt; Manage Tech Requirements</li>{% endblock %}
+
+{% block actions %}{% endblock %}
+
+{% block content %}
+
+<h2>Current Tech Requirements</h2>
+
+<div class="datatable_container">
+	{% if techreqs %}
+		<table class="display" id="tas_table">
+			<thead>
+				<tr>
+					<td>Name</td>
+					<td>Version</td>
+					<td>Quantity</td>
+					<td>Location</td>
+					<td>Notes</td>
+					<td>Satisfied</td>
+					<td>Action</td>
+				</tr>
+			</thead>
+			{% for techreq in techreqs %}
+				<tr>
+					<td>{{ techreq.name }}</td>
+					<td>{{ techreq.version }}</td>
+					<td>{{ techreq.quantity }}</td>
+					<td>{{ techreq.location }}</td>
+					<td>{{ techreq.notes }}</td>
+					<td>{{ techreq.satisfied_by }}</td>
+					<td>
+						<form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
+							<p>
+								<input type="hidden" name="action" value="del" />
+								<input type="hidden" name="techreq_id" value="{{techreq.id}}" />
+								<input type="submit" value="remove" onclick="return confirmSubmit('remove this Tech Requirement')" />
+							</p>
+						</form>
+					</td>
+				</tr>
+			{% endfor %}
+		</table>
+	{% else %}
+		<p>There are currently no tech requirements.</p>
+	{% endif %}
+</div>
+
+<div id="form_container">
+    {% if form.non_field_errors %}
+    <div class="errorindicator">
+        <img src="{{MEDIA_URL}}/icons/exclamation.png" alt="exclamation" />
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    <form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
+        <fieldset>
+            <legend>Add Tech Requirement</legend>
+            <ul>
+                {{form.name|activity_field}}
+                {{form.version|activity_field}}
+                {{form.quantity|activity_field}}
+                {{form.location|activity_field}}
+                {{form.notes|activity_field}}
+                <li><input type="hidden" name="action" value="add" />
+                    <input class="submit" type="submit" value="Add Tech Requirement" />
+                </li>
+            </ul>
+        </fieldset>
+    </form>
+</div>
+{% endblock %}
