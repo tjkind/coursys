@@ -52,3 +52,5 @@ def manage_techreqs(request, course_slug):
 	techreqs = TechRequirement.objects.filter(course_offering=course)
 	context = {'course': course, 'techreqs': techreqs, 'form': form}
 	return render_to_response('techreq/manage_techreqs.html', context, context_instance=RequestContext(request))
+
+#Test#
