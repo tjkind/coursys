@@ -17,42 +17,42 @@
 <h2>Current Tech Requirements</h2>
 
 <div class="datatable_container">
-	{% if techreqs %}
-		<table class="display" id="tas_table">
-			<thead>
-				<tr>
-					<td>Name</td>
-					<td>Version</td>
-					<td>Quantity</td>
-					<td>Location</td>
-					<td>Notes</td>
-					<td>Satisfied</td>
-					<td>Action</td>
-				</tr>
-			</thead>
-			{% for techreq in techreqs %}
-				<tr>
-					<td>{{ techreq.name }}</td>
-					<td>{{ techreq.version }}</td>
-					<td>{{ techreq.quantity }}</td>
-					<td>{{ techreq.location }}</td>
-					<td>{{ techreq.notes }}</td>
-					<td>{{ techreq.satisfied_by }}</td>
-					<td>
-						<form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
-							<p>
-								<input type="hidden" name="action" value="del" />
-								<input type="hidden" name="techreq_id" value="{{techreq.id}}" />
-								<input type="submit" value="remove" onclick="return confirmSubmit('remove this Tech Requirement')" />
-							</p>
-						</form>
-					</td>
-				</tr>
-			{% endfor %}
-		</table>
-	{% else %}
-		<p>There are currently no tech requirements.</p>
-	{% endif %}
+    {% if techreqs %}
+        <table class="display" id="tas_table">
+            <thead>
+                <tr>
+                    <td>Name</td>
+                    <td>Version</td>
+                    <td>Quantity</td>
+                    <td>Location</td>
+                    <td>Notes</td>
+                    <td>Satisfied</td>
+                    <td>Action</td>
+                </tr>
+            </thead>
+            {% for techreq in techreqs %}
+                <tr>
+                    <td>{{ techreq.name }}</td>
+                    <td>{{ techreq.version }}</td>
+                    <td>{{ techreq.quantity }}</td>
+                    <td>{{ techreq.location }}</td>
+                    <td>{{ techreq.notes }}</td>
+                    <td>{{ techreq.satisfied_by }}</td>
+                    <td>
+                        <form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
+                            <p>
+                                <input type="hidden" name="action" value="del" />
+                                <input type="hidden" name="techreq_id" value="{{techreq.id}}" />
+                                <input type="submit" value="remove" onclick="return confirmSubmit('remove this Tech Requirement')" />
+                            </p>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>There are currently no tech requirements.</p>
+    {% endif %}
 </div>
 
 <div id="form_container">
