@@ -6,7 +6,28 @@
 {% block h1 %}{{course.name}} Tech Requirements{% endblock %}
 {% block title %}{{course.name}} Tech Requirements{% endblock %}
 
-{# head extra javascript for the table #}
+{% block headextra %}<script type="text/javascript">
+//<![CDATA[
+    $(document).ready(function() {
+    $('#techreqs_table').dataTable({
+                "bPaginate": false,
+                "bJQueryUI": true,
+                "aaSorting": [[0, "asc"]],
+                "aoColumns": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+        ]
+    });
+
+    });
+
+//]]></script>
+{% endblock %}
 
 {% block subbreadcrumbs %}<li>&gt; <a href="{% url grades.views.course_info course_slug=course.slug %}">{{ course.name }}</a></li><li>&gt; <a href="{% url grades.views.course_config course_slug=course.slug %}">Setup</a></li><li>&gt; Manage Tech Requirements</li>{% endblock %}
 
@@ -18,16 +39,16 @@
 
 <div class="datatable_container">
     {% if techreqs %}
-        <table class="display" id="tas_table">
+        <table class="display" id="techreqs_table">
             <thead>
                 <tr>
-                    <td>Name</td>
-                    <td>Version</td>
-                    <td>Quantity</td>
-                    <td>Location</td>
-                    <td>Notes</td>
-                    <td>Satisfied</td>
-                    <td>Action</td>
+                    <th scope="col">Name</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Notes</th>
+                    <th scope="col">Satisfied</th>
+                    <th scope="col">Action</th>
                 </tr>
             </thead>
             {% for techreq in techreqs %}
@@ -38,7 +59,7 @@
                     <td>{{ techreq.location }}</td>
                     <td>{{ techreq.notes }}</td>
                     <td>{{ techreq.satisfied_by }}</td>
-                    <td>
+                    <td class="miniaction">
                         <form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
                             <p>
                                 <input type="hidden" name="action" value="del" />

@@ -48,8 +48,7 @@ class ApplicationTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, '<td>%s</td>' % (techreq1.name))
 
-        # add a requirement using the form on the page
-        # and check to see if you can find it on the new page
+        # add a requirement and check to see if you can find it on the new page
         post_data = {
             'name':'Eclipse',
             'location':'anywhere',
