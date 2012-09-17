@@ -62,9 +62,10 @@
                     <td class="miniaction">
                         <form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
                             <p>
+                                <a href="{% url techreq.views.edit_techreq course_slug=course.slug techreq_id=techreq.id %}">Edit</a>
                                 <input type="hidden" name="action" value="del" />
                                 <input type="hidden" name="techreq_id" value="{{techreq.id}}" />
-                                <input type="submit" value="remove" onclick="return confirmSubmit('remove this Tech Requirement')" />
+                                <input type="submit" value="Remove" onclick="return confirmSubmit('remove this Tech Requirement')" />
                             </p>
                         </form>
                     </td>

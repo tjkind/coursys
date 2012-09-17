@@ -113,6 +113,7 @@ urlpatterns += patterns('',
     url(r'^' + COURSE_SLUG + '/config/tas$', 'coredata.views.manage_tas'),
     url(r'^' + COURSE_SLUG + '/config/copysetup$', 'marking.views.copy_course_setup'),
     url(r'^' + COURSE_SLUG + '/config/techreqs$', 'techreq.views.manage_techreqs'),
+    url(r'^' + COURSE_SLUG + '/config/techreqs/edit/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.edit_techreq'),
 
     # course groups
 
