@@ -20,3 +20,13 @@ class TechReqForm(forms.Form):
     def __init__(self, course_offering, *args, **kwargs):
         super(TechReqForm, self).__init__(*args, **kwargs)
         self.course_offering = course_offering
+
+
+class TechResource(forms.Form):
+	name = forms.CharField(required=True, label="Resource Name", max_length= 50)
+	#unit=  ----not sure about it yet:   Foreign Key
+	version = forms.CharField(required=False, label="Version", max_length=50) 
+	quantity = forms.IntegerField(required=False, label="Quantity"")
+   	location =  forms.CharField(required=False, label="Location", max_length=50)
+	notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
+
