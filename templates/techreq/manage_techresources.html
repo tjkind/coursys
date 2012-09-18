@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block h1 %}Tech Resources {% endblock %}
+
+<p> This is a page for Tech Resources</p>
+
+
+{% block content %}
+    <form action="." method="POST">{% csrf_token %}
+        <fieldset>
+ <table>
+            {{ form.as_table }}
+ </table>
+        <li><input type="hidden" name="action" value="add" />
+        <input class="submit" type="submit" value="Add Tech Resources" />
+         </li>
+  </ul>
+        </fieldset>
+    </form>
+{% endblock %}
