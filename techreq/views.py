@@ -12,6 +12,8 @@ from django.shortcuts import render_to_response, get_object_or_404
 
 from techreq.models import TechRequirement
 from techreq.forms import TechReqForm
+from techreq.forms import TechResourceForm
+from techreq.models import TechResource
 
 @requires_course_staff_by_slug
 def manage_techreqs(request, course_slug):
@@ -85,3 +87,17 @@ def edit_techreq(request, course_slug, techreq_id):
     return render_to_response('techreq/edit_techreq.html', context, context_instance=RequestContext(request))
 
 #Test#
+
+#TechResources#
+def manage_techresources(request):
+ if request.method == 'POST':
+    form = TechResourceForm(request.POST)
+	if form.is_valid():
+		form.save()
+		return HttpResponseRedirect('/manage_techresources/thanks')
+     	else:
+		form = TechResourceForm()
+ return render_to_response('techreq/manage_techresources.html',{'form':form}) 
+
+
+
