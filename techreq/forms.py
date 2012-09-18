@@ -22,7 +22,7 @@ class TechReqForm(forms.Form):
         self.course_offering = course_offering
 
 
-class TechResource(forms.Form):
+class TechResourceForm(forms.Form):
 	name = forms.CharField(required=True, label="Resource Name", max_length= 50)
 	#unit=  ----not sure about it yet:   Foreign Key
 	version = forms.CharField(required=False, label="Version", max_length=50) 
