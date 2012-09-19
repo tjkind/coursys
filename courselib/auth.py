@@ -254,3 +254,21 @@ def requires_instructor(function=None, login_url=None):
     else:
         return actual_decorator
 
+def is_techstaff(request, **kwargs):
+    """
+    Return True if the user is part of the tech staff
+    """
+    roles = Role.objects.filter(person__userid=request.user.username, role__in=['TECH'])
+    perms = roles.count()
+    request.units = [r.unit for r in roles]
+    return perms>0
+
+def requires_techstaff(function=None, login_url=None):
+    """
+    Allows access if user is part of the tech staff.
+    """
+    actual_decorator = user_passes_test(is_techstaff, login_url=login_url)
+    if function:
+        return actual_decorator(function)
+    else:
+        return actual_decorator

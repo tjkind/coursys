@@ -1,5 +1,5 @@
 from coredata.models import CourseOffering, Member
-from courselib.auth import requires_global_role, requires_role, requires_course_staff_by_slug, ForbiddenResponse
+from courselib.auth import requires_global_role, requires_role, requires_course_staff_by_slug, ForbiddenResponse, requires_techstaff
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse
@@ -84,9 +84,7 @@ def edit_techreq(request, course_slug, techreq_id):
     context = {'course': course, 'techreq': techreq, 'form': form}
     return render_to_response('techreq/edit_techreq.html', context, context_instance=RequestContext(request))
 
-#Test#
-
-#TechResources#
+@requires_techstaff
 def manage_techresources(request):
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='add':
         form = TechResourceForm(request.POST)
