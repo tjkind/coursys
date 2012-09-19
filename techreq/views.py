@@ -76,7 +76,7 @@ def edit_techreq(request, course_slug, techreq_id):
                 related_object=techreq)
             l.save()
             messages.success(request, 'Edited Tech Requirement "%s".' % (techreq.name))
-            return HttpResponseRedirect(reverse(edit_techreq, kwargs={'course_slug': course.slug, 'techreq_id': techreq.id}))
+            return HttpResponseRedirect(reverse(manage_techreqs, kwargs={'course_slug': course.slug}))
     else:
         techreq_initial = {'name':techreq.name, 'version':techreq.version, 'quantity':techreq.quantity, 'location':techreq.location, 'notes':techreq.notes}
         form = TechReqForm(course_offering=course, initial=techreq_initial)

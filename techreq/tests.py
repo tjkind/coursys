@@ -93,12 +93,6 @@ class ApplicationTest(TestCase):
         }
         response = client.post(url, post_data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, '<input name="name" value="%s"' % (techreq_orig_name))
-        self.assertContains(response, '<input name="name" value="%s"' % (techreq_changed_name))
-        # check the manage page
-        url = reverse('techreq.views.manage_techreqs', kwargs={'course_slug': c.slug,})
-        response = basic_page_tests(self, client, url)
-        self.assertEqual(response.status_code, 200)
         # check that our manually added tech requirement is in the page, 
         # and it's alternate name is not(avoid false positives)
         self.assertContains(response, '<td>%s</td>' % (techreq_changed_name))

@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
-{# This grade_student thing is for the activity_field in the form, this may not be the best way to get that functionality #}
-{% load grade_student %}
+{% load form_display %}
 
 {% block h1 %}Edit Tech Requirement{% endblock %}
 {% block title %}Edit Tech Requirement{% endblock %}
@@ -25,17 +24,9 @@
     <form action="{% url techreq.views.edit_techreq course_slug=course.slug techreq_id=techreq.id %}" method="post">{% csrf_token %}
         <fieldset>
             <legend>Edit Tech Requirement</legend>
-            <ul>
-                {{form.name|activity_field}}
-                {{form.version|activity_field}}
-                {{form.quantity|activity_field}}
-                {{form.location|activity_field}}
-                {{form.notes|activity_field}}
-                <li>
-                    <input type="hidden" name="action" value="edit" />
-                    <input class="submit" type="submit" value="Edit Tech Requirement" />
-                </li>
-            </ul>
+            {{form|as_dl}}
+            <input type="hidden" name="action" value="edit" />
+            <input class="submit" type="submit" value="Edit Tech Requirement" />
         </fieldset>
     </form>
 </div>

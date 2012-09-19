@@ -10,7 +10,7 @@ class TechReqForm(forms.Form):
         widget=forms.TextInput(attrs={'size':'20'}))
     quantity = forms.IntegerField(required=False, label="Quantity",
         help_text="A optional quantity of the tech requirement.")
-    location = forms.CharField(required=False, label="Location", max_length=20, 
+    location = forms.CharField(required=True, label="Location", max_length=20, 
         help_text="The location where the tech requirement is required.",
         widget= forms.TextInput(attrs={'size':'20'}))
     notes = forms.CharField(required=False, label="Notes",
