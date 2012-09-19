@@ -28,8 +28,3 @@ class TechResourceForm(forms.Form):
     quantity = forms.IntegerField(required=False, label="Quantity")
     location =  forms.CharField(required=False, label="Location", max_length=20)
     notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
-
-    def __init__(self, unit, *args, **kwargs):
-        super(TechResourceForm, self).__init__(*args, **kwargs)
-        self.unit = unit
-

@@ -1,20 +1,38 @@
 {% extends "base.html" %}
 
-{% block h1 %}Tech Resources {% endblock %}
+{# This grade_student thing is for the activity_field in the form, this may not be the best way to get that functionality #}
+{% load grade_student %}
 
-<p> This is a page for Tech Resources</p>
-
+{% block h1 %}Tech Resources{% endblock %}
+{% block title %}Tech Resources{% endblock %}
 
 {% block content %}
-    <form action="." method="POST">{% csrf_token %}
-        <fieldset>
- <table>
-            {{ form.as_table }}
- </table>
-        <li><input type="hidden" name="action" value="add" />
-        <input class="submit" type="submit" value="Add Tech Resources" />
-         </li>
-  </ul>
-        </fieldset>
-    </form>
+
+<div class="datatable_container">
+    {% if techresources %}
+        <table class="display" id="techresource_table">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Notes</th>
+                </tr>
+            </thead>
+            {% for techresource in techresources %}
+                <tr>
+                    <td>{{ techresource.name }}</td>
+                    <td>{{ techresource.version }}</td>
+                    <td>{{ techresource.quantity }}</td>
+                    <td>{{ techresource.location }}</td>
+                    <td>{{ techresource.notes }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>There are currently no tech resources.</p>
+    {% endif %}
+</div>
+
 {% endblock %}

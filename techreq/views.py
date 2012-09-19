@@ -102,7 +102,9 @@ def manage_techresources(request):
             return HttpResponseRedirect(reverse(manage_techresources))
     else:
         form = TechResourceForm()
-    return render_to_response('techreq/manage_techresources.html',{'form':form}, context_instance=RequestContext(request)) 
+    techresources = TechResource.objects.all()
+    context = {'techresources': techresources, 'form': form}
+    return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request)) 
 
 
 
