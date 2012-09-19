@@ -10,10 +10,8 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
 
-from techreq.models import TechRequirement
-from techreq.forms import TechReqForm
-from techreq.forms import TechResourceForm
-from techreq.models import TechResource
+from techreq.models import TechRequirement, TechResource
+from techreq.forms import TechReqForm, TechResourceForm
 
 @requires_course_staff_by_slug
 def manage_techreqs(request, course_slug):
@@ -90,14 +88,21 @@ def edit_techreq(request, course_slug, techreq_id):
 
 #TechResources#
 def manage_techresources(request):
- if request.method == 'POST':
-    form = TechResourceForm(request.POST)
-	if form.is_valid():
-		form.save()
-		return HttpResponseRedirect('/manage_techresources/thanks')
-     	else:
-		form = TechResourceForm()
- return render_to_response('techreq/manage_techresources.html',{'form':form}) 
+    if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='add':
+        form = TechResourceForm(request.POST)
+        if form.is_valid():
+            t = TechResource(unit=form.unit, name=form.cleaned_data['name'], version=form.cleaned_data['version'], quantity=form.cleaned_data['quantity'], location=form.cleaned_data['location'], notes=form.cleaned_data['notes'])
+            t.save()
+            #LOG EVENT#
+            l = LogEntry(userid=request.user.username, 
+                description=("Tech Resource added by Tech Staff %s") % (request.user.username),
+                related_object=t)
+            l.save()
+            messages.success(request, 'Added %s as a Tech Resource.' % (t.name))
+            return HttpResponseRedirect(reverse(manage_techresources))
+    else:
+        form = TechResourceForm()
+    return render_to_response('techreq/manage_techresources.html',{'form':form}, context_instance=RequestContext(request)) 
 
 
 
