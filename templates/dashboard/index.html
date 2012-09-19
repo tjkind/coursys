@@ -44,6 +44,7 @@ $(document).ready(function() {
     {% if 'TAAD' in roles %}<li  class='newsec'><a href="{% url ta.views.view_postings %}">TA Job Postings</a></li>{% endif %}
     {% if is_grad %}<li class='newsec'><a href="{% url grad.views.student_financials %}">Financial Summary</a></li>{% endif %}
     {% if 'TADM' in roles %}<li  class='newsec'><a href="{% url planning.views.view_insts_in_unit %}">Teaching Administration</a></li>{% endif %}
+    {% if 'TECH' in roles %}<li  class='newsec'><a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>{% endif %}
     {% if 'ADMN' in roles %}<li class="newsec"><a href="{% url coredata.views.unit_admin %}">Department Management</a></li>{% endif %}
     </ul>
 </div>
