@@ -23,10 +23,13 @@ class TechReqForm(forms.Form):
 
 
 class TechResourceForm(forms.Form):
-	name = forms.CharField(required=True, label="Resource Name", max_length= 50)
-	#unit=  ----not sure about it yet:   Foreign Key
-	version = forms.CharField(required=False, label="Version", max_length=50) 
-	quantity = forms.IntegerField(required=False, label="Quantity"")
-   	location =  forms.CharField(required=False, label="Location", max_length=50)
-	notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
+    name = forms.CharField(required=True, label="Resource Name", max_length= 60)
+    version = forms.CharField(required=False, label="Version", max_length=30) 
+    quantity = forms.IntegerField(required=False, label="Quantity")
+    location =  forms.CharField(required=False, label="Location", max_length=20)
+    notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
+
+    def __init__(self, unit, *args, **kwargs):
+        super(TechResourceForm, self).__init__(*args, **kwargs)
+        self.unit = unit
 
