@@ -1,12 +1,10 @@
 {% extends "base.html" %}
+{% load form_display %}
 
 {# This grade_student thing is for the activity_field in the form, this may not be the best way to get that functionality #}
 {% load grade_student %}
-
 {% block h1 %}Tech Resources{% endblock %}
 {% block title %}Tech Resources{% endblock %}
-
-{% block content %}
 
 <div class="datatable_container">
     {% if techresources %}
@@ -29,12 +27,37 @@
                     <td>{{ techresource.quantity }}</td>
                     <td>{{ techresource.location }}</td>
                     <td>{{ techresource.notes }}</td>
+                    <td class="miniaction">
+                        <form action="{% url techreq.views.manage_techresource %}" method="post">{% csrf_token %}
+                            <p>
+                            
+                            </p>
+                        </form>
+                    </td>
                 </tr>
-            {% endfor %}
+              {% endfor %}
         </table>
     {% else %}
-        <p>There are currently no tech resources.</p>
+            <p>There are currently no tech resources.</p>
     {% endif %}
-</div>
 
-{% endblock %}
+
+<div id="form_container">
+    {% if form.non_field_errors %}
+        <div class="errorindicator">
+                 <img src="{{MEDIA_URL}}/icons/exclamation.png" alt="exclamation" />
+                    {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    <form action="{% url techreq.views.manage_techresource %}" method="post">
+            {% csrf_token %}
+             {% csrf_token %}
+        <fieldset>
+            <legend>Add Tech Resources</legend>
+            {{form|as_dl}}
+            <input type="hidden" name="action" value="add" />
+            <input class="submit" type="submit" value="Add Tech Resources" />
+        </fieldset>
+    </form>
+</div>
+</div>
