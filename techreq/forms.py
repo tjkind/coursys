@@ -22,9 +22,25 @@ class TechReqForm(forms.Form):
         self.course_offering = course_offering
 
 
+
+MY_CHOICES = (
+    ('1', 'Option 1'),
+    ('2', 'Option 2'),
+    ('3', 'Option 3'),
+)
+
 class TechResourceForm(forms.Form):
+
     name = forms.CharField(required=True, label="Resource Name", max_length= 60)
+    unit = forms.ChoiceField(choices= MY_CHOICES)
     version = forms.CharField(required=False, label="Version", max_length=30) 
     quantity = forms.IntegerField(required=False, label="Quantity")
     location =  forms.CharField(required=False, label="Location", max_length=20)
     notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
+ 
+
+
+    def __init__(self, *args, **kwargs):
+        super(TechResourceForm, self).__init__(*args, **kwargs)
+        self.unit = forms.ChoiceField(choices=MY_CHOICES)
+
