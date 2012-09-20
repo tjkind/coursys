@@ -39,6 +39,7 @@ STATUS_CHOICES = (
         ('EXPI', 'Expired Application'),
         ('CONF', 'Confirmed Acceptance'),
         ('CANC', 'Cancelled Acceptance'),
+        ('ARIV', 'Arrived'),
         ('ACTI', 'Active'),
         ('PART', 'Part-Time'),
         ('LEAV', 'On-Leave'),
@@ -48,7 +49,7 @@ STATUS_CHOICES = (
         ('GONE', 'Gone'),
         ('ARSP', 'Completed Special'), # Special Arrangements and GONE
         )
-STATUS_APPLICANT = ('INCO', 'COMP', 'INRE', 'HOLD', 'OFFO', 'REJE', 'DECL', 'EXPI', 'CONF', 'CANC') # statuses that mean "applicant"
+STATUS_APPLICANT = ('INCO', 'COMP', 'INRE', 'HOLD', 'OFFO', 'REJE', 'DECL', 'EXPI', 'CONF', 'CANC', 'ARIV') # statuses that mean "applicant"
 STATUS_ACTIVE = ('ACTI', 'PART', 'NOND') # statuses that mean "still around"
 STATUS_DONE = ('WIDR', 'GRAD', 'GONE', 'ARSP') # statuses that mean "done"
 STATUS_INACTIVE = ('LEAV',) + STATUS_DONE # statuses that mean "not here"
@@ -481,6 +482,7 @@ STATUS_ORDER = {
         'EXPI': 3,
         'CONF': 4,
         'CANC': 5,
+        'ARIV': 5,
         'APPL': 5,
         'ACTI': 6,
         'PART': 6,
