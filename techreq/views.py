@@ -107,10 +107,36 @@ def manage_techresources(request):
 # a page for tech staff to manage(i.e. satisfy) tech requirements
 @requires_techstaff
 def techstaff_manage_techreqs(request):
+    if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='remove-satisfaction':
+        techreq = get_object_or_404(TechRequirement, id=request.POST['techreq_id'])
+        techreq.satisfied_by = None
+        techreq.save()
+        #LOG EVENT#
+        l = LogEntry(userid=request.user.username, 
+            description=("Removed satisfaction of Tech Requirement %s by Tech Staff %s") % (techreq.name, request.user.username),
+            related_object=techreq)
+        l.save()
+        messages.success(request, 'Removed satisfaction of Tech Requirement %s.' % (techreq.name))
+        return HttpResponseRedirect(reverse(techstaff_manage_techreqs))
     # right now grab everything and do filtering later
     techreqs = TechRequirement.objects.all()
     context = {'techreqs': techreqs}
     return render_to_response('techreq/techstaff_manage_techreqs.html', context, context_instance=RequestContext(request))
 
-
-
+@requires_techstaff
+def satisfy_techreq(request, techreq_id):
+    techreq = get_object_or_404(TechRequirement, id=techreq_id)
+    if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='satisfy':
+        techresource = get_object_or_404(TechResource, id=request.POST['techresource_id'])
+        techreq.satisfied_by = techresource
+        techreq.save()
+        #LOG EVENT#
+        l = LogEntry(userid=request.user.username, 
+            description=("Tech Requirement %s satisfied by %s added by Tech Staff %s") % (techreq.name, techresource.name, request.user.username),
+            related_object=techreq)
+        l.save()
+        messages.success(request, 'Satisfied Tech Requirement %s with Tech Resource %s.' % (techreq.name, techresource.name))
+        return HttpResponseRedirect(reverse(techstaff_manage_techreqs))
+    techresources = TechResource.objects.all()
+    context = {'techreq': techreq, 'techresources':techresources}
+    return render_to_response('techreq/satisfy_techreq.html', context, context_instance=RequestContext(request))

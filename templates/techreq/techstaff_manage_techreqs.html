@@ -2,8 +2,8 @@
 
 {% load form_display %}
 
-{% block h1 %}Tech Requirements{% endblock %}
-{% block title %}Tech Requirements{% endblock %}
+{% block h1 %}Satisfy Tech Requirements{% endblock %}
+{% block title %}Satisfy Tech Requirements{% endblock %}
 
 {% block headextra %}<script type="text/javascript">
 //<![CDATA[
@@ -27,6 +27,8 @@
 
 //]]></script>
 {% endblock %}
+
+{% block subbreadcrumbs %}<li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>{% endblock %}
 
 {% block actions %}{% endblock %}
 
@@ -55,7 +57,18 @@
                     <td>{{ techreq.notes }}</td>
                     <td>{{ techreq.satisfied_by }}</td>
                     <td class="miniaction">
-                        Satisfy Form
+                        {% if techreq.satisfied_by %}
+                            <form action="{% url techreq.views.techstaff_manage_techreqs %}" method="post">
+                                {% csrf_token %}
+                                <p>
+                                    <input type="hidden" name="action" value="remove-satisfaction" />
+                                    <input type="hidden" name="techreq_id" value="{{ techreq.id }}" />
+                                    <input type="submit" value="Remove Satisfaction" />
+                                </p>
+                            </form>
+                        {% else %}
+                            <a href="{% url techreq.views.satisfy_techreq techreq_id=techreq.id %}">Satisfy</a>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}

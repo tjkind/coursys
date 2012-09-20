@@ -117,6 +117,7 @@ urlpatterns += patterns('',
 
     url(r'^techstaff/techresources/$', 'techreq.views.manage_techresources'),
     url(r'^techstaff/techrequirements/$', 'techreq.views.techstaff_manage_techreqs'),
+    url(r'^techstaff/techrequirement/satisfy/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.satisfy_techreq'),
 
     # course groups
 

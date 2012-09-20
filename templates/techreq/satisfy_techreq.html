@@ -2,9 +2,8 @@
 
 {% load form_display %}
 
-
-{% block h1 %}Manage Tech Resources{% endblock %}
-{% block title %}Manage Tech Resources{% endblock %}
+{% block h1 %}Satisfy Tech Requirement{% endblock %}
+{% block title %}Satisfy Tech Requirement{% endblock %}
 
 {% block headextra %}<script type="text/javascript">
 //<![CDATA[
@@ -29,18 +28,39 @@
 //]]></script>
 {% endblock %}
 
-{% block actions %}
-<div id="actions">
-    <h2 class="heading">Actions</h2>
-    <ul>
-        <li><a href="{% url techreq.views.techstaff_manage_techreqs %}">Satisfy Tech Requirements</a></li>
-    </ul>
-</div>
+{% block subbreadcrumbs %}
+    <li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>
+    <li>&gt; <a href="{% url techreq.views.techstaff_manage_techreqs %}">Satisfy Tech Requirements</a></li>
 {% endblock %}
+
 
 {% block content %}
 
+<h3>Tech Requirement to be satisfied:</h3>
+<table>
+    <tr>
+        <td>Name</td>
+        <td>{{ techreq.name }}</td>
+    </tr>
+    <tr>
+        <td>Version</td>
+        <td>{{ techreq.version }}</td>
+    </tr>
+    <tr>
+        <td>Quantity</td>
+        <td>{{ techreq.quantity }}</td>
+    </tr>
+    <tr>
+        <td>Location</td>
+        <td>{{ techreq.location }}</td>
+    </tr>
+    <tr>
+        <td>Notes</td>
+        <td>{{ techreq.notes }}</td>
+    </tr>
+</table>
 
+<h3>Select the resources to satisfy this requirement:</h3>
 <div class="datatable_container">
     {% if techresources %}
         <table class="display" id="techresource_table">
@@ -64,9 +84,12 @@
                     <td>{{ techresource.location }}</td>
                     <td>{{ techresource.notes }}</td>
                     <td class="miniaction">
-                        <form action="{% url techreq.views.manage_techresources %}" method="post">{% csrf_token %}
+                        <form action="{% url techreq.views.satisfy_techreq techreq.id %}" method="post">
+                            {% csrf_token %}
                             <p>
-                            
+                                <input type="hidden" name="action" value="satisfy" />
+                                <input type="hidden" name="techresource_id" value="{{ techresource.id }}" />
+                                <input type="submit" value="Select" />
                             </p>
                         </form>
                     </td>
@@ -76,24 +99,6 @@
     {% else %}
             <p>There are currently no tech resources.</p>
     {% endif %}
-</div>
-
-<div id="form_container">
-    {% if form.non_field_errors %}
-        <div class="errorindicator">
-                 <img src="{{MEDIA_URL}}/icons/exclamation.png" alt="exclamation" />
-                    {{ form.non_field_errors }}
-        </div>
-    {% endif %}
-    <form action="{% url techreq.views.manage_techresources %}" method="post">
-            {% csrf_token %}
-        <fieldset>
-            <legend>Add Tech Resources</legend>
-            {{form|as_dl}}
-            <input type="hidden" name="action" value="add" />
-            <input class="submit" type="submit" value="Add Tech Resources" />
-        </fieldset>
-    </form>
 </div>
 
 {% endblock %}
