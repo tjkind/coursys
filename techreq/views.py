@@ -89,7 +89,7 @@ def manage_techresources(request):
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='add':
         form = TechResourceForm(request.POST)
         if form.is_valid():
-            t = TechResource(unit=form.unit, name=form.cleaned_data['name'], version=form.cleaned_data['version'], quantity=form.cleaned_data['quantity'], location=form.cleaned_data['location'], notes=form.cleaned_data['notes'])
+            t = TechResource(unit=form.cleaned_data['unit'], name=form.cleaned_data['name'], version=form.cleaned_data['version'], quantity=form.cleaned_data['quantity'], location=form.cleaned_data['location'], notes=form.cleaned_data['notes'])
             t.save()
             #LOG EVENT#
             l = LogEntry(userid=request.user.username, 
