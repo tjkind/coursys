@@ -115,7 +115,8 @@ urlpatterns += patterns('',
     url(r'^' + COURSE_SLUG + '/config/techreqs$', 'techreq.views.manage_techreqs'),
     url(r'^' + COURSE_SLUG + '/config/techreqs/edit/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.edit_techreq'),
 
-    url(r'^techresources/$', 'techreq.views.manage_techresources'),
+    url(r'^techstaff/techresources/$', 'techreq.views.manage_techresources'),
+    url(r'^techstaff/techrequirements/$', 'techreq.views.techstaff_manage_techreqs'),
 
     # course groups
 

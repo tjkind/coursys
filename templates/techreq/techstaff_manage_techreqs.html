@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% load form_display %}
+
+{% block h1 %}Tech Requirements{% endblock %}
+{% block title %}Tech Requirements{% endblock %}
+
+{% block headextra %}<script type="text/javascript">
+//<![CDATA[
+    $(document).ready(function() {
+    $('#techreqs_table').dataTable({
+                "bPaginate": false,
+                "bJQueryUI": true,
+                "aaSorting": [[0, "asc"]],
+                "aoColumns": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+        ]
+    });
+
+    });
+
+//]]></script>
+{% endblock %}
+
+{% block actions %}{% endblock %}
+
+{% block content %}
+
+<div class="datatable_container">
+    {% if techreqs %}
+        <table class="display" id="techreqs_table">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Notes</th>
+                    <th scope="col">Satisfied</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            {% for techreq in techreqs %}
+                <tr>
+                    <td>{{ techreq.name }}</td>
+                    <td>{{ techreq.version }}</td>
+                    <td>{{ techreq.quantity }}</td>
+                    <td>{{ techreq.location }}</td>
+                    <td>{{ techreq.notes }}</td>
+                    <td>{{ techreq.satisfied_by }}</td>
+                    <td class="miniaction">
+                        Satisfy Form
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>There are currently no tech requirements.</p>
+    {% endif %}
+</div>
+{% endblock %}

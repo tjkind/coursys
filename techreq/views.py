@@ -102,7 +102,15 @@ def manage_techresources(request):
         form = TechResourceForm()
     techresources = TechResource.objects.all()
     context = {'techresources': techresources, 'form': form}
-    return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request)) 
+    return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request))
+
+# a page for tech staff to manage(i.e. satisfy) tech requirements
+@requires_techstaff
+def techstaff_manage_techreqs(request):
+    # right now grab everything and do filtering later
+    techreqs = TechRequirement.objects.all()
+    context = {'techreqs': techreqs}
+    return render_to_response('techreq/techstaff_manage_techreqs.html', context, context_instance=RequestContext(request))
 
 
 
