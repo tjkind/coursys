@@ -34,6 +34,24 @@
 
 {% block content %}
 
+<div>Filter Type:
+    {% if filter_type = 'all' %}
+        <strong>All</strong> |
+    {% else %}
+        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='all' %}">All</a> | 
+    {% endif %}
+    {% if filter_type = 'unsatisfied' %}
+        <strong>Unsatisfied</strong> |
+    {% else %}
+        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='unsatisfied' %}">Unsatisfied</a> | 
+    {% endif %}
+    {% if filter_type = 'current' %}
+        <strong>Current Semester</strong>
+    {% else %}
+        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='current' %}">Current Semester</a>
+    {% endif %}
+</div>
+
 <div class="datatable_container">
     {% if techreqs %}
         <table class="display" id="techreqs_table">
