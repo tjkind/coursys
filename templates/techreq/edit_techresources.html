@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% load form_display %}
+
+{% block h1 %}Edit Tech Resources {% endblock %}
+{% block title %}Edit Tech Resources{% endblock %}
+
+{% block subbreadcrumbs %}
+    <li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>
+    <li>&gt; <a href="{% url techreq.views.techstaff_manage_techreqs %}">Satisfy Tech Requirements</a></li>
+{% endblock %}
+
+{% block content %}
+<div id="form_container">
+    {% if form.non_field_errors %}
+    <div class="errorindicator">
+        <img src="{{MEDIA_URL}}/icons/exclamation.png" alt="exclamation" />
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    <form action="{% url techreq.views.edit_techresources  techresource_id=techresource.id %}" method="post">{% csrf_token %}
+        <fieldset>
+            <legend>Edit Tech Resource</legend>
+            {{form.as_p}}
+            <input type="hidden" name="action" value="edit" />
+            <input class="submit" type="submit" value="Edit Tech Requirement" />
+        </fieldset>
+    </form>
+</div>
+{% endblock %}
