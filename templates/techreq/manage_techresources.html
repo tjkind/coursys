@@ -59,10 +59,10 @@
                 <tr>
                     <td>{{ techresource.name }}</td>
                     <td>{{ techresource.unit }}</td>
-                    <td>{{ techresource.version }}</td>
-                    <td>{{ techresource.quantity }}</td>
+                    <td>{{ techresource.version|default:"" }}</td>
+                    <td>{{ techresource.quantity|default:"" }}</td>
                     <td>{{ techresource.location }}</td>
-                    <td>{{ techresource.notes }}</td>
+                    <td>{{ techresource.notes|default:"" }}</td>
                     <td class="miniaction">
                         <form action="{% url techreq.views.manage_techresources %}" method="post">{% csrf_token %}
                             <p>
