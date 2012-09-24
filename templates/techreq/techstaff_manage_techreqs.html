@@ -51,11 +51,11 @@
             {% for techreq in techreqs %}
                 <tr>
                     <td>{{ techreq.name }}</td>
-                    <td>{{ techreq.version }}</td>
-                    <td>{{ techreq.quantity }}</td>
+                    <td>{{ techreq.version|default:"" }}</td>
+                    <td>{{ techreq.quantity|default:"" }}</td>
                     <td>{{ techreq.location }}</td>
-                    <td>{{ techreq.notes }}</td>
-                    <td>{{ techreq.satisfied_by }}</td>
+                    <td>{{ techreq.notes|default:"" }}</td>
+                    <td>{{ techreq.satisfied_by|default:"No" }}</td>
                     <td class="miniaction">
                         {% if techreq.satisfied_by %}
                             <form action="{% url techreq.views.techstaff_manage_techreqs %}" method="post">

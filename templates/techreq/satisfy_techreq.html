@@ -44,11 +44,11 @@
     </tr>
     <tr>
         <td>Version</td>
-        <td>{{ techreq.version }}</td>
+        <td>{{ techreq.version|default:"" }}</td>
     </tr>
     <tr>
         <td>Quantity</td>
-        <td>{{ techreq.quantity }}</td>
+        <td>{{ techreq.quantity|default:"" }}</td>
     </tr>
     <tr>
         <td>Location</td>
@@ -56,7 +56,7 @@
     </tr>
     <tr>
         <td>Notes</td>
-        <td>{{ techreq.notes }}</td>
+        <td>{{ techreq.notes|default:"" }}</td>
     </tr>
 </table>
 
@@ -79,10 +79,10 @@
                 <tr>
                     <td>{{ techresource.name }}</td>
                     <td>{{ techresource.unit }}</td>
-                    <td>{{ techresource.version }}</td>
-                    <td>{{ techresource.quantity }}</td>
+                    <td>{{ techresource.version|default:"" }}</td>
+                    <td>{{ techresource.quantity|default:"" }}</td>
                     <td>{{ techresource.location }}</td>
-                    <td>{{ techresource.notes }}</td>
+                    <td>{{ techresource.notes|default:"" }}</td>
                     <td class="miniaction">
                         <form action="{% url techreq.views.satisfy_techreq techreq.id %}" method="post">
                             {% csrf_token %}
