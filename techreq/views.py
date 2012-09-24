@@ -98,11 +98,61 @@ def manage_techresources(request):
             l.save()
             messages.success(request, 'Added %s as a Tech Resource.' % (t.name))
             return HttpResponseRedirect(reverse(manage_techresources))
+ # Delete Resources   
+    elif request.method == 'POST' and 'action' in request.POST and request.POST['action']=='del':
+        techresource_id = request.POST['techresource_id']
+        techresources = TechResource.objects.filter(id=techresource_id)
+        if techresources:
+            techresource = techresources[0]
+            techresource_name = techresource.name
+            techresource.delete()
+            #LOG EVENT#
+            l = LogEntry(userid=request.user.username,
+                description=("Tech Resource removed by Tech Staff: %s for ") % (request.user.username),
+                related_object=techresource)  
+            l.save()
+            messages.success(request, 'Removed the Tech Resource %s.' % (techresource_name))
+        return HttpResponseRedirect(reverse(manage_techresources))
+
+
+
     else:
         form = TechResourceForm()
     techresources = TechResource.objects.all()
     context = {'techresources': techresources, 'form': form}
     return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request))
+
+
+@requires_techstaff
+#def edit_techresources(request,techresource_id):
+def edit_techresources(request,techresource_id):
+    techresource = get_object_or_404(TechResource, id=techresource_id)
+    
+    if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='edit':
+        form = TechResourceForm(data=request.POST)
+        if form.is_valid():
+            techresource.name = form.cleaned_data['name']
+           # techresource.unit = form.cleaned_queryset=Unit.objects.all() 
+            techresource.unit = form.cleaned_data['unit']
+            techresource.version = form.cleaned_data['version']
+            techresource.quantity = form.cleaned_data['quantity']
+            techresource.location = form.cleaned_data['location']
+            techresource.notes = form.cleaned_data['notes']
+            techresource.save()
+
+            #LOG EVENT#
+            l = LogEntry(userid=request.user.username, 
+                description=("Tech Resource %s edited by TechStaff: %s") % (techresource.name, request.user.username),
+                related_object=techresource)
+            l.save()
+            messages.success(request, 'Edited Tech Resource "%s".' % (techresource.name))
+            return HttpResponseRedirect(reverse(manage_techresources))
+    else:
+        techresource_initial = {'name':techresource.name, 'version':techresource.version, 'quantity':techresource.quantity, 'location':techresource.location, 'notes':techresource.notes}
+        form = TechResourceForm(initial=techresource_initial)
+
+    context = {'techresource': techresource, 'form': form}
+    return render_to_response('techreq/edit_techresources.html', context, context_instance=RequestContext(request))   
 
 # a page for tech staff to manage(i.e. satisfy) tech requirements
 @requires_techstaff
