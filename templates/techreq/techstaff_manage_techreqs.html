@@ -23,7 +23,13 @@
         ]
     });
 
+    $('select#techreq_semester_selector').change(function() {
+        window.location = "{% url techreq.views.techstaff_manage_techreqs %}" + $('select#techreq_semester_selector').val() + "/" + "{{ options }}";
     });
+
+    });
+
+    
 
 //]]></script>
 {% endblock %}
@@ -34,21 +40,23 @@
 
 {% block content %}
 
-<div>Filter Type:
-    {% if filter_type = 'all' %}
+<div>Semester:
+    <select id="techreq_semester_selector">
+        <option value="all">All</option>
+        {% for sem in semesters %}
+            <option value="{{ sem.name }}" {% if semester == sem.name %}selected="selected"{% endif %}>{{ sem.label }}</option>
+        {% endfor %}
+    </select>
+    Options:
+    {% if options = 'all' or options != 'unsatisfied' %}
         <strong>All</strong> |
     {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='all' %}">All</a> | 
+        <a href="{% url techreq.views.techstaff_manage_techreqs semester=semester options='all' %}">All</a> | 
     {% endif %}
-    {% if filter_type = 'unsatisfied' %}
-        <strong>Unsatisfied</strong> |
+    {% if options = 'unsatisfied' %}
+        <strong>Unsatisfied</strong>
     {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='unsatisfied' %}">Unsatisfied</a> | 
-    {% endif %}
-    {% if filter_type = 'current' %}
-        <strong>Current Semester</strong>
-    {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='current' %}">Current Semester</a>
+        <a href="{% url techreq.views.techstaff_manage_techreqs semester=semester options='unsatisfied' %}">Unsatisfied</a>
     {% endif %}
 </div>
 

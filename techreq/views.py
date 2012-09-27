@@ -1,4 +1,4 @@
-from coredata.models import CourseOffering, Member
+from coredata.models import CourseOffering, Member, Semester
 from courselib.auth import requires_global_role, requires_role, requires_course_staff_by_slug, ForbiddenResponse, requires_techstaff
 
 from django.contrib import messages
@@ -159,7 +159,7 @@ def edit_techresources(request,techresource_id):
 
 # a page for tech staff to manage(i.e. satisfy) tech requirements
 @requires_techstaff
-def techstaff_manage_techreqs(request, filter_type="all"):
+def techstaff_manage_techreqs(request, semester="all", options="all"):
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='remove-satisfaction':
         techreq = get_object_or_404(TechRequirement, id=request.POST['techreq_id'])
         techreq.satisfied_by = None
@@ -172,19 +172,19 @@ def techstaff_manage_techreqs(request, filter_type="all"):
         messages.success(request, 'Removed satisfaction of Tech Requirement %s.' % (techreq.name))
         return HttpResponseRedirect(reverse(techstaff_manage_techreqs))
     # right now grab everything and do filtering later
-    if(filter_type == "unsatisfied"):
-        techreqs = TechRequirement.objects.filter(satisfied_by=None)
-    elif(filter_type == "current"):
-        # Basically replicating the timely method of a semester here because I don't know how
-        # to call a method in the filter function
-        today = datetime.date.today()
-        month_ago = today - datetime.timedelta(days=40)
-        ten_days_ago = today + datetime.timedelta(days=10)
-        techreqs = TechRequirement.objects.filter(course_offering__semester__end__gt=month_ago, course_offering__semester__start__lt=ten_days_ago)
-    else: # default to all
-        filter_type="all"
-        techreqs = TechRequirement.objects.all()
-    context = {'techreqs': techreqs, 'filter_type':filter_type }
+    if(semester != "all"):
+        sem = get_object_or_404(Semester, name=semester)
+        if(options == "unsatisfied"):
+            techreqs = TechRequirement.objects.filter(course_offering__semester=sem, satisfied_by=None)
+        else: # all other cases get everything
+            techreqs = TechRequirement.objects.filter(course_offering__semester=sem)
+    else: # all semesters
+        if(options == "unsatisfied"):
+            techreqs = TechRequirement.objects.filter(satisfied_by=None)
+        else: # all other cases get everything
+            techreqs = TechRequirement.objects.all()
+    semesters = Semester.objects.all()
+    context = {'techreqs': techreqs, 'semesters':semesters, 'semester': semester, 'options': options }
     return render_to_response('techreq/techstaff_manage_techreqs.html', context, context_instance=RequestContext(request))
 
 @requires_techstaff
