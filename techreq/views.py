@@ -107,7 +107,7 @@ def manage_techresources(request):
  # Delete Resources   
     elif request.method == 'POST' and 'action' in request.POST and request.POST['action']=='del':
         techresource_id = request.POST['techresource_id']
-        techresources = TechResource.objects.filter(id=techresource_id)
+        techresources = TechResource.objects.filter(id=techresource_id, unit__in=units)
         if techresources:
             techresource = techresources[0]
             # get all the requirements this tech resource is satisfying and remove the satisfaction
@@ -126,20 +126,20 @@ def manage_techresources(request):
         return HttpResponseRedirect(reverse(manage_techresources))
     else:
         form = TechResourceForm(units=units)
-    techresources = TechResource.objects.all()
+    techresources = TechResource.objects.filter(unit__in=units)
     context = {'techresources': techresources, 'form': form}
     return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request))
 
 
 @requires_techstaff
-#def edit_techresources(request,techresource_id):
 def edit_techresources(request,techresource_id):
-    techresource = get_object_or_404(TechResource, id=techresource_id)
+    # get the units the logged in tech staff belong to
+    units = get_techstaff_units(request.user.username)
+    techresource = get_object_or_404(TechResource, id=techresource_id, unit__in=units)
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='edit':
-        form = TechResourceForm(data=request.POST)
+        form = TechResourceForm(data=request.POST, units=units)
         if form.is_valid():
             techresource.name = form.cleaned_data['name']
-           # techresource.unit = form.cleaned_queryset=Unit.objects.all() 
             techresource.unit = form.cleaned_data['unit']
             techresource.version = form.cleaned_data['version']
             techresource.quantity = form.cleaned_data['quantity']
@@ -156,7 +156,7 @@ def edit_techresources(request,techresource_id):
             return HttpResponseRedirect(reverse(manage_techresources))
     else:
         techresource_initial = {'name':techresource.name, 'version':techresource.version, 'quantity':techresource.quantity, 'location':techresource.location, 'notes':techresource.notes}
-        form = TechResourceForm(initial=techresource_initial)
+        form = TechResourceForm(initial=techresource_initial, units=units)
 
     context = {'techresource': techresource, 'form': form}
     return render_to_response('techreq/edit_techresources.html', context, context_instance=RequestContext(request))   
@@ -164,8 +164,10 @@ def edit_techresources(request,techresource_id):
 # a page for tech staff to manage(i.e. satisfy) tech requirements
 @requires_techstaff
 def techstaff_manage_techreqs(request, semester="all", options="all"):
+    # get the units the logged in tech staff belong to
+    units = get_techstaff_units(request.user.username)
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='remove-satisfaction':
-        techreq = get_object_or_404(TechRequirement, id=request.POST['techreq_id'])
+        techreq = get_object_or_404(TechRequirement, id=request.POST['techreq_id'], course_offering__owner__in=units)
         techreq.satisfied_by = None
         techreq.save()
         #LOG EVENT#
@@ -179,23 +181,25 @@ def techstaff_manage_techreqs(request, semester="all", options="all"):
     if(semester != "all"):
         sem = get_object_or_404(Semester, name=semester)
         if(options == "unsatisfied"):
-            techreqs = TechRequirement.objects.filter(course_offering__semester=sem, satisfied_by=None)
+            techreqs = TechRequirement.objects.filter(course_offering__semester=sem, satisfied_by=None, course_offering__owner__in=units)
         else: # all other cases get everything
-            techreqs = TechRequirement.objects.filter(course_offering__semester=sem)
+            techreqs = TechRequirement.objects.filter(course_offering__semester=sem, course_offering__owner__in=units)
     else: # all semesters
         if(options == "unsatisfied"):
-            techreqs = TechRequirement.objects.filter(satisfied_by=None)
+            techreqs = TechRequirement.objects.filter(satisfied_by=None, course_offering__owner__in=units)
         else: # all other cases get everything
-            techreqs = TechRequirement.objects.all()
+            techreqs = TechRequirement.objects.filter(course_offering__owner__in=units)
     semesters = Semester.objects.all()
     context = {'techreqs': techreqs, 'semesters':semesters, 'semester': semester, 'options': options }
     return render_to_response('techreq/techstaff_manage_techreqs.html', context, context_instance=RequestContext(request))
 
 @requires_techstaff
 def satisfy_techreq(request, techreq_id):
-    techreq = get_object_or_404(TechRequirement, id=techreq_id)
+    # get the units the logged in tech staff belong to
+    units = get_techstaff_units(request.user.username)
+    techreq = get_object_or_404(TechRequirement, id=techreq_id, course_offering__owner__in=units)
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='satisfy':
-        techresource = get_object_or_404(TechResource, id=request.POST['techresource_id'])
+        techresource = get_object_or_404(TechResource, id=request.POST['techresource_id'], unit__in=units)
         techreq.satisfied_by = techresource
         techreq.save()
         #LOG EVENT#
@@ -205,7 +209,7 @@ def satisfy_techreq(request, techreq_id):
         l.save()
         messages.success(request, 'Satisfied Tech Requirement %s with Tech Resource %s.' % (techreq.name, techresource.name))
         return HttpResponseRedirect(reverse(techstaff_manage_techreqs))
-    techresources = TechResource.objects.all()
+    techresources = TechResource.objects.filter(unit__in=units)
     context = {'techreq': techreq, 'techresources':techresources}
     return render_to_response('techreq/satisfy_techreq.html', context, context_instance=RequestContext(request))
 
