@@ -121,9 +121,6 @@ def manage_techresources(request):
             l.save()
             messages.success(request, 'Removed the Tech Resource %s.' % (techresource_name))
         return HttpResponseRedirect(reverse(manage_techresources))
-
-
-
     else:
         form = TechResourceForm()
     techresources = TechResource.objects.all()
