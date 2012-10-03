@@ -87,6 +87,13 @@ def edit_techreq(request, course_slug, techreq_id):
     context = {'course': course, 'techreq': techreq, 'form': form}
     return render_to_response('techreq/edit_techreq.html', context, context_instance=RequestContext(request))
 
+@requires_course_staff_by_slug
+def techreq_satisfaction(request, course_slug, techreq_id):
+    course = get_object_or_404(CourseOffering, slug=course_slug)
+    techreq = get_object_or_404(TechRequirement, id=techreq_id, course_offering=course)
+    context = {'course': course, 'techreq': techreq, 'techresource': techreq.satisfied_by}
+    return render_to_response('techreq/course_techreq_satisfaction.html', context, context_instance=RequestContext(request))
+
 @requires_techstaff
 def manage_techresources(request):
     # get the units the logged in tech staff belong to
@@ -212,6 +219,13 @@ def satisfy_techreq(request, techreq_id):
     techresources = TechResource.objects.filter(unit__in=units)
     context = {'techreq': techreq, 'techresources':techresources}
     return render_to_response('techreq/satisfy_techreq.html', context, context_instance=RequestContext(request))
+
+def techstaff_techreq_satisfaction(request, techreq_id):
+    # get the units the logged in tech staff belong to
+    units = get_techstaff_units(request.user.username)
+    techreq = get_object_or_404(TechRequirement, id=techreq_id, course_offering__owner__in=units)
+    context = {'techreq': techreq, 'techresource': techreq.satisfied_by}
+    return render_to_response('techreq/techstaff_techreq_satisfaction.html', context, context_instance=RequestContext(request))
 
 def get_techstaff_units(username):
     roles = Role.objects.filter(person__userid=username, role__in=['TECH'])

@@ -81,7 +81,13 @@
                     <td>{{ techreq.quantity|default:"" }}</td>
                     <td>{{ techreq.location }}</td>
                     <td>{{ techreq.notes|default:"" }}</td>
-                    <td>{{ techreq.satisfied_by|default:"No" }}</td>
+                    <td>
+                        {% if techreq.satisfied_by %}
+                            <a href="{% url techreq.views.techstaff_techreq_satisfaction techreq_id=techreq.id %}">{{ techreq.satisfied_by }}</a>
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
                     <td class="miniaction">
                         {% if techreq.satisfied_by %}
                             <form action="{% url techreq.views.techstaff_manage_techreqs %}" method="post">
