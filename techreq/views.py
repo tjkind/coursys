@@ -1,4 +1,4 @@
-from coredata.models import CourseOffering, Member, Semester
+from coredata.models import CourseOffering, Member, Semester, Person, Role, Unit
 from courselib.auth import requires_global_role, requires_role, requires_course_staff_by_slug, ForbiddenResponse, requires_techstaff
 
 from django.contrib import messages
@@ -89,8 +89,11 @@ def edit_techreq(request, course_slug, techreq_id):
 
 @requires_techstaff
 def manage_techresources(request):
+    # get the units the logged in tech staff belong to
+    units = get_techstaff_units(request.user.username)
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='add':
-        form = TechResourceForm(request.POST)
+        form = TechResourceForm(data=request.POST, units=units)
+        print request.POST
         if form.is_valid():
             t = TechResource(unit=form.cleaned_data['unit'], name=form.cleaned_data['name'], version=form.cleaned_data['version'], quantity=form.cleaned_data['quantity'], location=form.cleaned_data['location'], notes=form.cleaned_data['notes'])
             t.save()
@@ -122,7 +125,7 @@ def manage_techresources(request):
             messages.success(request, 'Removed the Tech Resource %s.' % (techresource_name))
         return HttpResponseRedirect(reverse(manage_techresources))
     else:
-        form = TechResourceForm()
+        form = TechResourceForm(units=units)
     techresources = TechResource.objects.all()
     context = {'techresources': techresources, 'form': form}
     return render_to_response('techreq/manage_techresources.html', context, context_instance=RequestContext(request))
@@ -132,7 +135,6 @@ def manage_techresources(request):
 #def edit_techresources(request,techresource_id):
 def edit_techresources(request,techresource_id):
     techresource = get_object_or_404(TechResource, id=techresource_id)
-    
     if request.method == 'POST' and 'action' in request.POST and request.POST['action']=='edit':
         form = TechResourceForm(data=request.POST)
         if form.is_valid():
@@ -206,3 +208,10 @@ def satisfy_techreq(request, techreq_id):
     techresources = TechResource.objects.all()
     context = {'techreq': techreq, 'techresources':techresources}
     return render_to_response('techreq/satisfy_techreq.html', context, context_instance=RequestContext(request))
+
+def get_techstaff_units(username):
+    roles = Role.objects.filter(person__userid=username, role__in=['TECH'])
+    units = []
+    for role in roles:
+        units.append(role.unit.id)
+    return units

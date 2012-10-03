@@ -24,11 +24,13 @@ class TechReqForm(forms.Form):
 
 
 class TechResourceForm(forms.Form):
-
     name = forms.CharField(required=True, label="Resource Name", max_length= 60)
-    unit = forms.ModelChoiceField(queryset=Unit.objects.all(),label="Unit is", required=True, empty_label=None)
+    unit = forms.ModelChoiceField(queryset=Unit.objects.none(), label="Unit is", required=True, empty_label=None)
     version = forms.CharField(required=False, label="Version", max_length=30) 
     quantity = forms.IntegerField(required=False, label="Quantity")
     location =  forms.CharField(required=True, label="Location", max_length=20)
     notes = forms.CharField(required=False, label="Notes", widget= forms.Textarea())
 
+    def __init__(self, units, *args, **kwargs):
+        super(TechResourceForm, self).__init__(*args, **kwargs)
+        self.fields['unit'].queryset = Unit.objects.filter(id__in=units)
