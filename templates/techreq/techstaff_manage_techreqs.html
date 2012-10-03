@@ -20,6 +20,7 @@
                     null,
                     null,
                     null,
+                    null,
         ]
     });
 
@@ -69,6 +70,7 @@
             <thead>
                 <tr>
                     <th scope="col">Name</th>
+                    <th scope="col">Course</th>
                     <th scope="col">Version</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Location</th>
@@ -80,6 +82,7 @@
             {% for techreq in techreqs %}
                 <tr>
                     <td>{{ techreq.name }}</td>
+                    <td>{{ techreq.course_offering }}</td>
                     <td>{{ techreq.version|default:"" }}</td>
                     <td>{{ techreq.quantity|default:"" }}</td>
                     <td>{{ techreq.location }}</td>
