@@ -107,6 +107,11 @@ def manage_techresources(request):
         techresources = TechResource.objects.filter(id=techresource_id)
         if techresources:
             techresource = techresources[0]
+            # get all the requirements this tech resource is satisfying and remove the satisfaction
+            techreqs = TechRequirement.objects.filter(satisfied_by=techresource)
+            for techreq in techreqs:
+                techreq.satisfied_by = None
+                techreq.save()
             techresource_name = techresource.name
             techresource.delete()
             #LOG EVENT#
