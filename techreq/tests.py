@@ -100,7 +100,6 @@ class ApplicationTest(TestCase):
 
 
 
-
 class ApplicationTechResourceTest(TestCase):
     fixtures = ['test_data']
     #def setUp(self):
@@ -116,28 +115,25 @@ class ApplicationTechResourceTest(TestCase):
         client = Client()
         client.login(ticket=tech.userid, service=CAS_SERVER_URL)  
 
-        # get the tech requirement managing page
-        url = reverse('techresources.views.manage_techresources')
+        # get the tech resource managing page
+        url = reverse('techreq.views.manage_techresources')
         response = basic_page_tests(self, client, url)
         self.assertEqual(response.status_code, 200)
 
-        # check that our manually added tech requirement is in the page
+        # check that our manually added tech resource in the page
         self.assertContains(response, '<td>%s</td>' % (techres1.name))
 
-
-
-        # delete the requirement and check that the requirement is no longer on the page
+        # delete the resource and check that the resource is no longer on the page
         post_data = {
             'techresource_id':techres1.id,
             'action':'del',
         }
-
         response = client.post(url, post_data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, '<td>%s</td>' % (techres1.name))
 
 
-        # add a requirement and check to see if you can find it on the new page
+        # add a resource and check to see if you can find it on the new page
         post_data = {
             'name':'Eclipse',
             'location':'anywhere',
@@ -148,26 +144,24 @@ class ApplicationTechResourceTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<td>Eclipse</td>')
 
-        # add a second tech req to test the edit page
+        # add a second tech resource to test the edit page
         techresource_orig_name = "Python"
         techresource_changed_name = "Python_alt"
         techres2 = TechResource(name=techresource_orig_name,  location="CSIL Linux")
         techres2.save()
 
-        # get the tech requirement managing page
+        # get the tech resource managing page
 
         url = reverse('techresources.views.manage_techresources')
         response = basic_page_tests(self, client, url)
         self.assertEqual(response.status_code, 200)
 
-        # check that our manually added tech requirement is in the page, 
+        # check that our manually added tech resource is in the page, 
         # and it's alternate name is not(avoid false positives)
         self.assertContains(response, '<td>%s</td>' % (techresources_orig_name))
         self.assertNotContains(response, '<td>%s</td>' % (techresources_changed_name))
 
-
-
-        # get the edit tech requirement page
+        # get the edit tech resource page
         url = reverse('techreq.views.edit_techresources', kwargs={'techresource_id':techres2.id})
         response = basic_page_tests(self, client, url)
 
@@ -176,9 +170,7 @@ class ApplicationTechResourceTest(TestCase):
         self.assertContains(response, '<input name="name" value="%s"' % (techresources_orig_name))
         self.assertNotContains(response, '<input name="name" value="%s"' % (techresources_changed_name))
 
-
-
-        # edit the requirement and check that the requirement is changed on the edit page and the manage tech req page
+        # edit the res and check that the res is changed on the edit page and the manage tech res page
         post_data = {
             'techresource_id':techres2.id,
             'action':'edit',
