@@ -29,38 +29,41 @@
 {% endblock %}
 
 {% block subbreadcrumbs %}
-    <li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>
-    <li>&gt; <a href="{% url techreq.views.techstaff_manage_techreqs %}">Satisfy Tech Requirements</a></li>
+<li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>
+<li>&gt; <a href="{% url techreq.views.techstaff_manage_techreqs %}">Satisfy Tech Requirements</a></li>
+<li>&gt; Satisfy Tech Requirement</li>
 {% endblock %}
 
 
 {% block content %}
 
 <h3>Tech Requirement to be satisfied:</h3>
-<table>
-    <tr>
-        <td>Name</td>
-        <td>{{ techreq.name }}</td>
-    </tr>
-    <tr>
-        <td>Version</td>
-        <td>{{ techreq.version|default:"" }}</td>
-    </tr>
-    <tr>
-        <td>Quantity</td>
-        <td>{{ techreq.quantity|default:"" }}</td>
-    </tr>
-    <tr>
-        <td>Location</td>
-        <td>{{ techreq.location }}</td>
-    </tr>
-    <tr>
-        <td>Notes</td>
-        <td>{{ techreq.notes|default:"" }}</td>
-    </tr>
-</table>
+<div class="table_container">
+    <table class="info">
+        <tr>
+            <th>Name</th>
+            <td>{{ techreq.name }}</td>
+        </tr>
+        <tr>
+            <th>Version</th>
+            <td>{{ techreq.version|default:"" }}</td>
+        </tr>
+        <tr>
+            <th>Quantity</th>
+            <td>{{ techreq.quantity|default:"" }}</td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td>{{ techreq.location }}</td>
+        </tr>
+        <tr>
+            <th>Notes</th>
+            <td>{{ techreq.notes|default:"" }}</td>
+        </tr>
+    </table>
+</div>
 
-<h3>Select the resources to satisfy this requirement:</h3>
+<h3>Select the resource to satisfy this requirement:</h3>
 <div class="datatable_container">
     {% if techresources %}
         <table class="display" id="techresource_table">

@@ -113,13 +113,18 @@ urlpatterns += patterns('',
     url(r'^' + COURSE_SLUG + '/config/tas$', 'coredata.views.manage_tas'),
     url(r'^' + COURSE_SLUG + '/config/copysetup$', 'marking.views.copy_course_setup'),
     url(r'^' + COURSE_SLUG + '/config/techreqs$', 'techreq.views.manage_techreqs'),
+    url(r'^' + COURSE_SLUG + '/config/techreqs/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.techreq_satisfaction'),
     url(r'^' + COURSE_SLUG + '/config/techreqs/edit/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.edit_techreq'),
 
     url(r'^techstaff/techresources/$', 'techreq.views.manage_techresources'),
     url(r'^techstaff/techrequirements/$', 'techreq.views.techstaff_manage_techreqs'),
-    url(r'^techstaff/techrequirements/(?P<filter_type>\w+)$', 'techreq.views.techstaff_manage_techreqs'),
+    url(r'^techstaff/techrequirements/(?P<semester>\w+)/$', 'techreq.views.techstaff_manage_techreqs'),
+    url(r'^techstaff/techrequirements/(?P<semester>\w+)/(?P<options>\w+)$', 'techreq.views.techstaff_manage_techreqs'),
+    url(r'^techstaff/techrequirement/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.techstaff_techreq_satisfaction'),
     url(r'^techstaff/techrequirement/satisfy/(?P<techreq_id>' + ID_RE + ')$', 'techreq.views.satisfy_techreq'),
     url(r'^techstaff/techresources/edit/(?P<techresource_id>' + ID_RE + ')$', 'techreq.views.edit_techresources'),
+
+
 
 
     # course groups

@@ -38,9 +38,11 @@
 </div>
 {% endblock %}
 
+{% block subbreadcrumbs %}
+<li>&gt; Manage Tech Resources</li>
+{% endblock %}
+
 {% block content %}
-
-
 <div class="datatable_container">
     {% if techresources %}
         <table class="display" id="techresource_table">

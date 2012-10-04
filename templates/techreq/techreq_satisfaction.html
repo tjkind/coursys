@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% load form_display %}
+
+{% block h1 %}{{course.name}} Tech Requirement Satisfaction{% endblock %}
+{% block title %}{{course.name}} Tech Requirement Satisfaction{% endblock %}
+
+{% block actions %}{% endblock %}
+
+{% block content %}
+
+<h3>Tech Requirement:</h3><br>
+
+<div>
+    <table class="display info">
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Course</th>
+            <th scope="col">Version</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Location</th>
+            <th scope="col">Notes</th>
+        </tr>
+        <tr>
+            <td>{{ techreq.name }}</td>
+            <td>{{ techreq.course_offering }}</td>
+            <td>{{ techreq.version|default:"" }}</td>
+            <td>{{ techreq.quantity|default:"" }}</td>
+            <td>{{ techreq.location }}</td>
+            <td>{{ techreq.notes|default:"" }}</td>
+        </tr>
+    </table>
+</div>
+{% if techresource %}
+
+<h3>Is being satisfied by the Tech Resource:</h3><br>
+
+<div>
+    <table class="display info">
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Unit</th>
+            <th scope="col">Version</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Location</th>
+            <th scope="col">Notes</th>
+        </tr>
+        <tr>
+            <td>{{ techresource.name }}</td>
+            <td>{{ techresource.unit }}</td>
+            <td>{{ techresource.version|default:"" }}</td>
+            <td>{{ techresource.quantity|default:"" }}</td>
+            <td>{{ techresource.location }}</td>
+            <td>{{ techresource.notes|default:"" }}</td>
+        </tr>
+    </table>
+</div>
+{% else %}
+    <div>This requirement has not been satisfied.</div>
+{% endif %}
+{% endblock %}

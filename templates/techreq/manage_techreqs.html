@@ -57,7 +57,13 @@
                     <td>{{ techreq.quantity|default:"" }}</td>
                     <td>{{ techreq.location }}</td>
                     <td>{{ techreq.notes|default:"" }}</td>
-                    <td>{{ techreq.satisfied_by|default:"No" }}</td>
+                    <td>
+                        {% if techreq.satisfied_by %}
+                            <a href="{% url techreq.views.techreq_satisfaction course_slug=course.slug techreq_id=techreq.id %}">{{ techreq.satisfied_by }}</a>
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
                     <td class="miniaction">
                         <form action="{% url techreq.views.manage_techreqs course_slug=course.slug %}" method="post">{% csrf_token %}
                             <p>

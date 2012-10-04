@@ -20,35 +20,47 @@
                     null,
                     null,
                     null,
+                    null,
         ]
     });
 
+    $('select#techreq_semester_selector').change(function() {
+        window.location = "{% url techreq.views.techstaff_manage_techreqs %}" + $('select#techreq_semester_selector').val() + "/" + "{{ options }}";
     });
+
+    });
+
+    
 
 //]]></script>
 {% endblock %}
 
-{% block subbreadcrumbs %}<li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>{% endblock %}
+{% block subbreadcrumbs %}
+<li>&gt; <a href="{% url techreq.views.manage_techresources %}">Manage Tech Resources</a></li>
+<li>&gt; Satisfy Tech Requirements</li>
+{% endblock %}
 
 {% block actions %}{% endblock %}
 
 {% block content %}
 
-<div>Filter Type:
-    {% if filter_type = 'all' %}
+<div>Semester:
+    <select id="techreq_semester_selector">
+        <option value="all">All</option>
+        {% for sem in semesters %}
+            <option value="{{ sem.name }}" {% if semester == sem.name %}selected="selected"{% endif %}>{{ sem.label }}</option>
+        {% endfor %}
+    </select>
+    Options:
+    {% if options = 'all' or options != 'unsatisfied' %}
         <strong>All</strong> |
     {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='all' %}">All</a> | 
+        <a href="{% url techreq.views.techstaff_manage_techreqs semester=semester options='all' %}">All</a> | 
     {% endif %}
-    {% if filter_type = 'unsatisfied' %}
-        <strong>Unsatisfied</strong> |
+    {% if options = 'unsatisfied' %}
+        <strong>Unsatisfied</strong>
     {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='unsatisfied' %}">Unsatisfied</a> | 
-    {% endif %}
-    {% if filter_type = 'current' %}
-        <strong>Current Semester</strong>
-    {% else %}
-        <a href="{% url techreq.views.techstaff_manage_techreqs filter_type='current' %}">Current Semester</a>
+        <a href="{% url techreq.views.techstaff_manage_techreqs semester=semester options='unsatisfied' %}">Unsatisfied</a>
     {% endif %}
 </div>
 
@@ -58,6 +70,7 @@
             <thead>
                 <tr>
                     <th scope="col">Name</th>
+                    <th scope="col">Course</th>
                     <th scope="col">Version</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Location</th>
@@ -69,11 +82,18 @@
             {% for techreq in techreqs %}
                 <tr>
                     <td>{{ techreq.name }}</td>
+                    <td>{{ techreq.course_offering }}</td>
                     <td>{{ techreq.version|default:"" }}</td>
                     <td>{{ techreq.quantity|default:"" }}</td>
                     <td>{{ techreq.location }}</td>
                     <td>{{ techreq.notes|default:"" }}</td>
-                    <td>{{ techreq.satisfied_by|default:"No" }}</td>
+                    <td>
+                        {% if techreq.satisfied_by %}
+                            <a href="{% url techreq.views.techstaff_techreq_satisfaction techreq_id=techreq.id %}">{{ techreq.satisfied_by }}</a>
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
                     <td class="miniaction">
                         {% if techreq.satisfied_by %}
                             <form action="{% url techreq.views.techstaff_manage_techreqs %}" method="post">
