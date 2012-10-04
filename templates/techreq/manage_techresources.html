@@ -68,16 +68,12 @@
                     <td class="miniaction">
                        
                      <form action="{% url techreq.views.manage_techresources %}" method="post">{% csrf_token %}
-                      
-                     <input type="hidden" name="action" value="del" />
                         <p>      
-                         <a href="{% url techreq.views.edit_techresources  techresource_id=techresource.id %}">Edit</a>
-
-                                <input type="hidden" name="techresource_id" value="{{techresource.id}}" />
-                                <input type="submit" value="Remove" onclick="return confirmSubmit('remove this Tech Resource')" />
-                           
-                            
-                            </p>
+                            <a href="{% url techreq.views.edit_techresources  techresource_id=techresource.id %}">Edit</a>
+                            <input type="hidden" name="techresource_id" value="{{techresource.id}}" />
+                            <input type="hidden" name="action" value="del" />
+                            <input type="submit" value="Remove" onclick="return confirmSubmit('remove this Tech Resource')" />
+                        </p>
                         </form>
                     </td>
                 </tr>

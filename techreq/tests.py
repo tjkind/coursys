@@ -107,8 +107,10 @@ class ApplicationTechResourceTest(TestCase):
         tech = Person.objects.get(userid="dzhao")
         tech.save()
 
+        u = Unit.objects.get(label="COMP")
+
         # add a tech resource
-        techres1 = TechResource(name="Visual Studio", unit=Unit.objects[1], location="CSIL Windows")
+        techres1 = TechResource(name="Visual Studio", unit=u, location="CSIL Windows")
         techres1.save()
 
         # login the techstaff
@@ -137,6 +139,7 @@ class ApplicationTechResourceTest(TestCase):
         post_data = {
             'name':'Eclipse',
             'location':'anywhere',
+            'unit':u.id,
             'action':'add',
         }
 
@@ -147,19 +150,19 @@ class ApplicationTechResourceTest(TestCase):
         # add a second tech resource to test the edit page
         techresource_orig_name = "Python"
         techresource_changed_name = "Python_alt"
-        techres2 = TechResource(name=techresource_orig_name,  location="CSIL Linux")
+        techres2 = TechResource(name=techresource_orig_name,  location="CSIL Linux", unit=u)
         techres2.save()
 
         # get the tech resource managing page
 
-        url = reverse('techresources.views.manage_techresources')
+        url = reverse('techreq.views.manage_techresources')
         response = basic_page_tests(self, client, url)
         self.assertEqual(response.status_code, 200)
 
         # check that our manually added tech resource is in the page, 
         # and it's alternate name is not(avoid false positives)
-        self.assertContains(response, '<td>%s</td>' % (techresources_orig_name))
-        self.assertNotContains(response, '<td>%s</td>' % (techresources_changed_name))
+        self.assertContains(response, '<td>%s</td>' % (techresource_orig_name))
+        self.assertNotContains(response, '<td>%s</td>' % (techresource_changed_name))
 
         # get the edit tech resource page
         url = reverse('techreq.views.edit_techresources', kwargs={'techresource_id':techres2.id})
@@ -167,25 +170,31 @@ class ApplicationTechResourceTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         # check that it has an input filled out with our techres name
-        self.assertContains(response, '<input name="name" value="%s"' % (techresources_orig_name))
-        self.assertNotContains(response, '<input name="name" value="%s"' % (techresources_changed_name))
+        self.assertContains(response, '<input id="id_name" type="text" name="name" value="%s"' % (techresource_orig_name))
+        self.assertNotContains(response, '<input id="id_name" type="text" name="name" value="%s"' % (techresource_changed_name))
 
         # edit the res and check that the res is changed on the edit page and the manage tech res page
         post_data = {
             'techresource_id':techres2.id,
             'action':'edit',
-            'name': techres_changed_name,
+            'name': techresource_changed_name,
             'location': techres2.location,
             'quantity': "",
             'version': "",
+            'unit':u.id,
             'notes': "",
         }
         response = client.post(url, post_data, follow=True)
         self.assertEqual(response.status_code, 200)
 
+        # go back to the manage page
+        url = reverse('techreq.views.manage_techresources')
+        response = basic_page_tests(self, client, url)
+        self.assertEqual(response.status_code, 200)
+
         # check that our manually added tech techresource is in the page, 
-        self.assertContains(response, '<td>%s</td>' % (techreq_changed_name))
-        self.assertNotContains(response, '<td>%s</td>' % (techreq_orig_name))
+        self.assertContains(response, '<td>%s</td>' % (techresource_changed_name))
+        self.assertNotContains(response, '<td>%s</td>' % (techresource_orig_name))
 
 
 
