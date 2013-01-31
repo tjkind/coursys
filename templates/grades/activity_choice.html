@@ -34,6 +34,7 @@ $(document).ready(function() {
     <li><a href="{% url grades.views.add_letter_activity course_slug=course.slug %}">Letter Graded Activity</a> <span class="helptext">(an activity where students or groups will receive a letter grade)</span></li>
     <li><a href="{% url grades.views.add_cal_numeric_activity course_slug=course.slug %}">Calculated Numeric Activity</a> <span class="helptext">(a numeric grade calculated by a formula)</span></li>
     <li><a href="{% url grades.views.add_cal_letter_activity course_slug=course.slug %}">Calculated Letter Activity</a> <span class="helptext">(a letter grade calculated by specifying cutoffs for each grade)</span></li>
+    <li><a href="{% url peerreview.views.add_peer_review_component course_slug=course.slug %}">Peer Review Activity</a> <span class="helptext">(To be announced)</span></li>
 </ul>
 </div>
   <p>

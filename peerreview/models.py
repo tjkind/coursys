@@ -4,13 +4,13 @@ from coredata.models import Member
 from jsonfield import JSONField
 import datetime
 
-class PeerReviewComponenet(models.Model):
+class PeerReviewComponent(models.Model):
     activity = models.ForeignKey(Activity)
     due_date = models.DateTimeField(null=True, help_text='Activity due date')
     number_reviews = models.IntegerField(null=True)
 
 class StudentPeerReview(models.Model):
-    peer_review_component = models.ForeignKey(PeerReviewComponenet)
+    peer_review_component = models.ForeignKey(PeerReviewComponent)
     reviewer = models.ForeignKey(Member, related_name="reviewer")
     reviewee = models.ForeignKey(Member, related_name="reviewee")
     feedback = models.TextField()

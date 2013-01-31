@@ -523,7 +523,11 @@ urlpatterns += patterns('',
     url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/$', 'alerts.views.view_automation'),
     url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/new/$', 'alerts.views.new_automation'),
     url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/(?P<automation_id>\d+)/(?P<alert_id>\d+)/$', 'alerts.views.view_email_preview' ),    
-    url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/(?P<automation_id>\d+)/delete/$', 'alerts.views.delete_automation' ),    
+    url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/(?P<automation_id>\d+)/delete/$', 'alerts.views.delete_automation' ),   
+    
+        
+    # PeerReview
+    url(r'^' + COURSE_SLUG + '/peerreview/component/add/$', 'peerreview.views.add_peer_review_component'), 
 )
 
 if not settings.DEPLOYED:
