@@ -11,6 +11,7 @@ import os.path
 from django.conf import settings
 from django.utils.safestring import mark_safe
 from courselib.slugs import make_slug
+from jsonfield import JSONField
 
 
 STATUS_CHOICES = [
@@ -211,3 +212,8 @@ class SubmittedComponent(models.Model):
             filename = os.path.join(prefix, filename)
         return filename
 
+class SubmissionLock(models.Model):
+    member = models.ForeignKey(Member)
+    activity = models.ForeignKey(Activity)
+    created_date = models.DateField(default=datetime.now())
+    config = JSONField(null=False, blank=False, default={})
