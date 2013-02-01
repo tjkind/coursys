@@ -5,9 +5,10 @@ from django.shortcuts import render_to_response, get_object_or_404, render
 from datetime import date
 from urlparse import urlparse
 from courselib.auth import requires_role, HttpResponseRedirect, \
-    ForbiddenResponse
+    ForbiddenResponse, requires_course_staff_by_slug
 from peerreview.forms import AddPeerReviewComponentForm
 
+@requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug):
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(request.units, request.POST)

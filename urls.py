@@ -13,6 +13,7 @@ handler404 = 'courselib.auth.NotFoundResponse'
 urlpatterns = patterns('')
 
 urlpatterns += patterns('',
+        
 
     url(r'^teaching/$', 'planning.views.instructor_index'),
     url(r'^teaching/courses$', 'planning.views.edit_capability'),
@@ -338,6 +339,9 @@ urlpatterns += patterns('',
     url(r'^admin/signatures/' + USERID_SLUG + '/delete', 'dashboard.views.delete_signature'),
     url(r'^admin/(?P<unit_slug>[\w-]+)/address$', 'coredata.views.unit_address'),
     url(r'^admin/(?P<unit_slug>[\w-]+)/instr$', 'coredata.views.missing_instructors'),
+    
+    # PeerReview
+    url(r'^peerreview/' + COURSE_SLUG + '/component/add/$', 'peerreview.views.add_peer_review_component'), 
 
 )
 
@@ -525,9 +529,6 @@ urlpatterns += patterns('',
     url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/(?P<automation_id>\d+)/(?P<alert_id>\d+)/$', 'alerts.views.view_email_preview' ),    
     url(r'^alerts/type/' + ALERT_TYPE_SLUG + '/automation/(?P<automation_id>\d+)/delete/$', 'alerts.views.delete_automation' ),   
     
-        
-    # PeerReview
-    url(r'^' + COURSE_SLUG + '/peerreview/component/add/$', 'peerreview.views.add_peer_review_component'), 
 )
 
 if not settings.DEPLOYED:

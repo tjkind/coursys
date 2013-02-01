@@ -213,7 +213,13 @@ class SubmittedComponent(models.Model):
         return filename
 
 class SubmissionLock(models.Model):
+    """
+        If a submission lock exists against a Member, this Member
+        may not create or change a SubmittedComponent against
+        this particular Activity.
+    """
     member = models.ForeignKey(Member)
     activity = models.ForeignKey(Activity)
-    created_date = models.DateField(default=datetime.now())
+    created_date = models.DateTimeField(default=datetime.now())
+    effective_date = models.DateTimeField(default=datetime.now())
     config = JSONField(null=False, blank=False, default={})
