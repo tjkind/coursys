@@ -18,6 +18,9 @@ FORMTYPE = {'add': 'add', 'edit': 'edit'}
 GROUP_STATUS_CHOICES = [
     ('0', 'Yes'),
     ('1', 'No') ]
+LOCK_CHOICES = [
+    (False, 'No'),
+    (True, 'Yes')]
 GROUP_STATUS = dict(GROUP_STATUS_CHOICES)
 GROUP_STATUS_MAP = {'0': True, '1': False}
 
@@ -60,6 +63,12 @@ class ActivityForm(forms.Form):
     url = forms.URLField(required=False, verify_exists=True, label='URL:',
                                  help_text='page for more information, e.g. assignment description or exam info',
                                  widget=forms.TextInput(attrs={'size':'60'}))
+    apply_lock = forms.ChoiceField(choices=LOCK_CHOICES, required=False,
+                                label=mark_safe('Apply Lock:'),
+                                help_text='yes to apply lock on specified date')
+    lock_date = forms.SplitDateTimeField(label=mark_safe('Lock Date:'), required=False,
+                                help_text='Time format: HH:MM:SS, 24-hour time',
+                                widget=CustomSplitDateTimeWidget())
 
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
