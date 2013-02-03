@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Submission Locks{% endblock %}
+{% block h1 %}View All Locks{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url grades.views.activity_info course_slug=course_slug activity_slug=activity_slug%}">Course Info</a></li>
+<li>&gt; Submission Lock</li>
+{% endblock %}
+
+{%block content%}
+<div class="datatable_container">
+<table id="notes" class="display">
+  <thead>
+    <tr>
+        <th scope="col">Student Name</th>
+        <th scope="col">Student ID</th>
+        <th scope="col">Stu #</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for student in students %}
+  <tr>
+    <td>{{student.person.name}}</td>
+    <td>{{student.person.userid}}</td>
+    <td>{{student.person.emplid}}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{%endblock content%}

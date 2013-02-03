@@ -176,6 +176,10 @@ urlpatterns += patterns('',
     url(r'^' + COURSE_ACTIVITY_SLUG + '/release$', 'grades.views.release_activity'),
     url(r'^' + COURSE_ACTIVITY_SLUG + '/delete$', 'grades.views.delete_activity'),
 
+    # submission locks
+
+    url(r'^' + COURSE_ACTIVITY_SLUG + '/submissionlock/$', 'submissionlock.views.submission_lock'),
+
     # activity submission
 
     url(r'^' + COURSE_ACTIVITY_SLUG + '/submission/$', 'submission.views.show_components'),

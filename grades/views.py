@@ -36,6 +36,7 @@ from groups.models import GroupMember, add_activity_to_group
 
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
 from submissionlock.models import SubmissionLock
+from submissionlock.views import _apply_lock
 
 from log.models import LogEntry
 from pages.models import Page, ACL_ROLES
@@ -543,14 +544,6 @@ def grade_change(request, course_slug, activity_slug, userid):
     grade_change_form(member, member.official_grade, grade, user, response)
     return response
 
-    
-
-def _apply_lock(course, activity, lock_date):
-    students = Member.objects.filter(offering=course, role="STUD").select_related('person', 'offering')
-    for student in students:
-        SubmissionLock.objects.create(member=student,
-                                    activity=activity,
-                                    effective_date=lock_date)
 
 @requires_course_staff_by_slug
 def add_numeric_activity(request, course_slug):
@@ -592,7 +585,7 @@ def add_numeric_activity(request, course_slug):
                         add_activity_to_group(a, a2[0], course)
 
                 #applying lock if requested#
-                if form.cleaned_data['apply_lock']:
+                if form.cleaned_data['apply_lock']==True:
                     _apply_lock(course=course, activity=a, lock_date=form.cleaned_data['lock_date'])
                 
                 #LOG EVENT#
