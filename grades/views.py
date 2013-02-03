@@ -34,7 +34,8 @@ from marking.models import get_group_mark, StudentActivityMark, GroupActivityMar
 
 from groups.models import GroupMember, add_activity_to_group
 
-from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, SubmissionLock, get_current_submission, select_all_submitted_components, select_all_components
+from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
+from submissionlock.models import SubmissionLock
 
 from log.models import LogEntry
 from pages.models import Page, ACL_ROLES

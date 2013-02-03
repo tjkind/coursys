@@ -121,6 +121,7 @@ INSTALLED_APPS = (
     'techreq',
     'onlineforms',
     'peerreview',
+    'submissionlock',
 )
 if DEBUG:
     #INSTALLED_APPS = INSTALLED_APPS + ('debug_toolbar',)

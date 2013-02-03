@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from django.core.servers.basehttp import FileWrapper
 from django.http import HttpResponse
 
-from base import SubmissionComponent, Submission, StudentSubmission, GroupSubmission, SubmittedComponent, SubmissionLock
+from base import SubmissionComponent, Submission, StudentSubmission, GroupSubmission, SubmittedComponent
 from coredata.models import Person
 from groups.models import Group,GroupMember
 from autoslug import AutoSlugField
