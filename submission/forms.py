@@ -7,6 +7,10 @@ from django.utils.safestring import mark_safe
 import urllib, zipfile
 
 
+LOCK_CHOICES = [
+    (False, 'unlock'),
+    (True, 'lock')]
+
 _required_star = '<em><img src="'+settings.MEDIA_URL+'icons/required_star.gif" alt="required"/></em>'
 
 class ComponentForm(ModelForm):
@@ -158,3 +162,10 @@ def make_form_from_list(component_list, request=None):
         component_form_list.append(data)
     return component_form_list
 
+class SubmissionLockForm(forms.Form):
+    def __init__(self, student_list, locked_list, *args, **kwargs):
+        for student in student_list:
+            if student in locked_list:
+                self.fields['student'] = forms.ChoiceField(label=student.person.userid, widget=forms.CheckboxSelectMultiple, choices=LOCK_CHOICES, default='lock')
+            else:
+                self.fields['student'] = forms.ChoiceField(label=student.person.userid, widget=forms.CheckboxSelectMultiple, choices=LOCK_CHOICES, default='unlock')
