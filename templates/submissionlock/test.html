@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% block title %}Submission Locks{% endblock %}
+{% block h1 %}View All Locks{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url grades.views.activity_info course_slug=course_slug activity_slug=activity_slug%}">Course Info</a></li>
+<li>&gt; Submission Lock</li>
+{% endblock %}
+
+{%block content%}
+<div class="datatable_container">
+<table id="notes" class="display">
+  <thead>
+    <tr>
+        <th scope="col">Student Name</th>
+        <th scope="col">Student ID</th>
+        <th scope="col">Stu #</th>
+    </tr>
+  </thead>
+  <tbody>
+    <div class="form_container">
+        <form action="{% url submissionlock.views.submission_lock course_activity_slug=course_activity_slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+            <fieldset>
+            <legend>Something</legend>
+            {{ form|as_dl }}
+            <p><input type="submit" class="submit" value="Submit" /></p>
+            </fieldset>
+        </form>
+    </div>
+  </tbody>
+</table>
+</div>
+
+{%endblock content%}
