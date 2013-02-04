@@ -1,30 +1,28 @@
 {% extends "base.html" %}
+{% load form_display %}
 {% block title %}Submission Locks{% endblock %}
-{% block h1 %}View All Locks{% endblock %}
+{% block h1 %}View All Submission Locks{% endblock %}
 
 {% block subbreadcrumbs %}
 <li><a href="{% url grades.views.activity_info course_slug=course_slug activity_slug=activity_slug%}">Course Info</a></li>
-<li>&gt; Submission Lock</li>
+<li>&gt; Submission Locks</li>
 {% endblock %}
 
 {%block content%}
 <div class="datatable_container">
 <table id="notes" class="display">
   <thead>
-    <tr>
-        <th scope="col">Student Name</th>
-        <th scope="col">Student ID</th>
-        <th scope="col">Stu #</th>
-    </tr>
   </thead>
   <tbody>
-  {% for student in students %}
-  <tr>
-    <td>{{student.person.name}}</td>
-    <td>{{student.person.userid}}</td>
-    <td>{{student.person.emplid}}</td>
-  </tr>
-  {% endfor %}
+    <div class="form_container">
+        <form action="{% url submissionlock.views.submission_lock course_slug=course_slug activity_slug=activity_slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+            <fieldset>
+            <legend>Statuses</legend>
+            {{ form|as_dl }}
+            <p><input type="submit" class="submit" value="Apply Changes" /></p>
+            </fieldset>
+        </form>
+    </div>
   </tbody>
 </table>
 </div>

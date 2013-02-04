@@ -6,8 +6,6 @@ from django.shortcuts import render, get_object_or_404
 from django.core.urlresolvers import reverse
 
 from submissionlock.forms import *
-from django.forms.models import modelformset_factory
-LockFormSet = modelformset_factory(SubmissionLock)
 
 #def submission_lock(request, course_slug, activity_slug):
 #    activity = Activity.objects.get(slug=activity_slug)
@@ -29,16 +27,13 @@ def submission_lock(request, course_slug, activity_slug):
     locked_students = SubmissionLock.objects.filter(activity=activity).select_related('member', 'effective_date')
 
     if request.method == 'POST':
-        #form = SubmissionLockForm(request.POST)
-        formset = LockFormSet(request.POST)
+        form = SubmissionLockForm(request.POST, students)
         if form.isvalid():
             #...
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock'))
     else:
-        #form = SubmissionLockForm()
-        formset = LockFormSet()
+        form = SubmissionLockForm(students)
     
-    course_activity_slug = course_slug + '/\+' + activity_slug
     context = {
         'students': students,
         'course_slug': course_slug,
@@ -46,9 +41,7 @@ def submission_lock(request, course_slug, activity_slug):
         'locked_students': locked_students,
         'course_slug' : course_slug,
         'activity_slug' : activity_slug,
-        'course_activity_slug' : course_activity_slug,
-        #'form' : form,
-        'formset' : formset,
+        'form' : form,
     }  
     
     return render(request, 'submissionlock/test.html', context)
