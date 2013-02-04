@@ -15,3 +15,6 @@ class SubmissionLock(models.Model):
     created_date = models.DateTimeField(default=datetime.now())
     effective_date = models.DateTimeField(default=datetime.now())
     config = JSONField(null=False, blank=False, default={})
+
+    class Meta:
+        unique_together = (('member', 'activity'),)
