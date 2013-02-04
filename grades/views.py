@@ -584,8 +584,8 @@ def add_numeric_activity(request, course_slug):
                     if len(a2) > 0:
                         add_activity_to_group(a, a2[0], course)
 
-                #applying lock if requested#
-                if form.cleaned_data['apply_lock']==True:
+                #applying lock if requested
+                if form.cleaned_data['apply_lock']=='1':
                     _apply_lock(course=course, activity=a, lock_date=form.cleaned_data['lock_date'])
                 
                 #LOG EVENT#
@@ -1095,6 +1095,10 @@ def add_letter_activity(request, course_slug):
                     a2 = [i for i in activities if i.slug == form.cleaned_data['extend_group']]
                     if len(a2) > 0:
                         add_activity_to_group(a, a2[0], course)
+
+                #applying lock if requested
+                if form.cleaned_data['apply_lock']=='1':
+                    _apply_lock(course=course, activity=a, lock_date=form.cleaned_data['lock_date'])
 
                 #LOG EVENT#
                 l = LogEntry(userid=request.user.username,

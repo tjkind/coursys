@@ -19,8 +19,8 @@ GROUP_STATUS_CHOICES = [
     ('0', 'Yes'),
     ('1', 'No') ]
 LOCK_CHOICES = [
-    (False, 'No'),
-    (True, 'Yes')]
+    ('0', 'No'),
+    ('1', 'Yes')]
 GROUP_STATUS = dict(GROUP_STATUS_CHOICES)
 GROUP_STATUS_MAP = {'0': True, '1': False}
 
@@ -63,12 +63,6 @@ class ActivityForm(forms.Form):
     url = forms.URLField(required=False, verify_exists=True, label='URL:',
                                  help_text='page for more information, e.g. assignment description or exam info',
                                  widget=forms.TextInput(attrs={'size':'60'}))
-    apply_lock = forms.ChoiceField(choices=LOCK_CHOICES, required=False,
-                                label=mark_safe('Apply Lock:'),
-                                help_text='yes to apply lock on specified date')
-    lock_date = forms.SplitDateTimeField(label=mark_safe('Lock Date:'), required=False,
-                                help_text='Time format: HH:MM:SS, 24-hour time',
-                                widget=CustomSplitDateTimeWidget())
 
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
@@ -83,7 +77,7 @@ class ActivityForm(forms.Form):
         self._editform_validate = True
         self._course_slug = course_slug
         self._activity_slug = activity_slug
-        
+
     def clean_name(self):
         name = self.cleaned_data['name']
         if name:
@@ -178,6 +172,12 @@ class NumericActivityForm(ActivityForm):
     due_date = forms.SplitDateTimeField(label=mark_safe('Due date:'), required=False,
             help_text='Time format: HH:MM:SS, 24-hour time',
             widget=CustomSplitDateTimeWidget())
+    apply_lock = forms.ChoiceField(choices=LOCK_CHOICES, required=False,
+            label=mark_safe('Apply Lock:'),
+            help_text='yes to apply submission lock on specified date, submissions later than this date will not be accepted by system')
+    lock_date = forms.SplitDateTimeField(label=mark_safe('Lock Date:'), required=False,
+            help_text='Time format: HH:MM:SS, 24-hour time',
+            widget=CustomSplitDateTimeWidget())
     max_grade = forms.DecimalField(max_digits=5, decimal_places=2, label=mark_safe('Maximum grade:' + _required_star),
             help_text='maximum grade for the activity',
             widget=forms.TextInput(attrs={'size':'3'}))
@@ -193,6 +193,13 @@ class NumericActivityForm(ActivityForm):
     showhisto = forms.BooleanField(initial=True, required=False,
             label="Show histogram:", 
             help_text="Should students be able to view the grade distribution histogram?")
+
+    def clean_lock_date(self):
+        if self.cleaned_data['apply_lock']=='1':
+            if self.cleaned_data['lock_date'] is None:
+                raise forms.ValidationError(u'Please have a valid date and time')
+            if self.cleaned_data['lock_date']<self.cleaned_data['due_date']:
+                raise forms.ValidationError(u'Submission lock date must be after due date')
 
     def __init__(self, *args, **kwargs):
         try:
@@ -211,6 +218,12 @@ class LetterActivityForm(ActivityForm):
     due_date = forms.SplitDateTimeField(label=mark_safe('Due date:'), required=False,
                                         help_text='Time format: HH:MM:SS',
                                         widget=CustomSplitDateTimeWidget())
+    apply_lock = forms.ChoiceField(choices=LOCK_CHOICES, required=False,
+                                label=mark_safe('Apply Lock:'),
+                                help_text='yes to apply submission lock on specified date, submissions later than this date will not be accepted by system')
+    lock_date = forms.SplitDateTimeField(label=mark_safe('Lock Date:'), required=False,
+                                help_text='Time format: HH:MM:SS, 24-hour time',
+                                widget=CustomSplitDateTimeWidget())
     group = forms.ChoiceField(label=mark_safe('Group activity:' + _required_star), initial='1',
                               choices=GROUP_STATUS_CHOICES,
                               widget=forms.RadioSelect())
@@ -223,6 +236,13 @@ class LetterActivityForm(ActivityForm):
     showhisto = forms.BooleanField(initial=True, required=False,
             label="Show histogram:", 
             help_text="Should students be able to view the grade distribution histogram?")
+
+    def clean_lock_date(self):
+        if self.cleaned_data['apply_lock']=='1':
+            if self.cleaned_data['lock_date'] is None:
+                raise forms.ValidationError(u'Please have a valid date and time')
+            if self.cleaned_data['lock_date']<self.cleaned_data['due_date']:
+                raise forms.ValidationError(u'Submission lock date must be after due date')
 
     def __init__(self, *args, **kwargs):
         try:

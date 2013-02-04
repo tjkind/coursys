@@ -2,12 +2,9 @@ from submissionlock.models import SubmissionLock
 from grades.models import Activity
 from coredata.models import CourseOffering, Member
 
-from courselib.auth import ForbiddenResponse, requires_course_staff_by_slug
-
 from django.shortcuts import render, get_object_or_404
 from django.core.urlresolvers import reverse
 
-@requires_course_staff_by_slug
 def submission_lock(request, course_slug, activity_slug):
     activity = Activity.objects.get(slug=activity_slug)
     course = get_object_or_404(CourseOffering, slug=course_slug)

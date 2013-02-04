@@ -14,7 +14,7 @@
 <script type="text/javascript" src="{{MEDIA_URL}}collapsible/js/jQuery.collapsible.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-    $("#id_due_date_0").datepicker({ buttonImageOnly: true, buttonImage: '{{MEDIA_URL}}images/grades/calendar.png',
+    $("#id_due_date_0, #id_lock_date_0").datepicker({ buttonImageOnly: true, buttonImage: '{{MEDIA_URL}}images/grades/calendar.png',
                                 changeMonth: true, changeYear: true,
                                 dateFormat: 'yy-mm-dd', showOn: 'button'});
     
@@ -54,8 +54,10 @@ $(document).ready(function() {
                 {{form.status|activity_field}}
                 {{form.url|activity_field}}
                 {{form.due_date|activity_field}}
-                {{form.apply_lock|activity_field}}
-                {{form.lock_date|activity_field}}
+                {% ifequal form_type 'add' %}
+                    {{form.apply_lock|activity_field}}
+                    {{form.lock_date|activity_field}}
+                {% endifequal %}
                 {{form.percent|activity_field}}
                 {{form.group|activity_field}}
                 {{form.extend_group|activity_field}}
