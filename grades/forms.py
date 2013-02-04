@@ -195,11 +195,15 @@ class NumericActivityForm(ActivityForm):
             help_text="Should students be able to view the grade distribution histogram?")
 
     def clean_lock_date(self):
+        lock_date = self.cleaned_data['lock_date']
         if self.cleaned_data['apply_lock']=='1':
-            if self.cleaned_data['lock_date'] is None:
+            if lock_date is None:
                 raise forms.ValidationError(u'Please have a valid date and time')
-            if self.cleaned_data['lock_date']<self.cleaned_data['due_date']:
+            if self.cleaned_data['due_date'] is None:
+                raise forms.ValidationError(u'If applying submission lock, you must have valid due date')
+            if lock_date<self.cleaned_data['due_date']:
                 raise forms.ValidationError(u'Submission lock date must be after due date')
+        return lock_date
 
     def __init__(self, *args, **kwargs):
         try:
@@ -238,11 +242,15 @@ class LetterActivityForm(ActivityForm):
             help_text="Should students be able to view the grade distribution histogram?")
 
     def clean_lock_date(self):
+        lock_date = self.cleaned_data['lock_date']
         if self.cleaned_data['apply_lock']=='1':
-            if self.cleaned_data['lock_date'] is None:
+            if lock_date is None:
                 raise forms.ValidationError(u'Please have a valid date and time')
-            if self.cleaned_data['lock_date']<self.cleaned_data['due_date']:
+            if self.cleaned_data['due_date'] is None:
+                raise forms.ValidationError(u'If applying submission lock, you must have valid due date')
+            if lock_date<self.cleaned_data['due_date']:
                 raise forms.ValidationError(u'Submission lock date must be after due date')
+        return lock_date
 
     def __init__(self, *args, **kwargs):
         try:

@@ -7,18 +7,23 @@ from coredata.models import Member
 from submissionlock.models import SubmissionLock 
 
 LOCK_CHOICES = (
-        (True, 'Locked'),
-        (False, 'Unlocked'),
+        ('1', 'Locked'),
+        ('0', 'Unlocked'),
     )
 
 class SubmissionLockForm(forms.Form):
-    def __init__(self, students, locked_students, *args, **kwargs):
+    def __init__(self, students, activity, *args, **kwargs):
         super(SubmissionLockForm, self).__init__(*args, **kwargs)
+        current_time = datetime.datetime.now()
         for student in students:
-            if student in locked_students:
-                self.fields["%s" % (student.person.userid)] = ChoiceField(LOCK_CHOICES, initial = True)
-            else:
-                self.fields["%s" % (student.person.userid)] = ChoiceField(LOCK_CHOICES, initial = False)
+            try:
+                student_lock = SubmissionLock.objects.get(activity=activity, member=student)
+                if student_lock.effective_date > current_time:
+                    self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='1')
+                else:
+                    self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
+            except:
+                self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
     
     def clean(self):
         cleaned_data = self.cleaned_data

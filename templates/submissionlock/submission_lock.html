@@ -4,7 +4,8 @@
 {% block h1 %}View All Submission Locks{% endblock %}
 
 {% block subbreadcrumbs %}
-<li><a href="{% url grades.views.activity_info course_slug=course_slug activity_slug=activity_slug%}">Course Info</a></li>
+<li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+<li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
 <li>&gt; Submission Locks</li>
 {% endblock %}
 
@@ -15,7 +16,7 @@
   </thead>
   <tbody>
     <div class="form_container">
-        <form action="{% url submissionlock.views.submission_lock course_slug=course_slug activity_slug=activity_slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+        <form action="{% url submissionlock.views.submission_lock course_slug=course.slug activity_slug=activity.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Statuses</legend>
             {{ form|as_dl }}

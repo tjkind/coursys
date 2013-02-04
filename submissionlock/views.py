@@ -1,47 +1,31 @@
 from submissionlock.models import SubmissionLock
 from grades.models import Activity
 from coredata.models import CourseOffering, Member
+from courselib.auth import requires_course_staff_by_slug
 
 from django.shortcuts import render, get_object_or_404
 from django.core.urlresolvers import reverse
 
 from submissionlock.forms import *
 
-#def submission_lock(request, course_slug, activity_slug):
-#    activity = Activity.objects.get(slug=activity_slug)
-#    course = get_object_or_404(CourseOffering, slug=course_slug)
-#    students = Member.objects.filter(offering=course, role="STUD").select_related('person', 'offering')
-#    locked_students = SubmissionLock.objects.filter(activity=activity).select_related('member', 'effective_date')
-#    context = {
-#        'students': students,
-#        'course_slug': course_slug,
-#        'activity_slug': activity_slug,
-#        'locked_students': locked_students,
-#    }
-#    return render(request, 'submissionlock/submission_lock.html', context)
-
+@requires_course_staff_by_slug
 def submission_lock(request, course_slug, activity_slug):
     activity = Activity.objects.get(slug=activity_slug)
     course = get_object_or_404(CourseOffering, slug=course_slug)
-    students = Member.objects.filter(offering=course, role="STUD").select_related('person', 'offering')
-    locked_students = SubmissionLock.objects.filter(activity=activity).select_related('member', 'effective_date')
+    students = Member.objects.filter(offering=course, role="STUD")
 
     if request.method == 'POST':
-        form = SubmissionLockForm(request.POST, students, locked_students)
+        form = SubmissionLockForm(request.POST, students, activity)
         if form.isvalid():
             a = form.clean(self)
             #To Be Done ...
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock'))
     else:
-        form = SubmissionLockForm(students, locked_students)
+        form = SubmissionLockForm(students, activity)
     
     context = {
-        'students': students,
-        'course_slug': course_slug,
-        'activity_slug': activity_slug,
-        'locked_students': locked_students,
-        'course_slug' : course_slug,
-        'activity_slug' : activity_slug,
+        'course' : course,
+        'activity' : activity,
         'form' : form,
     }  
     
