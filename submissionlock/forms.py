@@ -15,15 +15,15 @@ class SubmissionLockForm(forms.Form):
     def __init__(self, students, activity, *args, **kwargs):
         super(SubmissionLockForm, self).__init__(*args, **kwargs)
         current_time = datetime.datetime.now()
-        for student in students:
+        for member in students:
             try:
                 student_lock = SubmissionLock.objects.get(activity=activity, member=student)
                 if student_lock.effective_date > current_time:
-                    self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='1')
+                    self.fields["%s" % (member.person.userid)]=ChoiceField(LOCK_CHOICES, initial='1')
                 else:
-                    self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
+                    self.fields["%s" % (member.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
             except:
-                self.fields["%s" % (student.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
+                self.fields["%s" % (member.person.userid)]=ChoiceField(LOCK_CHOICES, initial='0')
     
     def clean(self):
         cleaned_data = self.cleaned_data

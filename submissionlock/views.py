@@ -24,6 +24,7 @@ def submission_lock(request, course_slug, activity_slug):
         form = SubmissionLockForm(students, activity)
     
     context = {
+        'students' : students,
         'course' : course,
         'activity' : activity,
         'form' : form,
