@@ -12,8 +12,18 @@ LOCK_CHOICES = (
     )
 
 class SubmissionLockForm(forms.Form):
-    def __init__(self, students, *args, **kwargs):
+    def __init__(self, students, locked_students, *args, **kwargs):
         super(SubmissionLockForm, self).__init__(*args, **kwargs)
         for student in students:
-            #self.fields['test_field_%s' % item] = CharField(max_length=255)
-            self.fields["%s    %s" % (student.person.userid, student.person.emplid)] = ChoiceField(LOCK_CHOICES)
+            if student in locked_students:
+                self.fields["%s" % (student.person.userid)] = ChoiceField(LOCK_CHOICES, initial = True)
+            else:
+                self.fields["%s" % (student.person.userid)] = ChoiceField(LOCK_CHOICES, initial = False)
+    
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        for student in students:
+            member = Member.objects.filter(__person__userid = student.person.userid)
+            lock_status = cleaned_data.get("%s" % student)
+            
+        return cleaned_data

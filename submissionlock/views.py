@@ -27,12 +27,13 @@ def submission_lock(request, course_slug, activity_slug):
     locked_students = SubmissionLock.objects.filter(activity=activity).select_related('member', 'effective_date')
 
     if request.method == 'POST':
-        form = SubmissionLockForm(request.POST, students)
+        form = SubmissionLockForm(request.POST, students, locked_students)
         if form.isvalid():
-            #...
+            a = form.clean(self)
+            #To Be Done ...
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock'))
     else:
-        form = SubmissionLockForm(students)
+        form = SubmissionLockForm(students, locked_students)
     
     context = {
         'students': students,
@@ -44,7 +45,7 @@ def submission_lock(request, course_slug, activity_slug):
         'form' : form,
     }  
     
-    return render(request, 'submissionlock/test.html', context)
+    return render(request, 'submissionlock/submission_lock.html', context)
 
 def _apply_lock(course, activity, lock_date):
     students = Member.objects.filter(offering=course, role="STUD").select_related('person', 'offering')
