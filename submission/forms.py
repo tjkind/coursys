@@ -161,11 +161,3 @@ def make_form_from_list(component_list, request=None):
         data = {'comp':component, 'form':form}
         component_form_list.append(data)
     return component_form_list
-
-class SubmissionLockForm(forms.Form):
-    def __init__(self, student_list, locked_list, *args, **kwargs):
-        for student in student_list:
-            if student in locked_list:
-                self.fields['student'] = forms.ChoiceField(label=student.person.userid, widget=forms.CheckboxSelectMultiple, choices=LOCK_CHOICES, default='lock')
-            else:
-                self.fields['student'] = forms.ChoiceField(label=student.person.userid, widget=forms.CheckboxSelectMultiple, choices=LOCK_CHOICES, default='unlock')
