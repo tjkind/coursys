@@ -5,9 +5,9 @@ from coredata.models import Member
 from grades.models import Activity
 
 LOCK_STATUS_CHOICES = [
-    ('locked', 'locked'),
-    ('unlocked', 'unlocked'),
-    ('lock pending', 'lock pending')
+    ('locked', 'Lock'),
+    ('unlocked', 'Unlock'),
+    ('lock_pending', 'Unlocked Until')
 ]
 
 class SubmissionLock(models.Model):

@@ -12,9 +12,15 @@ import datetime
 def _effective_lock_date(activity_lock, activity, student):
     try:
         submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
+        if submission_lock.status == 'unlocked':
+            return None
+        if activity.due_date == None and submission_lock == 'lock_pending':
+            return None
         return submission_lock.effective_date
     except:
-        if activity_lock == None:
+        if activity.due_date == None or activity_lock == None:
+            return None
+        elif activity.due_date == None:
             return None
         else:
             return activity_lock.effective_date
@@ -22,24 +28,63 @@ def _effective_lock_date(activity_lock, activity, student):
 def _submission_lock_status(activity_lock, activity, student):
     try:
         submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
-        return submission_lock.status
-    except:
-        if activity_lock == None:
-            return "unlocked"
-        elif activity_lock.effective_date > datetime.datetime.now():
-            return "lock pending"
+        if submission_lock.status == 'locked':
+            return "Locked"
+        elif submission_lock.status == 'lock_pending':
+            if submission_lock.effective_date < datetime.datetime.now():
+                return "Locked"
+            elif activity.due_date == None:
+                return "Unlocked"
+            else:
+                return "Lock Pending"
         else:
-            return "locked"
+            return "Unlocked"
+    except:
+        if activity.due_date == None or activity_lock == None:
+            return "Unlocked"
+        elif activity.due_date == None:
+            return "Unlocked"
+        elif activity_lock.effective_date > datetime.datetime.now():
+            return "Lock Pending"
+        else:
+            return "Locked"
 
-def _activity_lock_status(activity_lock):
-    if activity_lock == None:
-        return "unlocked"
+def _activity_lock_status(activity_lock, activity):
+    if activity.due_date == None or activity_lock == None:
+        return "Unlocked"
     elif activity_lock.effective_date > datetime.datetime.now():
-        return "lock pending"
+        return "Lock Pending"
     else:
-        return "locked"
+        return "Locked"
 
-    return "unlocked"
+def _is_student_locked(activity, student):
+    locked = False
+    try: #first check ActivityLock
+        activity_lock = ActivityLock.objects.get(activity=activity)
+        if activity_lock.effective_date < datetime.datetime.now():
+            locked = True
+    except:
+        pass
+
+    #check for activity due date
+    if activity.due_date == None:
+        locked = False
+
+    try: #SubmissionLock has hierachy and will overshadow previous checks
+        submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
+        if submission_lock.status == 'locked':
+            locked = True
+        #status "lock_pending" can only be set by the staff and therefore must taken into account the activity due date
+        elif submission_lock.status == 'lock_pending' and activity.due_date != None:
+            if submission_lock.effective_date < datetime.datetime.now():
+                locked = True
+            else:
+                locked = False
+        elif submission_lock.status == 'unlocked':
+            locked = False
+    except:
+        pass
+    return locked
 
 @requires_course_staff_by_slug
 def submission_lock(request, course_slug, activity_slug):
@@ -62,7 +107,7 @@ def submission_lock(request, course_slug, activity_slug):
         })
 
     context = {
-        'activity_lock_status' : _activity_lock_status(activity_lock=activity_lock),
+        'activity_lock_status' : _activity_lock_status(activity_lock=activity_lock, activity=activity),
         'activity_lock' : activity_lock,
         'students' : students,
         'course' : course,
@@ -103,15 +148,19 @@ def staff_edit_submission_lock(request, course_slug, activity_slug, userid):
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
 
     else:
-        #find initial values for form
         student_lock_status = _submission_lock_status(activity_lock=activity_lock, activity=activity, student=student)
         student_lock_effective_date = _effective_lock_date(activity_lock=activity_lock, activity=activity, student=student)
         
-        #use verbs instead of status to clearify for users; lock/unlock instead of locked/unlocked/lock_pending
-        if student_lock_status == "unlocked":
-            lock_status = 'unlock'
+        #setting initial lock status values
+        if student_lock_status == "Lock Pending":
+            if student_lock_effective_date > datetime.datetime.now():
+                lock_status = 'lock_pending'
+            else:
+                lock_status = 'locked'
+        elif student_lock_status == "Locked":
+            lock_status = 'locked'
         else:
-            lock_status = 'lock'
+            lock_status = 'unlocked'
 
         #if None is returned from _effective_lock_date use current time
         if student_lock_effective_date == None:
