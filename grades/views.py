@@ -35,8 +35,7 @@ from marking.models import get_group_mark, StudentActivityMark, GroupActivityMar
 from groups.models import GroupMember, add_activity_to_group
 
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
-from submissionlock.models import SubmissionLock
-from submissionlock.views import _apply_lock
+from submissionlock.models import ActivityLock
 
 from log.models import LogEntry
 from pages.models import Page, ACL_ROLES
@@ -586,8 +585,9 @@ def add_numeric_activity(request, course_slug):
 
                 #applying lock if requested
                 if form.cleaned_data['apply_lock']=='1':
-                    _apply_lock(course=course, activity=a, lock_date=form.cleaned_data['lock_date'])
-                
+                    ActivityLock.objects.create(activity=a,
+                                                effective_date=form.cleaned_data['lock_date'])
+
                 #LOG EVENT#
                 l = LogEntry(userid=request.user.username,
                       description=("created a numeric activity %s") % (a),
@@ -1098,7 +1098,8 @@ def add_letter_activity(request, course_slug):
 
                 #applying lock if requested
                 if form.cleaned_data['apply_lock']=='1':
-                    _apply_lock(course=course, activity=a, lock_date=form.cleaned_data['lock_date'])
+                    ActivityLock.objects.create(activity=a,
+                                                effective_date=form.cleaned_data['lock_date'])
 
                 #LOG EVENT#
                 l = LogEntry(userid=request.user.username,

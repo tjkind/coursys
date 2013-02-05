@@ -1,48 +1,53 @@
 {% extends "base.html" %}
 {% load form_display %}
 {% block title %}Submission Locks{% endblock %}
-{% block h1 %}View All Submission Locks{% endblock %}
+{% block h1 %}{{activiy.name}}Activity Lock{% endblock %}
 
 {% block subbreadcrumbs %}
 <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
 <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
-<li>&gt; Submission Locks</li>
+<li>&gt; Activity Lock</li>
 {% endblock %}
 
 {%block content%}
+<legend>
+  This Activity 
+  {% ifequal activity_lock_status "lock pending" %}
+    will be locked on {{activity_lock.effective_date}}
+  {% endifequal %}
+  {% ifequal activity_lock_status "locked" %}
+    is locked
+  {% endifequal %}
+  {% ifequal activity_lock_status "unlocked" %}
+    is unlocked
+  {% endifequal %}
+</legend>
 <div class="datatable_container">
-  <div class="form_container">
-      <form action="{% url submissionlock.views.submission_lock course_slug=course.slug activity_slug=activity.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
-          <fieldset>
-          {%comment%}
-            {{form|as_dl}}
-          {%endcomment%}
-          <table id="submission_lock_table" class="display">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Student ID</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for field in form %}
-                 {% for member in students %}
-                    {% if forloop.counter == forloop.parentloop.counter %}
-                        <tr>
-                          <td>{{member.person.name}}</td>
-                          <td>{{member.person.userid}}</td>
-                          <td>{{field}}</td>
-                        </tr>
-                    {% endif %}
-                 {% endfor %}
-              {% endfor %}
-            </tbody>
-          </table>
-          <p><input type="submit" class="submit" value="Apply Changes" /></p>
-          </fieldset>
-      </form>
-  </div>
+  <table id="submission_lock_table" class="display">
+    <h2>
+      Student Submission Lock Status
+    </h2>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Student ID</th>
+        <th scope="col">Student #</th>
+        <th scope="col">Effective Date</th>
+        <th scope="col">Lock Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%for student in students%}
+        <tr>
+          <td>{{student.name}}</td>
+          <td>{{student.userid}}</td>
+          <td>{{student.emplid}}</td>
+          <td>{{student.lock_date}}</td>
+          <td>{{student.lock_status}}</td>
+        </tr>
+      {%endfor%}
+    </tbody>
+  </table>
 </div>
 
 {%endblock content%}
