@@ -179,6 +179,7 @@ urlpatterns += patterns('',
     # submission locks
 
     url(r'^' + COURSE_ACTIVITY_SLUG + '/submissionlock/$', 'submissionlock.views.submission_lock'),
+    url(r'^' + COURSE_ACTIVITY_SLUG + '/submissionlock/' + USERID_SLUG + '/$', 'submissionlock.views.staff_edit_submission_lock'),
 
     # activity submission
 
