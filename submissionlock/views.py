@@ -14,11 +14,16 @@ def _effective_lock_date(activity_lock, activity, student):
         submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
         if submission_lock.status == 'unlocked':
             return None
-        if activity.due_date == None and submission_lock == 'lock_pending':
-            return None
+        if submission_lock.status == 'lock_pending':
+            if activity.due_date == None:
+                return None
+            elif submission_lock.effective_date < activity.due_date:
+                return None
         return submission_lock.effective_date
     except:
         if activity.due_date == None or activity_lock == None:
+            return None
+        elif activity_lock.effective_date < activity.due_date:
             return None
         elif activity.due_date == None:
             return None
@@ -30,11 +35,13 @@ def _submission_lock_status(activity_lock, activity, student):
         submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
         if submission_lock.status == 'locked':
             return "Locked"
-        elif submission_lock.status == 'lock_pending':
-            if submission_lock.effective_date < datetime.datetime.now():
-                return "Locked"
-            elif activity.due_date == None:
+        elif submission_lock.status == 'lock_pending':            
+            if activity.due_date == None:
                 return "Unlocked"
+            elif submission_lock.effective_date < activity.due_date:
+                return "Unlocked"
+            elif submission_lock.effective_date < datetime.datetime.now():
+                return "Locked"
             else:
                 return "Lock Pending"
         else:
@@ -44,6 +51,8 @@ def _submission_lock_status(activity_lock, activity, student):
             return "Unlocked"
         elif activity.due_date == None:
             return "Unlocked"
+        elif activity_lock.effective_date < activity.due_date:
+            return "Unlocked"
         elif activity_lock.effective_date > datetime.datetime.now():
             return "Lock Pending"
         else:
@@ -51,6 +60,8 @@ def _submission_lock_status(activity_lock, activity, student):
 
 def _activity_lock_status(activity_lock, activity):
     if activity.due_date == None or activity_lock == None:
+        return "Unlocked"
+    elif activity_lock.effective_date < activity.due_date:
         return "Unlocked"
     elif activity_lock.effective_date > datetime.datetime.now():
         return "Lock Pending"
@@ -61,22 +72,25 @@ def _is_student_locked(activity, student):
     locked = False
     try: #first check ActivityLock
         activity_lock = ActivityLock.objects.get(activity=activity)
-        if activity_lock.effective_date < datetime.datetime.now():
-            locked = True
     except:
-        pass
+        activity_lock = None
 
-    #check for activity due date
-    if activity.due_date == None:
+    #check ActivityLock and activity.due_date
+    if activity_lock == None or activity.due_date == None:
         locked = False
+    elif activity_lock.effective_date < activity.due_date:
+        locked = False
+    elif activity_lock.effective_date < datetime.datetime.now():
+        locked = True
 
     try: #SubmissionLock has hierachy and will overshadow previous checks
         submission_lock = SubmissionLock.objects.get(activity=activity, member=student)
-        if submission_lock.status == 'locked':
-            locked = True
-        #status "lock_pending" can only be set by the staff and therefore must taken into account the activity due date
-        elif submission_lock.status == 'lock_pending' and activity.due_date != None:
-            if submission_lock.effective_date < datetime.datetime.now():
+        if submission_lock.status == 'locked': #this will automatically return true because it's only set when student try to perform peer review and agreed to lock submissions
+            return True
+        elif submission_lock.status == 'lock_pending' and activity.due_date != None: #status "lock_pending" can only be set by the staff and therefore must taken into account the activity due date
+            if submission_lock.effective_date < activity.due_date:
+                locked = False
+            elif submission_lock.effective_date < datetime.datetime.now():
                 locked = True
             else:
                 locked = False
