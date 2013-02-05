@@ -12,11 +12,13 @@
 {%block content%}
 <legend>
   This Activity 
+  <a href="{% url submissionlock.views.staff_edit_activity_lock course_slug=course.slug activity_slug=activity.slug %}">
   {% ifequal activity_lock_status "Lock Pending" %}
     will be locked on {{activity_lock.effective_date}}
   {% else %}
     is {{activity_lock_status}}
   {% endifequal %}
+  </a>
 </legend>
 <div class="datatable_container">
   <table id="submission_lock_table" class="display">

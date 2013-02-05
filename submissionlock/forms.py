@@ -9,7 +9,7 @@ from grades.forms import CustomSplitDateTimeWidget
 from coredata.models import Member
 from submissionlock.models import SubmissionLock, ActivityLock, LOCK_STATUS_CHOICES
 
-class SubmissionLockForm(forms.Form):
+class LockForm(forms.Form):
     lock_status = forms.ChoiceField(choices=LOCK_STATUS_CHOICES,
             label=mark_safe('Lock Status:'),
             help_text='status of individual student lock',
@@ -19,7 +19,7 @@ class SubmissionLockForm(forms.Form):
             widget=CustomSplitDateTimeWidget())
 
     def __init__(self, *args, **kwargs):
-        super(SubmissionLockForm, self).__init__(*args, **kwargs)
+        super(LockForm, self).__init__(*args, **kwargs)
         self._check_due_date = False
         self._activity_due_date = None
 
@@ -27,8 +27,9 @@ class SubmissionLockForm(forms.Form):
         self._check_due_date = True
         self._activity_due_date = activity.due_date
 
+class StaffLockForm(LockForm):
     def clean(self):
-        cleaned_data = super(SubmissionLockForm, self).clean()
+        cleaned_data = super(StaffLockForm, self).clean()
         if self._check_due_date:
             if cleaned_data['lock_status'] == 'lock_pending':
                 if self._activity_due_date == None:

@@ -1,0 +1,63 @@
+{% extends "grades/base.html" %}
+{% load grade_student %}
+
+{% block title %}Add/Edit Activity Lock - {{activity.name}}{% endblock %}
+{% block h1 %}{{activity.name}}{% endblock %}
+
+{% block grades_headextra %}
+<script type="text/javascript">
+$(document).ready(function() {
+    $("#id_lock_date_0").datepicker({ buttonImageOnly: true, buttonImage: '{{MEDIA_URL}}images/grades/calendar.png',
+                                changeMonth: true, changeYear: true,
+                                dateFormat: 'yy-mm-dd', showOn: 'button'});
+        
+    if($("input[name=lock_status]:checked").val() != 'lock_pending'){
+        $("#div_id_lock_date").parent().addClass("hidden");
+    }
+
+    $("input[name=lock_status]").click(function(){
+        if($("input[name=lock_status]:checked").val() == 'lock_pending'){
+            $("#div_id_lock_date").parent().removeClass("hidden");
+        } else {
+            $("#div_id_lock_date").parent().addClass("hidden");
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block subbreadcrumbs %}
+    <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+    <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
+    <li><a href="{% url submissionlock.views.submission_lock course_slug=course.slug activity_slug=activity.slug %}">&gt; Activity Lock</a></li>
+    <li>&gt; Edit</li>
+{% endblock %}
+
+{% block content %}
+    <div class="form_container">
+        {% if form.non_field_errors %}
+        <div class="errorindicator">
+            <img src="{{MEDIA_URL}}/icons/exclamation.png" alt="exclamation" />
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        <form action="{% url submissionlock.views.staff_edit_activity_lock course_slug=course.slug activity_slug=activity.slug %}" 
+        enctype="multipart/form-data" method="post">{% csrf_token %}
+            <fieldset>
+            <legend>Edit Activity Lock for {{activity.name}}</legend>
+            <ul>
+                {{form.lock_status|activity_field}}
+                {{form.lock_date|activity_field}}
+                <li>
+                    <input class="submit" type="submit" value="Submit" />
+                </li>
+            </ul>
+            </fieldset>
+        </form>
+    </div>
+    {% if activity.due_date %}
+        <p>Note: Due Date for {{activity.name}} is {{activity.due_date}}</p>
+    {% else %}
+        <p>Note: {{activity.name}} does not have a due date and therefore you may only Unlock this student at this time</p>
+    {% endif %}
+{% endblock %}
