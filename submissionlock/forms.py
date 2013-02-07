@@ -35,20 +35,20 @@ class StaffLockForm(LockForm):
                 if self._activity_due_date == None:
                     pass
                 elif cleaned_data['lock_date'] == None:
-                    raise forms.ValidationError(u'Please have a valid lock pending date')
+                    raise forms.ValidationError(u'Please have a valid lock pending date.')
                 elif cleaned_data['lock_date'] < self._activity_due_date:
-                    raise forms.ValidationError(u'Please select a submission lock date that is after the due date')
+                    raise forms.ValidationError(u'Please select a submission lock date that is after the due date.')
 
             if cleaned_data['lock_status'] == 'locked':
                 cleaned_data['lock_date'] = datetime.datetime.now()
                 if self._activity_due_date == None:
                     pass
                 elif cleaned_data['lock_date'] < self._activity_due_date:
-                    raise forms.ValidationError(u'May not lock student submission until pass the due date')
+                    raise forms.ValidationError(u'May not lock student submission until past the due date.')
 
             if cleaned_data['lock_status'] == 'locked': #this is to ensure all staff "lock" to SubmissionLock are stored as lock_pending
                 cleaned_data['lock_status'] = 'lock_pending'
             
             if cleaned_data['lock_status'] == 'lock_pending' and self._activity_due_date == None:
-                raise forms.ValidationError(u'You may only use "Unlock" option until there is a valid due date for this activity')
+                raise forms.ValidationError(u'You may only use "Unlock" option until there is a valid due date for this activity.')
         return cleaned_data
