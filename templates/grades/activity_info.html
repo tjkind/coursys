@@ -122,6 +122,7 @@ Column logic:
 	    {% endif %}
 	    {% if not activity.is_calculated %}
 	    <li><a href="{% url submission.views.show_components course_slug=course.slug, activity_slug=activity.slug%}">Configure Submission</a></li>	    
+	    <li><a href="{% url peerreview.views.add_peer_review_component course_slug=course.slug, activity_slug=activity.slug%}">Create PeerReview (Not Done)</a></li>
 	    <li class="newsec">
 	    {% if activity.is_numeric %}
 	    <a href="{% url marking.views.manage_activity_components course_slug=course.slug,activity_slug=activity.slug%}">Configure Marking</a>

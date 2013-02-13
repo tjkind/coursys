@@ -9,6 +9,7 @@
 
 {% block content %}
     <div class="form_container">
+        <form action="{% url peerreview.views.add_peer_review_component course_slug=course_slug activity_slug=activity_slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Add Peer Review Component</legend>
             {{ form|as_dl }}
