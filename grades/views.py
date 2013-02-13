@@ -218,6 +218,18 @@ def _activity_info_staff(request, course_slug, activity_slug):
     
     activity = activities[0]
 
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+        if not activity.due_date:
+            display_lock = False
+        elif activity_lock.effective_date < activity.due_date:
+            display_lock = False
+        else:
+            display_lock = True
+    except:
+        display_lock = False
+        activity_lock = ""
+
     # build list of all students and grades
     students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')
     if activity.is_numeric():
@@ -278,6 +290,7 @@ def _activity_info_staff(request, course_slug, activity_slug):
 
     context = {'course': course, 'activity': activity, 'students': students, 'grades': grades, 'source_grades': source_grades,
                'activity_view_type': 'individual', 'group_membership': group_membership,
+               'activity_lock': activity_lock, 'display_lock': display_lock,
                'from_page': FROMPAGE['activityinfo'],
                'sub_comps': sub_comps, 'mark_comps': mark_comps,
                'submitted': submitted, 'marked': marked}
@@ -900,6 +913,19 @@ def _semester_date_warning(request, activity):
             activity.offering.semester.start, datetime.time(0,0,0)):
         messages.warning(request, "Activity is due before the start of the semester.")
 
+def _activity_lock_warning(request, activity):
+    """
+    Generate warnings for this request if activity due date is nullifying activity locks and/or submission locks
+    """
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+        if not activity.due_date:
+            messages.warning(request, "Activity lock is no longer effective without a due date")
+        elif activity.due_date > activity_lock.effective_date:
+            messages.warning(request, "Activity lock is no longer effective because due date is set after the lock's effective date")
+    except:
+        return
+
 
 @requires_course_staff_by_slug
 def edit_activity(request, course_slug, activity_slug):
@@ -950,6 +976,7 @@ def edit_activity(request, course_slug, activity_slug):
                 l.save()
                 messages.success(request, "Details of %s updated" % activity.name)
                 _semester_date_warning(request, activity)
+                _activity_lock_warning(request, activity)
 
                 if from_page == FROMPAGE['course']:
                     return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course_slug}))

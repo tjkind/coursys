@@ -172,11 +172,13 @@ def staff_edit_submission_lock(request, course_slug, activity_slug, userid):
         else:
             lock_status = 'unlocked'
 
-        #if None is returned from _effective_lock_date use current time as initial form value
-        if student_lock_effective_date == None:
-            lock_date = datetime.datetime.now()
-        else:
+        #if student_lock_effective_date is returned, use that as initial value for lock_date
+        if student_lock_effective_date:
             lock_date = student_lock_effective_date
+        elif activity.due_date:
+            lock_date = activity.due_date
+        else:
+            lock_date = datetime.datetime.now()
 
         form_initials = {
             'lock_status' : lock_status,
@@ -193,6 +195,11 @@ def staff_edit_submission_lock(request, course_slug, activity_slug, userid):
 
     return render(request, 'submissionlock/staff_edit_submission_lock.html', context)
 
+def _clean_submission_locks(activity):
+    submission_locks = SubmissionLock.objects.filter(activity=activity)
+    submission_locks.delete()
+
+
 @requires_course_staff_by_slug
 def staff_edit_activity_lock(request, course_slug, activity_slug):
     activity = Activity.objects.get(slug=activity_slug)
@@ -206,21 +213,22 @@ def staff_edit_activity_lock(request, course_slug, activity_slug):
         form = StaffLockForm(request.POST)
         form.check_activity_due_date(activity)
         if form.is_valid(): #if all form validation goes through
-            if form.cleaned_data['lock_status'] == 'unlocked' and activity_lock != None:
+            if form.cleaned_data['lock_status'] == 'unlocked' and activity_lock:
                 activity_lock.delete()
             elif form.cleaned_data['lock_status'] == 'lock_pending':
-                if activity_lock == None:
+                if activity_lock:
+                    activity_lock.effective_date = form.cleaned_data['lock_date']
+                    activity_lock.save()
+                else:
                     activity_lock = ActivityLock.objects.create(
                         activity=activity,
                         effective_date=form.cleaned_data['lock_date'],
                     )
-                else:
-                    activity_lock.effective_date = form.cleaned_data['lock_date']
-                    activity_lock.save()
+            _clean_submission_locks(activity=activity)
 
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
-        if activity_lock != None:
+        if activity_lock:
             activity_lock_status = _activity_lock_status(activity_lock=activity_lock, activity=activity)
             if activity_lock_status == "Lock Pending":
                 if activity_lock.effective_date > datetime.datetime.now():
@@ -234,7 +242,10 @@ def staff_edit_activity_lock(request, course_slug, activity_slug):
             lock_date = activity_lock.effective_date
         else:
             lock_status = 'locked'
-            lock_date = datetime.datetime.now()
+            if activity.due_date:
+                lock_date = activity.due_date
+            else:
+                lock_date = datetime.datetime.now()
 
         form_initials = {
             'lock_status' : lock_status,

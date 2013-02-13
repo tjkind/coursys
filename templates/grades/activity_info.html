@@ -114,20 +114,19 @@ Column logic:
 {% endifequal %}</li>
 {% endif %}
 
-	    <li{% if activity.group %} class="newsec"{% endif %}><a href="{% url grades.views.edit_activity course_slug=course.slug activity_slug=activity.slug %}?from_page={{ from_page }}">Edit Activity Details</a></li>
+	    <li{% if activity.group %} class="newsec"{% endif %}><a href="{% url grades.views.edit_activity course_slug=course.slug activity_slug=activity.slug %}?from_page={{ from_page }}">Configure Activity</a></li>
+        <li><a href="{% url submission.views.show_components course_slug=course.slug, activity_slug=activity.slug%}">Configure Submission</a></li>      
 
-        <li><a href="{% url submissionlock.views.submission_lock course_slug=course.slug, activity_slug=activity.slug%}">View/Edit Activity Lock</a></li>
+        <li><a href="{% url submissionlock.views.submission_lock course_slug=course.slug, activity_slug=activity.slug%}">Configure Activity Lock</a></li>
 	    {% if activity.is_calculated and not activity.is_numeric%}
 	    <li><a href="{% url grades.views.edit_cutoffs course_slug=course.slug, activity_slug=activity.slug%}">Edit Cutoffs</a></li>
 	    {% endif %}
 	    {% if not activity.is_calculated %}
-	    <li><a href="{% url submission.views.show_components course_slug=course.slug, activity_slug=activity.slug%}">Configure Submission</a></li>	    
-	    <li><a href="{% url peerreview.views.add_peer_review_component course_slug=course.slug, activity_slug=activity.slug%}">Create PeerReview (Not Done)</a></li>
-	    <li class="newsec">
-	    {% if activity.is_numeric %}
-	    <a href="{% url marking.views.manage_activity_components course_slug=course.slug,activity_slug=activity.slug%}">Configure Marking</a>
-	    {% endif %}
-	    </li>
+        {% if activity.is_numeric %}
+        <li><a href="{% url marking.views.manage_activity_components course_slug=course.slug,activity_slug=activity.slug%}">Configure Marking</a></li>
+        {% endif %}
+	    <li><a href="{% url peerreview.views.add_peer_review_component course_slug=course.slug, activity_slug=activity.slug%}">Configure PeerReview (Not Done)</a></li>
+        <li class="newsec"></li>
 	    {% if sub_comps %}
 	    <li><a href="{% url submission.views.download_activity_files course_slug=course.slug, activity_slug=activity.slug%}">Download Submissions</a></li>
 	    {% endif %}
@@ -146,12 +145,12 @@ Column logic:
 	      <li><a href="{% url marking.views.import_marks course_slug=course.slug activity_slug=activity.slug%}">Import Marking Details</a></li>
 	    {% endif %}
 
-	    <li class="newsec"><a href="{% url grades.views.activity_stat course_slug=course.slug activity_slug=activity.slug %}">Display Statistics</a></li> 
-		    	<li><a href="{% url marking.views.export_csv course_slug=course.slug, activity_slug=activity.slug%}">Export Grades</a></li> 
-                 {% if not activity.is_numeric %}
-		    	<li><a href="{% url marking.views.export_sims course_slug=course.slug, activity_slug=activity.slug%}">Export for SIMS</a></li>
-		    	<li><a href="{% url grades.views.compare_official course_slug=course.slug, activity_slug=activity.slug%}">Compare Official Letter Grades</a></li>
-		 {% endif %}
+	    <li><a href="{% url grades.views.activity_stat course_slug=course.slug activity_slug=activity.slug %}">Display Statistics</a></li> 
+    	<li><a href="{% url marking.views.export_csv course_slug=course.slug, activity_slug=activity.slug%}">Export Grades</a></li> 
+        {% if not activity.is_numeric %}
+	    	<li><a href="{% url marking.views.export_sims course_slug=course.slug, activity_slug=activity.slug%}">Export for SIMS</a></li>
+	       <li><a href="{% url grades.views.compare_official course_slug=course.slug, activity_slug=activity.slug%}">Compare Official Letter Grades</a></li>
+		{% endif %}
 
 	 
     </ul>
@@ -188,6 +187,12 @@ Column logic:
                 <th class="ui-state-default">Due date</th>
                 <td class="{{activity.due_class}}">{{activity.due_date}}</td>
             </tr>
+            {% if display_lock %}
+            <tr>
+                <th class="ui-state-default">Activity lock date</th>
+                <td class="{{activity.due_class}}">{{activity_lock.effective_date}}</td>
+            </tr>
+            {% endif %}
             <tr>
                 <th class="ui-state-default">Percentage</th>
                 <td>{{activity.percent}}</td>

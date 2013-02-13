@@ -32,12 +32,15 @@ class StaffLockForm(LockForm):
         cleaned_data = super(StaffLockForm, self).clean()
         if self._check_due_date:
             if cleaned_data['lock_status'] == 'lock_pending':
-                if self._activity_due_date == None:
-                    pass
-                elif cleaned_data['lock_date'] == None:
-                    raise forms.ValidationError(u'Please have a valid lock pending date.')
-                elif cleaned_data['lock_date'] < self._activity_due_date:
-                    raise forms.ValidationError(u'Please select a submission lock date that is after the due date.')
+                try:
+                    if self._activity_due_date == None:
+                        pass
+                    elif cleaned_data['lock_date'] == None:
+                        raise forms.ValidationError(u'Please have a valid lock pending date.')
+                    elif cleaned_data['lock_date'] < self._activity_due_date:
+                        raise forms.ValidationError(u'Please select a submission lock date that is after the due date.')
+                except KeyError:
+                    raise forms.ValidationError(u'Please fix indicated fields below')
 
             if cleaned_data['lock_status'] == 'locked':
                 cleaned_data['lock_date'] = datetime.datetime.now()
