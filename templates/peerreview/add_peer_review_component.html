@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% load form_display %}
-{% block title %}Add Peer Review Component{% endblock %}
+{% block title %}Configure Peer Review Component{% endblock %}
 {% block h1 %}{% endblock %}
 
 {% block subbreadcrumbs %}
-    <li>&gt; Add Peer Review Component</li>
+    <li>&gt; Configure Peer Review Component</li>
 {% endblock %}
 
 {% block content %}
     <div class="form_container">
         <form action="{% url peerreview.views.add_peer_review_component course_slug=course_slug activity_slug=activity_slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
-            <legend>Add Peer Review Component</legend>
+            <legend>Configure Peer Review Component</legend>
             {{ form|as_dl }}
             <p><input type="submit" class="submit" value="Submit" /></p>
             </fieldset>
