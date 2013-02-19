@@ -7,7 +7,7 @@ import datetime
 class PeerReviewComponent(models.Model):
     activity = models.ForeignKey(Activity)
     due_date = models.DateTimeField(null=True, help_text='Due date for Peer Reviews')
-    number_reviews = models.IntegerField(null=True, help_text="Number of reviews each student must perform." )
+    number_of_reviews = models.IntegerField(null=True, help_text="This is the number of peer reviews each student is expected to perform")
 
     hidden = models.BooleanField(null=False, default=False)
     config = JSONField(null=False, blank=False, default={}) 

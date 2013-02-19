@@ -3,6 +3,16 @@
 {% block title %}Configure Peer Review Component{% endblock %}
 {% block h1 %}{% endblock %}
 
+{% block headextra %}
+<script type="text/javascript">
+$(document).ready(function() {
+    $("#id_due_date_0").datepicker({ buttonImageOnly: true, buttonImage: '{{MEDIA_URL}}images/grades/calendar.png',
+                                changeMonth: true, changeYear: true,
+                                dateFormat: 'yy-mm-dd', showOn: 'button'});
+});
+</script>
+{% endblock %}
+
 {% block subbreadcrumbs %}
     <li>&gt; Configure Peer Review Component</li>
 {% endblock %}

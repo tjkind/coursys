@@ -10,7 +10,6 @@ from grades.models import Activity
 from peerreview.forms import AddPeerReviewComponentForm
 from peerreview.models import *
 
-
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
     activity = get_object_or_404(Activity, slug = activity_slug)
@@ -27,8 +26,7 @@ def add_peer_review_component(request, course_slug, activity_slug):
                 peerreview_component = PeerReviewComponent.objects.create(
                     activity = activity,
                     due_date = form.cleaned_data['due_date'],
-                    number_reviews = form.cleaned_data['number_reviews'],
-                    hidden = form.cleaned_data['active'],
+                    number_of_reviews = form.cleaned_data['number_of_reviews'],
                 )
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
@@ -40,3 +38,4 @@ def add_peer_review_component(request, course_slug, activity_slug):
         'activity_slug' : activity_slug,
     }
     return render(request, "peerreview/add_peer_review_component.html", context)
+
