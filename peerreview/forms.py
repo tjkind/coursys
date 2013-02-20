@@ -7,11 +7,22 @@ from grades.forms import CustomSplitDateTimeWidget
 
 from peerreview.models import PeerReviewComponent
 
+class PeerReviewSplitDateTimeWidget(forms.SplitDateTimeWidget):
+    """
+    Create a custom SplitDateTimeWidget with custom html output format
+    """
+    def __init__(self, attrs=None, date_format=None, time_format=None):
+        super(PeerReviewSplitDateTimeWidget, self).__init__(attrs, date_format, time_format)
+        
+    def format_output(self, rendered_widgets):
+        return mark_safe(u'<div class="datetime">%s %s</div><div class="datetime" style="margin-left: 9.37em">%s %s</div>' % \
+            (('Date:'), rendered_widgets[0], ('Time:'), rendered_widgets[1]))
+
 class AddPeerReviewComponentForm(forms.Form):
     #def __init__(self, *args, **kwargs):
         #super(AddPeerReviewComponentForm, self).__init__(*args, **kwargs)
     due_date = forms.SplitDateTimeField(initial=datetime.datetime.now(), label=mark_safe('Deadline'), required=True,
-        help_text='Time format: HH:MM:SS, 24-hour time', widget=CustomSplitDateTimeWidget())
+        help_text='Time format: HH:MM:SS, 24-hour time', widget=PeerReviewSplitDateTimeWidget())
     number_of_reviews = forms.IntegerField(initial=1, required=True,
         help_text= 'This is the number of peer reviews each student is expected to perform')
     
@@ -26,4 +37,6 @@ class AddPeerReviewComponentForm(forms.Form):
             #raise forms.ValidationError(u'Peer review number reviews cannot exceed class size!')
         context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
         return context
+
+
     
