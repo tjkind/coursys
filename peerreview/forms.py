@@ -42,6 +42,7 @@ class AddPeerReviewComponentForm(forms.Form):
             context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
             return context
 
-
+class StudentLockForm(forms.Form):
+    pass
 
     

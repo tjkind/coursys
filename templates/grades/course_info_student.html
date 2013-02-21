@@ -112,7 +112,7 @@
 		<td>{{ data.act.get_status_display }}</td>
 		<td>{{ data.grade_display }}</td>
             {% if data.peerreview %}
-                <td><a href="www.google.com">Start</a></td>
+                <td><a href="{% url peerreview.views.student_view course_slug=course.slug activity_slug=data.act.slug%}">Start</a></td>
             {% else %}
                 <td></td>
             {% endif %}
