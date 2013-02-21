@@ -13,14 +13,14 @@ from peerreview.models import *
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
     activity = get_object_or_404(Activity, slug = activity_slug)
+    class_size = activity.offering.members.count()
     if request.method == 'POST':
-        form = AddPeerReviewComponentForm(request.POST)
+        form = AddPeerReviewComponentForm(class_size, request.POST)
         if form.is_valid():
             try: #see if peerreview component already exists for this activity
-                peerreview_component = peerreview.objects.get(activity=activity)
+                peerreview_component = PeerReviewComponent.objects.get(pk=activity.pk)
                 peerreview_component.due_date = form.cleaned_data['due_date']
-                peerreview_component.number_reviews = form.cleaned_data['number_reviews']
-                peerreview_component.hidden = form.cleaned_data['active'] #inversed at the moment, consider re-modeling!
+                peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
                 peerreview_component.save()
             except: #else create a peerreview component
                 peerreview_component = PeerReviewComponent.objects.create(
@@ -30,7 +30,7 @@ def add_peer_review_component(request, course_slug, activity_slug):
                 )
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
-        form = AddPeerReviewComponentForm()
+        form = AddPeerReviewComponentForm(class_size)
 
     context = {
         'form' : form,
