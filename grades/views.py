@@ -36,6 +36,7 @@ from groups.models import GroupMember, add_activity_to_group
 
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
 from submissionlock.models import ActivityLock
+from peerreview.models import PeerReviewComponent, StudentPeerReview
 
 from log.models import LogEntry
 from pages.models import Page, ACL_ROLES
@@ -174,8 +175,15 @@ def _course_info_student(request, course_slug):
     
     activity_data = []
     student = Member.objects.get(offering=course, person__userid=request.user.username, role='STUD')
+    review_column = False
     for activity in activities:
         data = {}
+        try:
+            peerreview = PeerReviewComponent.objects.get(activity=activity)
+            data['peerreview'] = peerreview
+            review_column = True
+        except:
+            pass
         data['act'] = activity
         data['grade_display'] = activity.display_grade_student(student.person)
         activity_data.append(data)
@@ -185,7 +193,7 @@ def _course_info_student(request, course_slug):
     if course.discussion:
         discussion_activity = discuss_activity.recent_activity(member)
         
-    context = {'course': course, 'member': student, 'activity_data': activity_data, 'any_group': any_group, 
+    context = {'course': course, 'member': student, 'activity_data': activity_data, 'any_group': any_group, 'review_column': review_column, 
                'has_index': has_index, 'from_page': FROMPAGE['course'], 'discussion_activity': discussion_activity}
     
     return render_to_response("grades/course_info_student.html", context,

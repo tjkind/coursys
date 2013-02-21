@@ -99,15 +99,23 @@
 		<th scope="col">Due In</th>
 		<th scope="col">Status</th>
 		<th scope="col">Grade</th>
+        {% if review_column %}
+        <th scope="col">Peers Review</th>
+        {% endif %}
 	    </tr>
 	</thead>
-        <tbody>
+    <tbody>
 	    {% for data in activity_data %}
             <tr>
 		<td scope="row"><a href="{{data.act.get_absolute_url}}">{{ data.act.display_label }}</a></td>
 		<td class="{{data.act.due_class}}">{{ data.act.due_in_str }}</td>
 		<td>{{ data.act.get_status_display }}</td>
 		<td>{{ data.grade_display }}</td>
+            {% if data.peerreview %}
+                <td><a href="www.google.com">Start</a></td>
+            {% else %}
+                <td></td>
+            {% endif %}
             </tr>
 	    {% endfor %}
 	</tbody>

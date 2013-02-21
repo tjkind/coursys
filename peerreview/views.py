@@ -20,7 +20,7 @@ def add_peer_review_component(request, course_slug, activity_slug):
         form = AddPeerReviewComponentForm(class_size, request.POST)
         if form.is_valid():
             try: #see if peerreview component already exists for this activity
-                peerreview_component = PeerReviewComponent.objects.get(pk=activity.pk)
+                peerreview_component = PeerReviewComponent.objects.get(activity=activity)
                 peerreview_component.due_date = form.cleaned_data['due_date']
                 peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
                 peerreview_component.save()
