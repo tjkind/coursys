@@ -12,9 +12,10 @@ from courselib.auth import requires_role, HttpResponseRedirect, \
 
 from grades.models import Activity
 from coredata.models import Course, CourseOffering
-from peerreview.forms import AddPeerReviewComponentForm, StudentLockForm
+from peerreview.forms import AddPeerReviewComponentForm
 from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock
+from submission.models import get_current_submission
 
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
@@ -77,11 +78,8 @@ def _request_student_lock(request, course_slug, student_member, activity):
             return HttpResponseRedirect(reverse('peerreview.views.student_view', kwargs={'course_slug': course_slug, 'activity_slug': activity.slug}))
         else:
             return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course_slug}))
-    else:
-        form = StudentLockForm()
     
     context = {
-        'form':form,
         'course':course,
         'activity':activity,
     }
@@ -90,7 +88,11 @@ def _request_student_lock(request, course_slug, student_member, activity):
 def _student_peer_review(request, course_slug, student_member, activity):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     messages.warning(request, "You are Locked")
+
+    submitted_components = get_current_submission(student=student_member.person, activity=activity)
+    
     context = {
+        'submitted_components':submitted_components,
         'course':course,
         'activity':activity,
     }

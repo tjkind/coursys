@@ -41,8 +41,4 @@ class AddPeerReviewComponentForm(forms.Form):
                 self._errors["number_of_reviews"] = self.error_class(["Number of reviews has to be a number between 1 and class size: %i" % class_size])
             context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
             return context
-
-class StudentLockForm(forms.Form):
-    pass
-
     

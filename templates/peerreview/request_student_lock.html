@@ -25,11 +25,12 @@
         <form action="{% url peerreview.views.student_view course_slug=course.slug activity_slug=activity.slug %}" 
         enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
-            <p>In order to procceed to reviewing your peer's work, you must first agree to lock your submissions for this activity.</p>
+            <legend>Disclaimer</legend>
+            <p style="padding-left:3em;padding-right:3em;padding-top:1em;font-size:1.3em">By clicking on proceed to reviewing your peer's work, you will be agreeing to locking your current submissions for this activity.  Any further submissions or updates for this activity afterwards will not be accepted by the system.</p>
             <ul>
                 <li>
-                    <input class="submit" type="submit" name='cancel' value="Cancel" />
-                    <input class="submit" type="submit" value="Procceed" />
+                    <input class="submit" type="submit" name='cancel' value="Cancel" style="background-color:#FE642E;"/>
+                    <input class="submit" type="submit" value="Proceed" />
                 </li>
             </ul>
             </fieldset>
