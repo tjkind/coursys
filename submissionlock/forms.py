@@ -42,8 +42,10 @@ class StaffLockForm(LockForm):
                 except KeyError:
                     raise forms.ValidationError(u'Please fix indicated fields below')
 
-            if cleaned_data['lock_status'] == 'locked':
+            if cleaned_data['lock_status'] != 'lock_pending':
                 cleaned_data['lock_date'] = datetime.datetime.now()
+
+            if cleaned_data['lock_status'] == 'locked':
                 if self._activity_due_date == None:
                     pass
                 elif cleaned_data['lock_date'] < self._activity_due_date:
@@ -54,4 +56,5 @@ class StaffLockForm(LockForm):
             
             if cleaned_data['lock_status'] == 'lock_pending' and self._activity_due_date == None:
                 raise forms.ValidationError(u'You may only use "Unlock" option until there is a valid due date for this activity.')
+
         return cleaned_data
