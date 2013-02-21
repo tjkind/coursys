@@ -1,4 +1,5 @@
 from submission.models import GroupSubmission
+from submissionlock.models import is_student_locked
 from django.contrib.auth.decorators import login_required
 from coredata.models import Member, CourseOffering, Person
 from django.shortcuts import render_to_response, get_object_or_404#, redirect
@@ -41,6 +42,12 @@ def _show_components_student(request, course_slug, activity_slug, userid=None, t
     activity = get_object_or_404(course.activity_set,slug = activity_slug, deleted=False)
     student = get_object_or_404(Person, userid=userid)
     cansubmit = True
+
+    #check if student is locked
+    student_member = get_object_or_404(Member, person__userid=userid, offering__slug=course_slug)
+    if is_student_locked(activity=activity, student=student_member):
+        cansubmit = False
+        messages.add_message(request, messages.INFO, "This submission is now locked, no further submissions will be accepted.")
 
     submission, submitted_components = get_current_submission(student, activity, include_deleted=staff)
     if len(submitted_components) == 0:

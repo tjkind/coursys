@@ -82,12 +82,27 @@ def staff_edit_submission_lock(request, course_slug, activity_slug, userid):
                 )
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
-        if activity.due_date:
-            lock_date = activity.due_date
-        else:
-            lock_date = datetime.datetime.now()
+        lock_date = datetime.datetime.now()
+        lock_status = 'locked'
+        try:
+            student_lock = SubmissionLock.objects.get(activity=activity, member=student)
+            lock_date = student_lock.display_lock_date()
+            student_lock_status = student_lock.display_lock_status()
+            if student_lock_status == "Lock Pending":
+                if lock_date > datetime.datetime.now():
+                    lock_status = 'lock_pending'
+                else:
+                    lock_status = 'locked'
+            elif student_lock_status == "Locked":
+                lock_status = 'locked'
+            else:
+                lock_status = 'unlocked'
+        except:
+            if activity.due_date:
+                lock_date = activity.due_date
+                
         form_initials = {
-            'lock_status' : 'locked',
+            'lock_status' : lock_status,
             'lock_date' : lock_date,
         }
         form = StaffLockForm(initial=form_initials)
@@ -135,7 +150,7 @@ def staff_edit_activity_lock(request, course_slug, activity_slug):
             return HttpResponseRedirect(reverse('submissionlock.views.submission_lock', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
         if activity_lock:
-            activity_lock_status = _activity_lock_status(activity_lock=activity_lock, activity=activity)
+            activity_lock_status = activity_lock.display_lock_status()
             if activity_lock_status == "Lock Pending":
                 if activity_lock.effective_date > datetime.datetime.now():
                     lock_status = 'lock_pending'
@@ -145,7 +160,7 @@ def staff_edit_activity_lock(request, course_slug, activity_slug):
                 lock_status = 'locked'
             else:
                 lock_status = 'unlocked'
-            lock_date = activity_lock.effective_date
+            lock_date = activity_lock.display_lock_date()
         else:
             lock_status = 'locked'
             if activity.due_date:
