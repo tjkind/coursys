@@ -14,12 +14,14 @@ $(document).ready(function() {
 {% endblock %}
 
 {% block subbreadcrumbs %}
+    <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+    <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
     <li>&gt; Configure Peer Review Component</li>
 {% endblock %}
 
 {% block content %}
     <div class="form_container">
-        <form action="{% url peerreview.views.add_peer_review_component course_slug=course_slug activity_slug=activity_slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
+        <form action="{% url peerreview.views.add_peer_review_component course_slug=course.slug activity_slug=activity.slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Configure Peer Review Component</legend>
             {{ form|as_dl }}

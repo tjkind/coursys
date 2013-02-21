@@ -7,11 +7,13 @@ from urlparse import urlparse
 from courselib.auth import requires_role, HttpResponseRedirect, \
     ForbiddenResponse, requires_course_staff_by_slug
 from grades.models import Activity
+from coredata.models import Course, CourseOffering
 from peerreview.forms import AddPeerReviewComponentForm
 from peerreview.models import *
 
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
+    course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
     if request.method == 'POST':
@@ -34,8 +36,8 @@ def add_peer_review_component(request, course_slug, activity_slug):
 
     context = {
         'form' : form,
-        'course_slug' : course_slug,
-        'activity_slug' : activity_slug,
+        'course' : course,
+        'activity' : activity,
     }
     return render(request, "peerreview/add_peer_review_component.html", context)
 
