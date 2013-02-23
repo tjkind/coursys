@@ -1,0 +1,94 @@
+{% extends "grades/base.html" %}
+{% load course_display %}
+
+{% block title %}{{ activity.name }} Peer Review Information{% endblock %}
+{% block h1 %}{{ activity.name }} Peer Review Information{% endblock %}
+
+{% block grades_headextra %}
+<script type="text/javascript">
+    $(document).ready(function() {
+	addLinkClickStyleClass('a.redbutton', 'redbutton_onclick');
+	oTable = $('#student_grades').dataTable({
+                "bPaginate": false,
+		"bJQueryUI": true,
+		"aaSorting": [[0, "asc"]],
+		"aoColumns": [
+		    null,
+		    null,
+		    null,
+		    { "sType": "by-nolink" },
+		    {% if activity.group %}null,{% endif %}
+		    {% if not activity.is_numeric and activity.is_calculated %}{ "sType": "by-mark" },{% endif %}
+		    {% if activity.is_numeric %}{ "sType": "by-nolinkmark" }{% else %}{ "sType": "by-nolinkletter" }{% endif %}
+		    {% if not activity.is_calculated and activity.is_numeric %},{ "sType": "by-marklink" }{% endif %}
+		    {% if not activity.is_calculated %},{ "sType": "by-anything" }{% endif %}
+		    {% if activity.is_calculated and activity.is_numeric %},{ "bSortable": false }{% endif %}
+		]
+	});
+    });
+</script>
+{% endblock %}
+
+{% block subbreadcrumbs %}
+<li>&gt; <a href="{{course.get_absolute_url}}">{{ course.name }}</a></li><li>&gt; {{ activity.name }}</li>
+{% endblock %}
+
+{% block actions %}
+{% endblock %}
+
+{% block content %}
+<div class="table_container">
+    <table class="info">
+        <title>Peer Review</title>
+        <tbody>
+	    <tr>
+                <th class="ui-state-default">Activity Name</th>
+                <td>{{ activity.name }}</td>
+            </tr>
+            <tr>
+                <th class="ui-state-default">Due date</th>
+                <td class="{{activity.due_class}}">{{activity.due_date}}</td>
+            </tr>
+            <tr>
+                <th class="ui-state-default">Reviews Per Student</th>
+                <td>{{ peerreview.number_of_reviews }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% block activity_info_grades_block %}
+
+<div class="datatable_container">
+	{% if students %}
+    <table class="display" id="student_grades">
+        <thead>
+            <tr>
+                <th scope="col">Last name</th>
+                <th scope="col">First name</th>
+		        <th scope="col">User ID</th>
+		        <th scope="col">Stu #</th>
+		        <th scope="col">Review</th>
+            </tr>
+	</thead>
+        <tbody>
+	    {% for member in students %}
+	    {% with member.person.userid as userid %}
+	    {% with grades|hash:userid as grade %}
+	    <tr>
+		    <td>{{ member.person.last_name }}</td>
+		    <td>{{ member.person.first_with_pref }}</td>
+		    <td>{{ member.person.userid }}</td>
+		    <td><a href="{% url grades.views.student_info course_slug=course.slug userid=member.person.userid %}" title="student info">{{ member.person.emplid }}</a></td>
+            <td><a href="">View</a></td>
+        </tr>
+        {% endwith %}
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No students enrolled.</p>
+    {% endif %}</div>
+{% endblock %}
+{% endblock %}

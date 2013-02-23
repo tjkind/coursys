@@ -30,12 +30,14 @@ def add_peer_review_component(request, course_slug, activity_slug):
                 peerreview_component.due_date = form.cleaned_data['due_date']
                 peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
                 peerreview_component.save()
+                print "Exists and edited"
             except: #else create a peerreview component
                 peerreview_component = PeerReviewComponent.objects.create(
                     activity = activity,
                     due_date = form.cleaned_data['due_date'],
                     number_of_reviews = form.cleaned_data['number_of_reviews'],
                 )
+                print "Created"
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
         form = AddPeerReviewComponentForm(class_size)
@@ -46,6 +48,47 @@ def add_peer_review_component(request, course_slug, activity_slug):
         'activity' : activity,
     }
     return render(request, "peerreview/add_peer_review_component.html", context)
+
+@requires_course_staff_by_slug
+def edit_peer_review_component(request, course_slug, activity_slug):
+    peerreview = PeerReviewComponent.objects.get(activity=activity)
+    course = get_object_or_404(CourseOffering, slug = course_slug)
+    activity = get_object_or_404(Activity, slug = activity_slug)
+    class_size = activity.offering.members.count()
+    if request.method == 'POST':
+        form = EditPeerReviewComponentForm(class_size, request.POST)
+        if form.is_valid():
+            peerreview_component.due_date = form.cleaned_data['due_date']
+            peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
+            peerreview_component.save()
+            print "Exists and edited"
+            return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+    else:
+        form = EditPeerReviewComponentForm(class_size)
+
+    context = {
+        'form' : form,
+        'course' : course,
+        'activity' : activity,
+    }
+    return render(request, "peerreview/edit_peer_review_component.html", context)
+    
+def peer_review_info_staff(request, course_slug, activity_slug):
+    course = get_object_or_404(CourseOffering, slug=course_slug)
+    activity = get_object_or_404(Activity, slug=activity_slug)
+    
+    try:
+        peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+        print "Found"
+    except:
+        peerreview = None
+        print "Not Found"
+
+    # build list of all students and grades
+    students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')
+
+    context = {'course': course, 'activity': activity, 'students': students, 'peerreview':peerreview}
+    return render(request, 'peerreview/peer_review_info_staff.html', context)
 
 @login_required
 def student_view(request, course_slug, activity_slug):
@@ -85,7 +128,7 @@ def _request_student_lock(request, course_slug, student_member, activity):
     }
     return render(request, "peerreview/request_student_lock.html", context)
 
-def _student_peer_review(request, course_slug, student_member, activity):
+def _student_peer_review(request, course_slug, student_member, activity, staff=False):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     messages.warning(request, "You are Locked")
 

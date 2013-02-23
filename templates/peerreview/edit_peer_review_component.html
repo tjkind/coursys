@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load form_display %}
-{% block title %}Add Peer Review Component{% endblock %}
+{% block title %}Edit Peer Review Component{% endblock %}
 {% block h1 %}{% endblock %}
 
 {% block headextra %}
@@ -16,14 +16,14 @@ $(document).ready(function() {
 {% block subbreadcrumbs %}
     <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
     <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
-    <li>&gt; Add Peer Review Component</li>
+    <li>&gt; Edit Peer Review Component</li>
 {% endblock %}
 
 {% block content %}
     <div class="form_container">
         <form action="{% url peerreview.views.add_peer_review_component course_slug=course.slug activity_slug=activity.slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
-            <legend>Add Peer Review Component</legend>
+            <legend>Edit Peer Review Component</legend>
             {{ form|as_dl }}
             <p><input type="submit" class="submit" value="Submit" /></p>
             </fieldset>

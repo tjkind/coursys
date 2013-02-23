@@ -125,7 +125,8 @@ Column logic:
         {% if activity.is_numeric %}
         <li><a href="{% url marking.views.manage_activity_components course_slug=course.slug,activity_slug=activity.slug%}">Configure Marking</a></li>
         {% endif %}
-	    <li><a href="{% url peerreview.views.add_peer_review_component course_slug=course.slug, activity_slug=activity.slug%}">Configure Peer Review</a></li>
+        
+	    <li><a href="{% url peerreview.views.peer_review_info_staff course_slug=course.slug, activity_slug=activity.slug%}">Configure Peer Review</a></li>
         <li class="newsec"></li>
 	    {% if sub_comps %}
 	    <li><a href="{% url submission.views.download_activity_files course_slug=course.slug, activity_slug=activity.slug%}">Download Submissions</a></li>
