@@ -24,7 +24,7 @@ class AddPeerReviewComponentForm(forms.Form):
         self.class_size = class_size
     due_date = forms.SplitDateTimeField(label=mark_safe('Deadline'), required=True,
         help_text='Time format: HH:MM:SS, 24-hour time', widget=PeerReviewSplitDateTimeWidget())
-    number_of_reviews = forms.IntegerField(initial=1, required=True,
+    number_of_reviews = forms.IntegerField(required=True,
         help_text= 'This is the number of peer reviews each student is expected to perform')
     
     def clean(self):
@@ -38,27 +38,4 @@ class AddPeerReviewComponentForm(forms.Form):
             if (number_of_reviews < 1 or number_of_reviews > class_size):
                 self._errors["number_of_reviews"] = self.error_class(["Number of reviews has to be a number between 1 and class size: %i" % class_size])
             context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
-            return context
-
-class EditPeerReviewComponentForm(forms.Form):
-    def __init__(self, class_size, peerreview, *args, **kwargs):
-        super(AddPeerReviewComponentForm, self).__init__(*args, **kwargs)
-        self.class_size = class_size
-    due_date = forms.SplitDateTimeField(label=mark_safe('Deadline'), required=True,
-        help_text='Time format: HH:MM:SS, 24-hour time', widget=PeerReviewSplitDateTimeWidget())
-    number_of_reviews = forms.IntegerField(initial=1, required=True,
-        help_text= 'This is the number of peer reviews each student is expected to perform')
-    
-    def clean(self):
-        class_size = self.class_size
-        due_date = self.cleaned_data.get('due_date')
-        number_of_reviews = self.cleaned_data.get('number_of_reviews')
-        
-        if due_date and number_of_reviews:   
-            if (due_date < datetime.datetime.today()):
-                self._errors["due_date"] = self.error_class(["Selected due datetime is before current date"])
-            if (number_of_reviews < 1 or number_of_reviews > class_size):
-                self._errors["number_of_reviews"] = self.error_class(["Number of reviews has to be a number between 1 and class size: %i" % class_size])
-            context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
-            return context
-    
+            return context 

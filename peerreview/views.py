@@ -51,20 +51,23 @@ def add_peer_review_component(request, course_slug, activity_slug):
 
 @requires_course_staff_by_slug
 def edit_peer_review_component(request, course_slug, activity_slug):
-    peerreview = PeerReviewComponent.objects.get(activity=activity)
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
+    peerreview_component = get_object_or_404(PeerReviewComponent, activity=activity)
     if request.method == 'POST':
-        form = EditPeerReviewComponentForm(class_size, request.POST)
+        form = AddPeerReviewComponentForm(class_size, request.POST)
         if form.is_valid():
             peerreview_component.due_date = form.cleaned_data['due_date']
             peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
             peerreview_component.save()
-            print "Exists and edited"
-            return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+        return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
-        form = EditPeerReviewComponentForm(class_size)
+        form = AddPeerReviewComponentForm(class_size, initial=
+        {
+            'due_date':peerreview_component.due_date,
+            'number_of_reviews':peerreview_component.number_of_reviews,
+        })
 
     context = {
         'form' : form,

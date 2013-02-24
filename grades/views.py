@@ -225,6 +225,14 @@ def _activity_info_staff(request, course_slug, activity_slug):
         return NotFoundResponse(request)
     
     activity = activities[0]
+    
+    #Ivan's snippet insert
+    try:
+        peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+        print "found"
+    except:
+        peerreview = None
+        print "not found"
 
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
@@ -301,7 +309,7 @@ def _activity_info_staff(request, course_slug, activity_slug):
                'activity_lock': activity_lock, 'display_lock': display_lock,
                'from_page': FROMPAGE['activityinfo'],
                'sub_comps': sub_comps, 'mark_comps': mark_comps,
-               'submitted': submitted, 'marked': marked}
+               'submitted': submitted, 'marked': marked, 'peerreview': peerreview}
     return render_to_response('grades/activity_info.html', context, context_instance=RequestContext(request))
 
 
