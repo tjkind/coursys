@@ -350,7 +350,8 @@ urlpatterns += patterns('',
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/add/$', 'peerreview.views.add_peer_review_component'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/edit/$', 'peerreview.views.edit_peer_review_component'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/$', 'peerreview.views.peer_review_info_staff'),
-    url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/$', 'peerreview.views.student_view'),
+    url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/(?P<peerreview_slug>[\w-]+)/$', 'peerreview.views.student_review'),
+    url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/$', 'peerreview.views.peer_review_info_student'),
 
 )
 

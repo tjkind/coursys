@@ -11,10 +11,10 @@ from courselib.auth import requires_role, HttpResponseRedirect, \
     ForbiddenResponse, requires_course_staff_by_slug, is_course_student_by_slug
 
 from grades.models import Activity
-from coredata.models import Course, CourseOffering
+from coredata.models import Course, CourseOffering, Member
 from peerreview.forms import AddPeerReviewComponentForm
 from peerreview.models import *
-from submissionlock.models import is_student_locked, SubmissionLock
+from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
 from submission.models import get_current_submission
 
 @requires_course_staff_by_slug
@@ -76,6 +76,7 @@ def edit_peer_review_component(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/edit_peer_review_component.html", context)
     
+@requires_course_staff_by_slug
 def peer_review_info_staff(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug=course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug)
@@ -94,20 +95,22 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     return render(request, 'peerreview/peer_review_info_staff.html', context)
 
 @login_required
-def student_view(request, course_slug, activity_slug):
+def peer_review_info_student(request, course_slug, activity_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
-    activity = Activity.objects.get(slug=activity_slug)
+    course = get_object_or_404(CourseOffering, slug = course_slug)
+    activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
+    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+    
     locked = is_student_locked(activity=activity, student=student_member)
 
     if locked:
-        return _student_peer_review(request=request, course_slug=course_slug, student_member=student_member, activity=activity)
+        return _student_peer_review(request=request, course=course, student_member=student_member, peerreview=peerreview)
     elif not locked:
-        return _request_student_lock(request=request, course_slug=course_slug, student_member=student_member, activity=activity)
+        return _request_student_lock(request=request, course=course, student_member=student_member, activity=activity)
     else:
         return ForbiddenResponse(request)
 
-def _request_student_lock(request, course_slug, student_member, activity):
-    course = get_object_or_404(CourseOffering, slug = course_slug)
+def _request_student_lock(request, course, student_member, activity):
     if request.method == 'POST':
         if 'cancel' not in request.POST:
             try:
@@ -121,9 +124,9 @@ def _request_student_lock(request, course_slug, student_member, activity):
                     activity=activity,
                     status='locked',
                 )
-            return HttpResponseRedirect(reverse('peerreview.views.student_view', kwargs={'course_slug': course_slug, 'activity_slug': activity.slug}))
+            return HttpResponseRedirect(reverse('peerreview.views.student_view', kwargs={'course_slug': course.slug, 'activity_slug': activity.slug}))
         else:
-            return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course_slug}))
+            return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course.slug}))
     
     context = {
         'course':course,
@@ -131,15 +134,35 @@ def _request_student_lock(request, course_slug, student_member, activity):
     }
     return render(request, "peerreview/request_student_lock.html", context)
 
-def _student_peer_review(request, course_slug, student_member, activity, staff=False):
-    course = get_object_or_404(CourseOffering, slug = course_slug)
-    messages.warning(request, "You are Locked")
+def _student_peer_review(request, course, student_member, peerreview):
+    activity = peerreview.activity
+    student_member_list = Member.objects.filter(offering=course, role="STUD").exclude(pk=student_member.pk)
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+    except:
+        activity_lock = False
 
-    submitted_components = get_current_submission(student=student_member.person, activity=activity)
+    review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
+    if len(review_components) < peerreview.number_of_reviews:
+        if activity_lock and activity_lock.display_lock_status()=="Locked":
+            submitted_students = []
+            for student in student_member_list:
+                sub = get_current_submission(student.person, activity)
+                if sub[0]:
+                    submitted_students.append(student)
+            review_components = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member, overlimit=True)
+        else:
+            locked_students = Member.objects.filter(offering=course, role="STUD", pk__in=SubmissionLock.objects.filter(member__in=(student_member_list)).values('member'))
+            review_components = generate_peerreview(peerreview=peerreview, students=locked_students, student_member=student_member)
     
     context = {
-        'submitted_components':submitted_components,
+        'review_components':review_components,
         'course':course,
         'activity':activity,
     }
     return render(request, "peerreview/student_peer_review.html", context)
+
+def student_review(request, course_slug, activity_slug, peerreview_slug):
+    peerreview = StudentPeerReview.objects.get(slug=peerreview_slug)
+    messages.warning(request,peerreview.reviewee)
+    return ForbiddenResponse(request)

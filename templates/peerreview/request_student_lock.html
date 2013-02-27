@@ -1,8 +1,8 @@
 {% extends "grades/base.html" %}
 {% load grade_student %}
 
-{% block title %}{{activity.name}} Peers Review{% endblock %}
-{% block h1 %}{{activity.name}} Peers Review{% endblock %}
+{% block title %}{{activity.name}} Peer Review{% endblock %}
+{% block h1 %}{{activity.name}} Peer Review{% endblock %}
 
 {% block grades_headextra %}
 <script type="text/javascript">
@@ -14,7 +14,7 @@
 {% block subbreadcrumbs %}
 <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
 <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
-<li>&gt; Peers Review</li>
+<li>&gt; Peer Review</li>
 {% endblock %}
 
 {% block actions %}
@@ -26,7 +26,8 @@
         enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Disclaimer</legend>
-            <p style="padding-left:3em;padding-right:3em;padding-top:1em;font-size:1.3em">By clicking on proceed to reviewing your peer's work, you will be agreeing to locking your current submissions for this activity.  Any further submissions or updates for this activity afterwards will not be accepted by the system.</p>
+            <p style="padding-left:3em;padding-right:3em;padding-top:1em;font-size:1.3em">By proceeding to review your peers' work, you agree to lock your current submissions for this activity.<br>
+            No further submissions or updates for this activity will be accepted by the system</p>
             <ul>
                 <li>
                     <input class="submit" type="submit" name='cancel' value="Cancel" style="background-color:#FE642E;"/>
