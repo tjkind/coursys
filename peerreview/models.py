@@ -53,6 +53,9 @@ def generate_peerreview(peerreview, students, student_member, overlimit=False):
         else:
             student_pending.append(student)
 
+    if not overlimit and (len(student_pending)+len(review_components))<number_of_reviews:
+        return None
+
     for student in student_pending:
         new_review = StudentPeerReview.objects.create(
             peer_review_component = peerreview,

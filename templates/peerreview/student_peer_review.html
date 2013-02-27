@@ -49,10 +49,14 @@
 {% endblock %}
 
 {% block content %}
-{% for review in review_components %}
-    <div class="review">
-        <div class="identifier">{{ review.identifier }}</div>
-        <button class="review_button" value="{{ review.slug }}">Review</button>
-    </div>
-{% endfor %}
+{% if review_components %}
+    {% for review in review_components %}
+        <div class="review">
+            <div class="identifier">{{ review.identifier }}</div>
+            <button class="review_button" value="{{ review.slug }}">Review</button>
+        </div>
+    {% endfor %}
+{% else %}
+    <h2>There aren't enough peers to review; go for a coffee and try again later, cowboy.</h2>
+{% endif %}
 {% endblock %}

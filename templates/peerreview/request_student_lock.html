@@ -22,7 +22,7 @@
 
 {% block content %}
     <div class="form_container">
-        <form action="{% url peerreview.views.student_view course_slug=course.slug activity_slug=activity.slug %}" 
+        <form action="{% url peerreview.views.peer_review_info_student course_slug=course.slug activity_slug=activity.slug %}" 
         enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Disclaimer</legend>

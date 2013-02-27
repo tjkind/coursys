@@ -124,7 +124,7 @@ def _request_student_lock(request, course, student_member, activity):
                     activity=activity,
                     status='locked',
                 )
-            return HttpResponseRedirect(reverse('peerreview.views.student_view', kwargs={'course_slug': course.slug, 'activity_slug': activity.slug}))
+            return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course.slug, 'activity_slug': activity.slug}))
         else:
             return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course.slug}))
     
