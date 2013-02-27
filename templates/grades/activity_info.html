@@ -255,6 +255,14 @@ Column logic:
                 </td>
             </tr>
             {% endif %}
+            {% if peerreview %}
+            <tr>
+                <th class="ui-state-default">Peer Review</th>
+                <td>
+                {{peerreview.number_of_reviews}} per student, due {{peerreview.due_date}}
+                </td>
+            </tr>
+            {% endif %}
             {% if activity.config.url %}
             <tr>
                 <th class="ui-state-default">More Information</th>
