@@ -75,6 +75,26 @@ def edit_peer_review_component(request, course_slug, activity_slug):
         'activity' : activity,
     }
     return render(request, "peerreview/edit_peer_review_component.html", context)
+
+#peer_reviews_view_staff is work in progress!    
+@requires_course_staff_by_slug
+def peer_reviews_view_staff(request, course_slug, activity_slug):
+    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
+    course = get_object_or_404(CourseOffering, slug = course_slug)
+    activity = get_object_or_404(Activity, slug = activity_slug, offering=course)
+    peer_review_component = get_object_or_404(PeerReviewComponent, activity = activity)
+    received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component).filter(reviewee = student_member)
+    given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component).filter(reviewer = student_member) 
+    
+    context = {
+        'student': student_member,
+        'activity': activity,
+        'received_reviews': received_reviews,
+        'given_reviews': given_reviews
+    }
+    
+    return render(request, 'peerreview/peer_reviews_view_staff.html')
+    
     
 @requires_course_staff_by_slug
 def peer_review_info_staff(request, course_slug, activity_slug):
@@ -90,8 +110,25 @@ def peer_review_info_staff(request, course_slug, activity_slug):
 
     # build list of all students and grades
     students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')
+    received_reviews = []
+    given_reviews = []
+    if (peerreview):
+        for student in students:
+            try:
+                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview).filter(reviewee = student)))
+            except:
+                pass
+            try:
+                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview).filter(reviewer = student)))
+            except:
+                pass
+                
+        print received_reviews
+        print given_reviews
 
-    context = {'course': course, 'activity': activity, 'students': students, 'peerreview':peerreview}
+        combined = zip(students, received_reviews, given_reviews)
+            
+    context = {'course': course, 'activity': activity, 'students': combined, 'peerreview':peerreview}
     return render(request, 'peerreview/peer_review_info_staff.html', context)
 
 @login_required

@@ -75,6 +75,8 @@
 		        <th scope="col">User ID</th>
 		        <th scope="col">Stu #</th>
 		        <th scope="col">Review</th>
+		        <th scope="col">Reviews Given</th>
+		        <th scope="col">Reviews Received</th>
             </tr>
 	</thead>
         <tbody>
@@ -82,11 +84,13 @@
 	    {% with member.person.userid as userid %}
 	    {% with grades|hash:userid as grade %}
 	    <tr>
-		    <td>{{ member.person.last_name }}</td>
-		    <td>{{ member.person.first_with_pref }}</td>
-		    <td>{{ member.person.userid }}</td>
-		    <td><a href="{% url grades.views.student_info course_slug=course.slug userid=member.person.userid %}" title="student info">{{ member.person.emplid }}</a></td>
+		    <td>{{ member.0.person.last_name }}</td>
+		    <td>{{ member.0.person.first_with_pref }}</td>
+		    <td>{{ member.0.person.userid }}</td>
+		    <td><a href="{% url grades.views.student_info course_slug=course.slug userid=member.0.person.userid %}" title="student info">{{ member.0.person.emplid }}</a></td>
             <td><a href="">View</a></td>
+            <td>{{ member.1 }}</td>
+            <td>{{ member.2 }}</td>
         </tr>
         {% endwith %}
         {% endwith %}

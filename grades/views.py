@@ -226,13 +226,10 @@ def _activity_info_staff(request, course_slug, activity_slug):
     
     activity = activities[0]
     
-    #Ivan's snippet insert
     try:
         peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-        print "found"
     except:
         peerreview = None
-        print "not found"
 
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
