@@ -147,8 +147,8 @@ def _student_peer_review(request, course, student_member, peerreview):
         if activity_lock and activity_lock.display_lock_status()=="Locked":
             submitted_students = []
             for student in student_member_list:
-                sub = get_current_submission(student.person, activity)
-                if sub[0]:
+                sub, sub_component = get_current_submission(student.person, activity)
+                if sub:
                     submitted_students.append(student)
             review_components = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member, overlimit=True)
         else:

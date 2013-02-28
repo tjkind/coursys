@@ -37,6 +37,7 @@ def generate_peerreview(peerreview, students, student_member, overlimit=False):
     priority_list = []
 
     for student in students:
+        #check if student_member is already reviewing student's work
         if(StudentPeerReview.objects.filter(peer_review_component=peerreview, reviewer=student_member, reviewee=student)):
             continue
         else:
@@ -57,11 +58,20 @@ def generate_peerreview(peerreview, students, student_member, overlimit=False):
         return None
 
     for student in student_pending:
+        unique = False
+        identifier = identifier_generator()
+        while not unique:
+            try:
+                check_unique = StudentPeerReview.objects.get(peer_review_component=peerreview, identifier=identifier)
+                identifier = identifier_generator()
+            except:
+                unique = True
+        
         new_review = StudentPeerReview.objects.create(
             peer_review_component = peerreview,
             reviewer = student_member,
             reviewee = student,
-            identifier = identifier_generator(),
+            identifier = identifier,
         )
         review_components.append(new_review)
 
