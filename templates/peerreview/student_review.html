@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load form_display %}
+
+{% block title %}{{student_review.identifier}}{% endblock %}
+{% block h1 %}{{student_review.identifier}}{% endblock %}
+
+{% block headextra %}
+<style type="text/css">
+.submission_component {
+    background:#F2EFE9;
+    height: 5em;
+    width:50%;
+    margin-bottom:1em;
+    border-style:solid;
+    border-width:1px;
+    border-color:#BFBAB0;
+}
+</style>
+{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+<li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
+<li><a href="{% url peerreview.views.peer_review_info_student course_slug=course.slug activity_slug=activity.slug %}">&gt; Peer Review</a></li>
+<li>&gt; {{student_review.identifier}}</li>
+{% endblock %}
+
+{% block content%}
+<div class="form_container">
+<form action="{% url peerreview.views.student_review course_slug=course.slug activity_slug=activity.slug peerreview_slug=student_review.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+<fieldset>
+{% ifequal submitted_pair|length 0 %}
+    {# there is no component #}
+{% else %}
+    {% for pair in submitted_components %}
+    <div>
+    <h2>{{pair.0.title}}</h2>
+
+    {% ifequal pair.1 None %}
+            <img src="{{MEDIA_URL}}icons/cancel.png" alt="warning" />
+            Doesn't seem to be anything here
+    {% else %}
+            <img src="{{MEDIA_URL}}icons/attach.png" alt="download" /><a href="{% url peerreview.views.download_file course_slug=course.slug activity_slug=activity.slug component_slug=pair.0.slug submission_id=pair.1.submission.id peerreview_slug=student_review.slug %}">Download {% if pair.1.get_filename %}{{ pair.1.get_filename }}{% else %}submission{% endif %}</a>
+    {% endifequal %}
+    </div>
+    {% endfor %}
+
+{% endifequal %}
+<h2>Comments</h2>
+{{ form }}
+<p><input type="submit" class="submit" value="Submit" /></p>
+</fieldset>
+</form>
+</div>
+
+{% endblock %}

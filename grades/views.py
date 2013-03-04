@@ -344,7 +344,12 @@ def _activity_info_student(request, course_slug, activity_slug):
         reason_msg = 'Summary statistics disabled for unreleased activities.'
         activity_stat = None
 
-    context = {'course': course, 'activity': activity, 'grade': grade,
+    try:
+        peerreview = PeerReviewComponent.objects.get(activity=activity)
+    except:
+        peerreview = None
+
+    context = {'course': course, 'activity': activity, 'grade': grade, 'peerreview': peerreview,
                'activity_stat': activity_stat, 'reason_msg': reason_msg}
     return render_to_response('grades/activity_info_student.html', context, context_instance=RequestContext(request))
 
