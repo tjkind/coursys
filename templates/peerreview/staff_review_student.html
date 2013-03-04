@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% block title %}Peer Reviews{% endblock %}
+{% block h1 %}{% endblock %}
+
+{% block headextra %}
+{% endblock %}
+
+{% block subbreadcrumbs %}
+    <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+    <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
+    <li><a href="{% url peerreview.views.peer_review_info_staff course_slug=course.slug, activity_slug=activity.slug%}">&gt; Configure Peer Review</a></li>
+    <li>&gt; {{ student.person.userid }}'s Peer Review</li>
+{% endblock %}
+
+{% block content %}
+    <div>
+    <h1>Received Reviews</h1>
+    {% if received_reviews %}
+        {% for review in received_reviews %}
+            <p>
+                {{ review.feedback }}
+            </p>
+            <p>From: <a href="{% url grades.views.student_info course_slug=course.slug userid=review.reviewer.person.userid %}">{{ review.reviewer.person.userid }}</a> </p>
+        {% endfor %}
+    {% else %}
+        <p> This student has not received any reviews for this peer review assignment</p>
+    {% endif %}
+    <h1>Given Reviews</h1>
+    {% if given_reviews %}    
+        {% for review in given_reviews %}
+            <p>
+                {{ review.feedback }}
+            </p>
+            <p>To: <a href="{% url grades.views.student_info course_slug=course.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a> </p>
+        {% endfor %}
+    {% else %}
+        <p> This student has not given any reviews for this peer review assignment</p>
+    {% endif %}
+    </div>
+{% endblock %}
