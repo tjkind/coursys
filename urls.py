@@ -353,6 +353,7 @@ urlpatterns += patterns('',
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/(?P<peerreview_slug>[\w-]+)/$', 'peerreview.views.student_review'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/(?P<peerreview_slug>[\w-]+)/' + COMPONENT_SLUG + '/' + SUBMISSION_ID + '/get$', 'peerreview.views.download_file'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/$', 'peerreview.views.peer_review_info_student'),
+    url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/view/' + USERID_SLUG + '/$', 'peerreview.views.staff_review_student'),
 
 )
 

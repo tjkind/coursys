@@ -76,24 +76,35 @@ def edit_peer_review_component(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/edit_peer_review_component.html", context)
 
-#peer_reviews_view_staff is work in progress!    
 @requires_course_staff_by_slug
-def peer_reviews_view_staff(request, course_slug, activity_slug):
-    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
+def staff_review_student(request, course_slug, activity_slug, userid):
+    try:
+        student_member = get_object_or_404(Member, person__userid=userid, offering__slug=course_slug)
+        print "student found"
+        print student_member.person.userid
+    except:
+        print "student not found"
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug, offering=course)
     peer_review_component = get_object_or_404(PeerReviewComponent, activity = activity)
-    received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component).filter(reviewee = student_member)
-    given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component).filter(reviewer = student_member) 
+    try:
+        received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
+    except:
+        pass
+    try:
+        given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewer = student_member)
+    except:
+        pass
     
     context = {
         'student': student_member,
         'activity': activity,
+        'course': course,
         'received_reviews': received_reviews,
         'given_reviews': given_reviews
     }
     
-    return render(request, 'peerreview/peer_reviews_view_staff.html')
+    return render(request, "peerreview/staff_review_student.html", context)
     
     
 @requires_course_staff_by_slug
@@ -103,10 +114,8 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     
     try:
         peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-        print "Found"
     except:
         peerreview = None
-        print "Not Found"
 
     # build list of all students and grades
     students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')
@@ -115,16 +124,13 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     if (peerreview):
         for student in students:
             try:
-                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview).filter(reviewee = student)))
+                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewee = student)))
             except:
                 pass
             try:
-                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview).filter(reviewer = student)))
+                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewer = student)))
             except:
                 pass
-                
-        print received_reviews
-        print given_reviews
 
         combined = zip(students, received_reviews, given_reviews)
             
