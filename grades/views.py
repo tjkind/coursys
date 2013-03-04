@@ -241,7 +241,13 @@ def _activity_info_staff(request, course_slug, activity_slug):
             display_lock = True
     except:
         display_lock = False
-        activity_lock = ""
+        activity_lock = None
+
+    if peerreview and activity_lock:
+        if activity_lock.display_lock_status() != 'Locked':
+            messages.warning(request, "Students may not start their peer review until activity lock is effective")
+    elif peerreview:
+        messages.warning(request, "Student may not start their peer review until activity is locked.")
 
     # build list of all students and grades
     students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')

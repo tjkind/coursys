@@ -30,7 +30,9 @@
 {% endblock %}
 
 {% block subbreadcrumbs %}
-<li>&gt; <a href="{{course.get_absolute_url}}">{{ course.name }}</a></li><li>&gt; {{ activity.name }}</li>
+<li>&gt; <a href="{{course.get_absolute_url}}">{{ course.name }}</a></li>
+<li>&gt; <a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">{{ activity.name }}</a></li>
+<li>&gt; Peer Review</li>
 {% endblock %}
 
 {% block actions %}

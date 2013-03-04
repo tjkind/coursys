@@ -21,6 +21,13 @@ from submission.models import get_current_submission
 def add_peer_review_component(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+    except:
+        activity_lock = None
+        messages.error(request, "May not add Peer Review to this activity without an activity lock")
+        return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+
     class_size = activity.offering.members.count()
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(class_size, request.POST)
@@ -55,6 +62,14 @@ def edit_peer_review_component(request, course_slug, activity_slug):
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
     peerreview_component = get_object_or_404(PeerReviewComponent, activity=activity)
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+        if activity_lock.display_lock_status() != "Locked":
+            messages.warning(request, "Students may not start peer review before activity lock is effective.")
+    except:
+        activity_lock = None
+        messages.error(request, "You do not have an activity lock, students may not access peer review without an effective activity lock.")
+
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(class_size, request.POST)
         if form.is_valid():
