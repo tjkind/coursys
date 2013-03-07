@@ -16,7 +16,8 @@ $(document).ready(function() {
 {% block subbreadcrumbs %}
     <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
     <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
-    <li>&gt; Edit Peer Review Component</li>
+    <li>&gt; <a href="{% url peerreview.views.peer_review_info_staff course_slug=course.slug activity_slug=activity.slug %}">Peer Review</a></li>
+    <li>&gt; Edit</li>
 {% endblock %}
 
 {% block content %}

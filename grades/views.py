@@ -241,7 +241,13 @@ def _activity_info_staff(request, course_slug, activity_slug):
             display_lock = True
     except:
         display_lock = False
-        activity_lock = ""
+        activity_lock = None
+
+    if peerreview and activity_lock:
+        if activity_lock.display_lock_status() != 'Locked':
+            messages.warning(request, "Students may not start their peer review until activity lock is effective")
+    elif peerreview:
+        messages.warning(request, "Student may not start their peer review until activity is locked.")
 
     # build list of all students and grades
     students = Member.objects.filter(role="STUD", offering=activity.offering).select_related('person')
@@ -344,7 +350,12 @@ def _activity_info_student(request, course_slug, activity_slug):
         reason_msg = 'Summary statistics disabled for unreleased activities.'
         activity_stat = None
 
-    context = {'course': course, 'activity': activity, 'grade': grade,
+    try:
+        peerreview = PeerReviewComponent.objects.get(activity=activity)
+    except:
+        peerreview = None
+
+    context = {'course': course, 'activity': activity, 'grade': grade, 'peerreview': peerreview,
                'activity_stat': activity_stat, 'reason_msg': reason_msg}
     return render_to_response('grades/activity_info_student.html', context, context_instance=RequestContext(request))
 

@@ -12,7 +12,7 @@ from courselib.auth import requires_role, HttpResponseRedirect, \
 
 from grades.models import Activity
 from coredata.models import Course, CourseOffering, Member
-from peerreview.forms import AddPeerReviewComponentForm
+from peerreview.forms import AddPeerReviewComponentForm, StudentReviewForm
 from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
@@ -21,6 +21,13 @@ from submission.models import SubmissionComponent, GroupSubmission, StudentSubmi
 def add_peer_review_component(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+    except:
+        activity_lock = None
+        messages.error(request, "May not add Peer Review to this activity without an activity lock")
+        return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+
     class_size = activity.offering.members.count()
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(class_size, request.POST)
@@ -55,6 +62,14 @@ def edit_peer_review_component(request, course_slug, activity_slug):
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
     peerreview_component = get_object_or_404(PeerReviewComponent, activity=activity)
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+        if activity_lock.display_lock_status() != "Locked":
+            messages.warning(request, "Students may not start peer review before activity lock is effective.")
+    except:
+        activity_lock = None
+        messages.error(request, "You do not have an activity lock, students may not access peer review without an effective activity lock.")
+
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(class_size, request.POST)
         if form.is_valid():
@@ -178,69 +193,100 @@ def peer_review_info_student(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-    
-    locked = is_student_locked(activity=activity, student=student_member)
-
-    if locked:
-        return _student_peer_review(request=request, course=course, student_member=student_member, peerreview=peerreview)
-    elif not locked:
-        return _request_student_lock(request=request, course=course, student_member=student_member, activity=activity)
-    else:
-        return ForbiddenResponse(request)
-
-def _request_student_lock(request, course, student_member, activity):
-    if request.method == 'POST':
-        if 'cancel' not in request.POST:
-            try:
-                student_lock = SubmissionLock.objects.get(activity=activity, member=student_member)
-                student_lock.status = 'locked'
-                student_lock.effective_date = datetime.datetime.now()
-                student_lock.save()
-            except:
-                submission_lock = SubmissionLock.objects.create(
-                    member=student_member,
-                    activity=activity,
-                    status='locked',
-                )
-            return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course.slug, 'activity_slug': activity.slug}))
-        else:
-            return HttpResponseRedirect(reverse('grades.views.course_info', kwargs={'course_slug': course.slug}))
-    
-    context = {
-        'course':course,
-        'activity':activity,
-    }
-    return render(request, "peerreview/request_student_lock.html", context)
-
-def _student_peer_review(request, course, student_member, peerreview):
-    activity = peerreview.activity
     student_member_list = Member.objects.filter(offering=course, role="STUD").exclude(pk=student_member.pk)
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
     except:
-        activity_lock = False
+        activity_lock = None
 
-    review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
-    if len(review_components) < peerreview.number_of_reviews:
-        if activity_lock and activity_lock.display_lock_status()=="Locked":
+    locked = is_student_locked(activity=activity, student=student_member)
+
+    reviewer_components = []
+    if activity_lock and locked:
+        reviewer_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
+        if len(reviewer_components) < peerreview.number_of_reviews:
             submitted_students = []
             for student in student_member_list:
                 sub, sub_component = get_current_submission(student.person, activity)
                 if sub:
                     submitted_students.append(student)
-            review_components = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member, overlimit=True)
-        else:
-            locked_students = Member.objects.filter(offering=course, role="STUD", pk__in=SubmissionLock.objects.filter(member__in=(student_member_list)).values('member'))
-            review_components = generate_peerreview(peerreview=peerreview, students=locked_students, student_member=student_member)
+            reviewer_components = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member)
+            
+        if len(reviewer_components) == 0:
+            messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
+
+    reviewee_components = list(StudentPeerReview.objects.filter(reviewee=student_member))
     
     context = {
-        'review_components':review_components,
+        'locked':locked,
+        'activity_lock':activity_lock,
+        'reviewer_components':reviewer_components,
+        'reviewee_components':reviewee_components,
         'course':course,
         'activity':activity,
     }
     return render(request, "peerreview/student_peer_review.html", context)
 
+@login_required
 def student_review(request, course_slug, activity_slug, peerreview_slug):
-    peerreview = StudentPeerReview.objects.get(slug=peerreview_slug)
-    messages.warning(request,peerreview.reviewee)
-    return ForbiddenResponse(request)
+    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
+    course = get_object_or_404(CourseOffering, slug = course_slug)
+    activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
+    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+    student_review = StudentPeerReview.objects.get(slug=peerreview_slug)
+    
+    submission, submitted_components = get_current_submission(student_review.reviewee.person, activity, include_deleted=False)
+    
+    if request.method == 'POST':
+        form = StudentReviewForm(request.POST)
+        if form.is_valid():
+            student_review.feedback = form.cleaned_data['feedback']
+            student_review.save()
+        return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+    else:
+        form_initials = {
+            'feedback' : student_review.feedback,
+        }
+        form = StudentReviewForm(initial=form_initials)
+
+    context = {
+        'submitted_components':submitted_components,
+        'activity':activity,
+        'course':course,
+        'student_review':student_review,
+        'form':form,
+    }
+
+    return render(request, "peerreview/student_review.html", context)
+
+@login_required
+def download_file(request, course_slug, activity_slug, component_slug, submission_id, peerreview_slug):
+    course = get_object_or_404(CourseOffering, slug=course_slug)
+    activity = get_object_or_404(course.activity_set, slug = activity_slug, deleted=False)
+    student_review = get_object_or_404(StudentPeerReview, slug=peerreview_slug)
+    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+    reviewer = student_review.reviewer
+    reviewee = student_review.reviewee
+    
+    # userid specified: get their most recent submission
+    submission, submitted_components = get_current_submission(reviewee.person, activity, include_deleted=False)
+    if not submission:
+        return NotFoundResponse(request)
+
+    # make sure this user is allowed to see the file
+    if request.user.username != reviewer.person.userid:
+        return ForbiddenResponse
+    elif not is_student_locked(student=reviewer, activity=activity) or not is_student_locked(student=reviewee, activity=activity):
+        return ForbiddenResponse(request)
+
+    # create the result
+    if component_slug:
+        # download single component if specified
+        # get the actual component: already did the searching above, so just look in that list
+        components = [sub for comp,sub in submitted_components if sub and sub.component.slug==component_slug]
+        if not components:
+            return NotFoundResponse(request)
+        return components[0].download_response()
+    else:
+        # no component specified: give back the full ZIP file.
+        return generate_zip_file(submission, submitted_components)

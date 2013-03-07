@@ -48,6 +48,9 @@
         <li><a href="{% url submission.views.show_components course.slug, activity.slug%}">View Submission</a></li>
 		{% endif %}
 		{% endif %}
+        {% if peerreview %}
+        <li><a href="{% url peerreview.views.peer_review_info_student course_slug=course.slug activity_slug=activity.slug%}">Peer Review</a></li>
+        {% endif %}
     </ul>
 </div>
 {% endif %}

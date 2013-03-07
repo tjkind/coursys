@@ -49,14 +49,35 @@
 {% endblock %}
 
 {% block content %}
-{% if review_components %}
-    {% for review in review_components %}
-        <div class="review">
-            <div class="identifier">{{ review.identifier }}</div>
-            <button class="review_button" value="{{ review.slug }}">Review</button>
-        </div>
-    {% endfor %}
+{% if not locked %}
+    {% if activity_lock %}
+        <h2>You can not start peer review until after {{activity_lock.effective_date}}.</h2>
+    {% else %}
+        <h2>Peer review is not available at this time; go for a coffee and try again later, cowboy.</h2>
+    {% endif %}
 {% else %}
-    <h2>There aren't enough peers to review; go for a coffee and try again later, cowboy.</h2>
+    {% if activity_lock %}
+        {% if reviewer_components %}
+            {% for review in reviewer_components %}
+                <div class="review">
+                    <div class="identifier">{{ review.identifier }}</div>
+                    <button class="review_button" value="{{ review.slug }}">Review</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        <h2>Peer review is not available at this time; go for a coffee and try again later, cowboy.</h2>
+    {% endif %}
+
+    {% if reviewee_components %}
+    <h2>Other people's comments on your work thus far</h2>
+    {% for review in reviewee_components %}
+        {% if review.feedback %}
+        <div class="review">
+            {{review.feedback}}
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
 {% endif %}
 {% endblock %}

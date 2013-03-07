@@ -5,7 +5,7 @@ from grades.models import Activity
 from coredata.models import Member
 from jsonfield import JSONField
 import datetime
-from random import randrange
+from random import randrange, shuffle, choice
 
 class PeerReviewComponent(models.Model):
     activity = models.ForeignKey(Activity)
@@ -30,82 +30,65 @@ class StudentPeerReview(models.Model):
     hidden = models.BooleanField(null=False, default=False)
     config = JSONField(null=False, blank=False, default={})
 
-def generate_peerreview(peerreview, students, student_member, overlimit=False):
+def generate_peerreview(peerreview, students, student_member):
     review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
     number_of_reviews = peerreview.number_of_reviews
     student_pending = []
-    priority_list = []
 
-    for student in students:
-        #check if student_member is already reviewing student's work
-        if(StudentPeerReview.objects.filter(peer_review_component=peerreview, reviewer=student_member, reviewee=student)):
-            continue
-        else:
-            reviewed_times = len(StudentPeerReview.objects.filter(reviewee=student))
-            priority_list.append((student, reviewed_times))
-
-    priority_list = sorted(priority_list, key=lambda student:student[1])
+    priority_list = _generate_priority_list(students=students, student_member=student_member, peerreview=peerreview)
 
     for student, reviewed in priority_list:
         if (len(student_pending)+len(review_components)>=number_of_reviews):
             break
-        elif reviewed>=number_of_reviews and not overlimit:
-            break
         else:
             student_pending.append(student)
 
-    if not overlimit and (len(student_pending)+len(review_components))<number_of_reviews:
-        return None
-
-    for student in student_pending:
-        unique = False
-        identifier = identifier_generator()
-        while not unique:
-            try:
-                check_unique = StudentPeerReview.objects.get(peer_review_component=peerreview, identifier=identifier)
-                identifier = identifier_generator()
-            except:
-                unique = True
-        
+    for student in student_pending:        
         new_review = StudentPeerReview.objects.create(
             peer_review_component = peerreview,
             reviewer = student_member,
             reviewee = student,
-            identifier = identifier,
+            identifier = _unique_identifier_generator(),
         )
         review_components.append(new_review)
 
     return review_components
 
-def identifier_generator():
-    capletters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-    letters = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-    vowels = ['a','e','i','o','u']
+def _generate_priority_list(students, student_member, peerreview):
+    priority_list = []
+    for student in students:
+        #check if student_member is already reviewing student's work
+        if len(StudentPeerReview.objects.filter(peer_review_component=peerreview, reviewer=student_member, reviewee=student))==0:
+            reviewed_times = len(StudentPeerReview.objects.filter(reviewee=student))
+            priority_list.append((student, reviewed_times))
 
-    first_name_length = randrange(3,14)
-    last_name_length = randrange(2,14)
+    return sorted(priority_list, key=lambda student:student[1])
+
+def _unique_identifier_generator():
+    identifier = _name_generator() + " " + _name_generator()
+    unique = False
+    while not unique:
+        try:
+            check_unique = StudentPeerReview.objects.get(peer_review_component=peerreview, identifier=identifier)
+            identifier = _name_generator() + " " + _name_generator()
+        except:
+            unique = True
+    return identifier
+
+def _name_generator():
+    capletters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+    letters = ['b','c','d','e','f','g','h','j','k','l','m','n','o','p','q','r','s','t','v','w','x','y','z']
+    vowels = ['a','e','i','o','u']
+    name_length = randrange(3,14)
 
     name = ""
-    for i in range(first_name_length):
+    for i in range(name_length):
         if i == 0:
-            name += capletters[randrange(0,25)]
+            name += choice(capletters)
         elif i == 1:
-            name += vowels[randrange(0,4)]
+            name += choice(vowels)
         elif i%4 == 0:
-            name += vowels[randrange(0,4)]
+            name += choice(vowels)
         else:
-            name += letters[randrange(0,25)]
-
-    name += " "
-
-    for i in range(last_name_length):
-        if i == 0:
-            name += capletters[randrange(0,25)]
-        elif i == 1:
-            name += vowels[randrange(0,4)]
-        elif i%4 == 0:
-            name += vowels[randrange(0,4)]
-        else:
-            name += letters[randrange(0,25)]
-
+            name += choice(letters)
     return name
