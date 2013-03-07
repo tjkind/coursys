@@ -1,9 +1,32 @@
 {% extends "base.html" %}
 {% load form_display %}
+{% load course_display %}
 {% block title %}Peer Reviews{% endblock %}
 {% block h1 %}{% endblock %}
 
 {% block headextra %}
+<script type="text/javascript" src="{{MEDIA_URL}}collapsible/js/jQuery.collapsible.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}js/advisornotes.js"></script>
+<script type="text/javascript">
+    	//<![CDATA[
+    $(document).ready(function() {
+        $(".note").collapsible();
+        $(".show").trigger('expand');
+
+        $('.hide-show').click(function(){
+		    var id = $(this).val();
+		    var ch = "no";
+		    if($(this).attr("checked")){
+		    ch="yes"
+		    $("#note-"+id).trigger('collapse_slow');
+		    }
+	
+	        $.post("{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=student.person.userid%}",
+			  {'csrfmiddlewaretoken': "{{csrf_token}}", 'note_id': id, 'hide': ch});
+	   });
+	});
+//]]>
+</script>
 {% endblock %}
 
 {% block subbreadcrumbs %}
@@ -16,12 +39,33 @@
 {% block content %}
     <div>
     <h1>Received Reviews</h1>
+    {% if submitted|hash:student.person.userid %}
+		<a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=student.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download" /></a>
+	{% else %}
+	    <p>No Submission to Download</p>
+	{% endif %}
     {% if received_reviews %}
         {% for review in received_reviews %}
-            <p>
-                {{ review.feedback }}
+        {% with review as note %}
+        <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
+	        <p>From: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewer.person.userid %}">{{ review.reviewer.person.userid }}</a></p>
+	    </h2>
+        <div class="note-box" id="note-box-{{note.id}}">
+
+            <div class="note-content">
+                {{note.feedback|linebreaks}}
+            </div>
+
+            <p class="hideshow">
+                {% if note.hidden %}
+                <input type="checkbox" class="hide-show" value="{{note.id}}" checked="checked" />
+                {% else %}
+                <input type="checkbox" class="hide-show" value="{{note.id}}"/>
+                {% endif %}
+                Hide this note?
             </p>
-            <p>From: <a href="{% url grades.views.student_info course_slug=course.slug userid=review.reviewer.person.userid %}">{{ review.reviewer.person.userid }}</a> </p>
+        </div>
+        {% endwith %}
         {% endfor %}
     {% else %}
         <p> This student has not received any reviews for this peer review assignment</p>
@@ -29,12 +73,35 @@
     <h1>Given Reviews</h1>
     {% if given_reviews %}    
         {% for review in given_reviews %}
-            <p>
-                {{ review.feedback }}
+        {% if submitted|hash:review.reviewee.person.userid %}
+		    <a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download"/></a>
+	    {% else %}
+	        <p>No Submission to Download</p>
+	    {% endif %}
+        {% with review as note %}
+        <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
+	        <p>For: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a></p>
+	    </h2>
+        <div class="note-box" id="note-box-{{note.id}}">
+
+            <div class="note-content">
+                {{note.feedback|linebreaks}}
+            </div>
+
+            <p class="hideshow">
+                {% if note.hidden %}
+                <input type="checkbox" class="hide-show" value="{{note.id}}" checked="checked" />
+                {% else %}
+                <input type="checkbox" class="hide-show" value="{{note.id}}"/>
+                {% endif %}
+                Hide this note?
             </p>
-            <p>To: <a href="{% url grades.views.student_info course_slug=course.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a> </p>
+        </div>
+        {% endwith %}
+        
         {% endfor %}
     {% else %}
+        <p> No Submission to Download</p>
         <p> This student has not given any reviews for this peer review assignment</p>
     {% endif %}
     </div>

@@ -45962,31 +45962,5 @@
   }, 
   "model": "onlineforms.field", 
   "pk": 3
- },
- {
-  "fields": {
-   "activity": 1,
-   "due_date": "2013-03-09 00:00:00",
-   "number_of_reviews": 1,
-   "hidden": false,
-   "config": {}
-  }, 
-  "model": "peerreview.peerreviewcomponent", 
-  "pk": 1
- },  
- {  
-  "fields": {
-   "peer_review_component": 1,
-   "reviewer": 826,
-   "reviewee": 1672,
-   "feedback": "This is a review comment",
-   "submission_date": "2013-03-08 12:01:01",
-   "identifier": "abcd",
-   "slug": "something",
-   "hidden": false,
-   "config": {}
-  }, 
-  "model": "peerreview.studentpeerreview", 
-  "pk": 1
  }
 ]
