@@ -30,7 +30,9 @@
 {% endblock %}
 
 {% block subbreadcrumbs %}
-<li>&gt; <a href="{{course.get_absolute_url}}">{{ course.name }}</a></li><li>&gt; {{ activity.name }}</li>
+    <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
+    <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
+    <li>&gt; Configure Peer Review </li>
 {% endblock %}
 
 {% block actions %}
@@ -73,10 +75,10 @@
                 <th scope="col">Last name</th>
                 <th scope="col">First name</th>
 		        <th scope="col">User ID</th>
-		        <th scope="col">Stu #</th>
+		        <th scope="col">Student No.</th>
+		        <th scope="col">Received</th>
+		        <th scope="col">Given</th>
 		        <th scope="col">Review</th>
-		        <th scope="col">Reviews Received</th>
-		        <th scope="col">Reviews Given</th>
             </tr>
 	</thead>
         <tbody>
@@ -88,9 +90,13 @@
 		    <td>{{ member.0.person.first_with_pref }}</td>
 		    <td>{{ member.0.person.userid }}</td>
 		    <td><a href="{% url grades.views.student_info course_slug=course.slug userid=member.0.person.userid %}" title="student info">{{ member.0.person.emplid }}</a></td>
-            <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}">View</a></td>
-            <td>{{ member.1 }}</td>
+            {% if submitted|hash:member.0.person.userid == False and member.1 == 0  %}
+                <td> N/A </td>
+            {% else %}
+                <td>{{ member.1 }}</td>
+            {% endif %}
             <td>{{ member.2 }}</td>
+            <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}">View</a></td>
         </tr>
         {% endwith %}
         {% endwith %}

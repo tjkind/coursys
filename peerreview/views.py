@@ -15,7 +15,7 @@ from coredata.models import Course, CourseOffering, Member
 from peerreview.forms import AddPeerReviewComponentForm
 from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
-from submission.models import get_current_submission
+from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
 
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
@@ -87,6 +87,23 @@ def staff_review_student(request, course_slug, activity_slug, userid):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug, offering=course)
     peer_review_component = get_object_or_404(PeerReviewComponent, activity = activity)
+    
+    # collect submission status
+    sub_comps = [sc.title for sc in SubmissionComponent.objects.filter(activity=activity, deleted=False)]
+    submitted = {}
+    if activity.group:
+        print "is group"
+        subs = GroupSubmission.objects.filter(activity=activity).select_related('group')
+        for s in subs:
+            members = s.group.groupmember_set.filter(activity=activity)
+            for m in members:
+                submitted[m.student.person.userid] = True
+    else:
+        print "not group"
+        subs = StudentSubmission.objects.filter(activity=activity)
+        for s in subs:
+            submitted[s.member.person.userid] = True
+
     try:
         received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
     except:
@@ -100,6 +117,8 @@ def staff_review_student(request, course_slug, activity_slug, userid):
         'student': student_member,
         'activity': activity,
         'course': course,
+        'sub_comps': sub_comps,
+        'submitted': submitted,
         'received_reviews': received_reviews,
         'given_reviews': given_reviews
     }
@@ -111,6 +130,22 @@ def staff_review_student(request, course_slug, activity_slug, userid):
 def peer_review_info_staff(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug=course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug)
+    
+    # collect submission status
+    sub_comps = [sc.title for sc in SubmissionComponent.objects.filter(activity=activity, deleted=False)]
+    submitted = {}
+    if activity.group:
+        print "is group"
+        subs = GroupSubmission.objects.filter(activity=activity).select_related('group')
+        for s in subs:
+            members = s.group.groupmember_set.filter(activity=activity)
+            for m in members:
+                submitted[m.student.person.userid] = True
+    else:
+        print "not group"
+        subs = StudentSubmission.objects.filter(activity=activity)
+        for s in subs:
+            submitted[s.member.person.userid] = True
     
     try:
         peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
@@ -134,7 +169,7 @@ def peer_review_info_staff(request, course_slug, activity_slug):
 
         combined = zip(students, received_reviews, given_reviews)
             
-    context = {'course': course, 'activity': activity, 'students': combined, 'peerreview':peerreview}
+    context = {'course': course, 'activity': activity, 'students': combined, 'peerreview':peerreview, 'submitted':submitted, 'subs':subs}
     return render(request, 'peerreview/peer_review_info_staff.html', context)
 
 @login_required
