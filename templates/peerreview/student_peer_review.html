@@ -14,13 +14,41 @@
 </script>
 <style type="text/css">
 .review {
-    background:#F2EFE9;
+    background:#F8F8C2;
     height: 5em;
-    width:50%;
-    margin-bottom:1em;
+    width: 40em;
+    margin-bottom:10px;
     border-style:solid;
     border-width:1px;
     border-color:#BFBAB0;
+}
+.reviewed {
+    background:#F2EFE9;
+    height: 5em;
+    width: 40em;
+    margin-bottom:10px;
+    border-style:solid;
+    border-width:1px;
+    border-color:#BFBAB0;
+}
+.reviewed legend {
+    position:absolute;
+    margin-top:0.5em;
+    margin-left:2.3em;
+    color:green;
+    font-size:1em;
+}
+.feedback {
+    margin-bottom:20px;
+    margin-left:10px;
+    margin-bottom:20px;
+    padding:10px;
+    padding-top:0px;
+    -webkit-border-radius:5px;
+    width:800px;
+    border-style:solid;
+    border-width:1px;
+    border-color:#CCC;
 }
 .identifier {
     margin-left:1em;
@@ -59,10 +87,18 @@
     {% if activity_lock %}
         {% if reviewer_components %}
             {% for review in reviewer_components %}
+            {% if review.feedback %}
+                <div class="reviewed">
+                    <div class="identifier">{{ review.identifier }}</div>
+                    <legend>reviewed</legend>
+                    <button class="review_button" value="{{ review.slug }}">Review</button>
+                </div>
+            {% else %}
                 <div class="review">
                     <div class="identifier">{{ review.identifier }}</div>
                     <button class="review_button" value="{{ review.slug }}">Review</button>
                 </div>
+            {% endif %}
             {% endfor %}
         {% endif %}
     {% else %}
@@ -70,11 +106,11 @@
     {% endif %}
 
     {% if reviewee_components %}
-    <h2>Other people's comments on your work thus far</h2>
+    <br><h2>Other people's comments on your work thus far:</h2><br>
     {% for review in reviewee_components %}
         {% if review.feedback %}
-        <div class="review">
-            {{review.feedback}}
+        <div class="feedback">
+            {{review.feedback|linebreaksbr}}
         </div>
         {% endif %}
     {% endfor %}

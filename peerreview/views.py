@@ -192,6 +192,16 @@ def peer_review_info_student(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/student_peer_review.html", context)
 
+def _email_reviewee_notification(student_review, course_slug, activity_slug):
+    subject = "New review for " + student_review.peer_review_component.activity.name
+    from_email = "do_not_reply@sfu.ca"
+    email = student_review.reviewee.person.email()
+    content = "You have receieved a new review for " + student_review.peer_review_component.activity.name +".\n"
+    content += "\nTo view the new review, click on the link below\n"
+    content += reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug})
+    mail = EmailMessage(subject, content, from_email, [email], cc=[from_email], attachments=[])
+    mail.send()
+
 @login_required
 def student_review(request, course_slug, activity_slug, peerreview_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
@@ -207,6 +217,10 @@ def student_review(request, course_slug, activity_slug, peerreview_slug):
         if form.is_valid():
             student_review.feedback = form.cleaned_data['feedback']
             student_review.save()
+
+            #send email notification to student
+            _email_reviewee_notification(student_review=student_review, course_slug=course_slug, activity_slug=activity_slug)
+
         return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
         form_initials = {
