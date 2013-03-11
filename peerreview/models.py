@@ -33,12 +33,16 @@ class StudentPeerReview(models.Model):
     config = JSONField(null=False, blank=False, default={})
 
     def add_reviewee_NewsItem(self):
-        NewsItem.for_members(member_kwargs={'offering': self.peer_review_component.activity.offering}, newsitem_kwargs={
-                    'author': None, 'course': self.peer_review_component.activity.offering, 'source_app': 'peerreview',
-                    'title': "New review for %s " % (self.peer_review_component.activity.name),
-                    'content': 'To view the new review, click on the link provided',
-                    'url': reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': self.peer_review_component.activity.offering.slug, 'activity_slug': self.peer_review_component.activity.slug})
-        })
+        news = NewsItem.objects.create(
+                    user = self.reviewee.person,
+                    author = None,
+                    course = self.peer_review_component.activity.offering,
+                    source_app = 'peerreview',
+                    title = "New review for %s " % (self.peer_review_component.activity.name),
+                    content = 'To view the new review, click on the link provided',
+                    url = reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': self.peer_review_component.activity.offering.slug, 'activity_slug': self.peer_review_component.activity.slug})
+                )
+        news.save()
 
 def generate_peerreview(peerreview, students, student_member):
     review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
