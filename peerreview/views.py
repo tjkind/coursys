@@ -174,11 +174,11 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     if (peerreview):
         for student in students:
             try:
-                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewee = student)))
+                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewee = student, feedback__gt='')))
             except:
                 pass
             try:
-                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewer = student)))
+                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewer = student, feedback__gt='')))
             except:
                 pass
 

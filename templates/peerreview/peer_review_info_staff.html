@@ -33,6 +33,7 @@
     <li><a href="{% url grades.views.course_info course_slug=course.slug %}">&gt; {{course.name}}</a></li>
     <li><a href="{% url grades.views.activity_info course_slug=course.slug activity_slug=activity.slug %}">&gt; {{activity.name}}</a></li>
     <li>&gt; Configure Peer Review </li>
+{% endblock %}
 {% block actions %}
 <div id="actions">
     <h2 class="heading">Actions</h2>
@@ -77,6 +78,7 @@
 		        <th scope="col">Received</th>
 		        <th scope="col">Given</th>
 		        <th scope="col">Review</th>
+		        <th scope="col">Submission</th>
             </tr>
 	</thead>
         <tbody>
@@ -94,7 +96,19 @@
                 <td>{{ member.1 }}</td>
             {% endif %}
             <td>{{ member.2 }}</td>
-            <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}">View</a></td>
+            {% if submitted|hash:member.0.person.userid == False and member.1 == 0 and member.2 == 0  %}
+                <td></td>
+            {% else %}
+                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}">View</a></td>
+            {% endif %}
+            {% if subs %}
+		        <td class="iconcell">
+                {% if submitted|hash:member.0.person.userid %}<a href="{% url submission.views.show_student_submission_staff course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}"><img src="{{MEDIA_URL}}icons/magnifier.png" title="view details" alt="View" /></a>
+		            <a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=member.0.person.userid %}" class="calculate"><img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download" /></a>{% endif %}
+		        </td>
+		    {% else %}
+		        <td class="iconcell disabled"></td>
+		    {% endif %}
         </tr>
         {% endwith %}
         {% endwith %}
