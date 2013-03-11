@@ -1,7 +1,9 @@
 from autoslug import AutoSlugField
 from courselib.slugs import make_slug
 from django.db import models
+from django.core.urlresolvers import reverse
 from grades.models import Activity
+from dashboard.models import *
 from coredata.models import Member
 from jsonfield import JSONField
 import datetime
@@ -29,6 +31,14 @@ class StudentPeerReview(models.Model):
 
     hidden = models.BooleanField(null=False, default=False)
     config = JSONField(null=False, blank=False, default={})
+
+    def add_reviewee_NewsItem(self):
+        NewsItem.for_members(member_kwargs={'offering': self.peer_review_component.activity.offering}, newsitem_kwargs={
+                    'author': None, 'course': self.peer_review_component.activity.offering, 'source_app': 'peerreview',
+                    'title': "New review for %s " % (self.peer_review_component.activity.name),
+                    'content': 'To view the new review, click on the link provided',
+                    'url': reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': self.peer_review_component.activity.offering.slug, 'activity_slug': self.peer_review_component.activity.slug})
+        })
 
 def generate_peerreview(peerreview, students, student_member):
     review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
