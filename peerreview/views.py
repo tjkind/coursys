@@ -190,7 +190,7 @@ def peer_review_info_staff(request, course_slug, activity_slug):
 
 @login_required
 def peer_review_info_student(request, course_slug, activity_slug):
-    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
+    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
@@ -230,7 +230,7 @@ def peer_review_info_student(request, course_slug, activity_slug):
 
 @login_required
 def student_review(request, course_slug, activity_slug, peerreview_slug):
-    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug)
+    student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
@@ -272,17 +272,17 @@ def download_file(request, course_slug, activity_slug, component_slug, submissio
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
     reviewer = student_review.reviewer
     reviewee = student_review.reviewee
-    
-    # userid specified: get their most recent submission
-    submission, submitted_components = get_current_submission(reviewee.person, activity, include_deleted=False)
-    if not submission:
-        return NotFoundResponse(request)
 
     # make sure this user is allowed to see the file
     if request.user.username != reviewer.person.userid:
         return ForbiddenResponse
     elif not is_student_locked(student=reviewer, activity=activity) or not is_student_locked(student=reviewee, activity=activity):
         return ForbiddenResponse(request)
+    
+    # userid specified: get their most recent submission
+    submission, submitted_components = get_current_submission(reviewee.person, activity, include_deleted=False)
+    if not submission:
+        return NotFoundResponse(request)
 
     # create the result
     if component_slug:
