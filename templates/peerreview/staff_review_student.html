@@ -47,24 +47,18 @@
     {% if received_reviews %}
         {% for review in received_reviews %}
         {% with review as note %}
+        {% if note.feedback %}
+
         <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
 	        <p>From: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewer.person.userid %}">{{ review.reviewer.person.userid }}</a></p>
 	    </h2>
         <div class="note-box" id="note-box-{{note.id}}">
-
             <div class="note-content">
                 {{note.feedback|linebreaks}}
             </div>
-
-            <p class="hideshow">
-                {% if note.hidden %}
-                <input type="checkbox" class="hide-show" value="{{note.id}}" checked="checked" />
-                {% else %}
-                <input type="checkbox" class="hide-show" value="{{note.id}}"/>
-                {% endif %}
-                Hide this note?
-            </p>
         </div>
+        
+        {% endif %}
         {% endwith %}
         {% endfor %}
     {% else %}
@@ -73,32 +67,26 @@
     <h1>Given Reviews</h1>
     {% if given_reviews %}    
         {% for review in given_reviews %}
-        {% if submitted|hash:review.reviewee.person.userid %}
-		    <a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download"/></a>
-	    {% else %}
-	        <p>No Submission to Download</p>
-	    {% endif %}
         {% with review as note %}
+        {%if note.feedback %}
+        
         <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
 	        <p>For: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a></p>
 	    </h2>
-        <div class="note-box" id="note-box-{{note.id}}">
 
+        <div class="note-box" id="note-box-{{note.id}}">
+            {% if submitted|hash:review.reviewee.person.userid %}
+		        <a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download"/></a>
+	        {% else %}
+	            <p>No Submission to Download</p>
+	        {% endif %}
             <div class="note-content">
                 {{note.feedback|linebreaks}}
             </div>
-
-            <p class="hideshow">
-                {% if note.hidden %}
-                <input type="checkbox" class="hide-show" value="{{note.id}}" checked="checked" />
-                {% else %}
-                <input type="checkbox" class="hide-show" value="{{note.id}}"/>
-                {% endif %}
-                Hide this note?
-            </p>
         </div>
-        {% endwith %}
         
+        {% endif %}
+        {% endwith %}
         {% endfor %}
     {% else %}
         <p> No Submission to Download</p>
