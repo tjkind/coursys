@@ -38,7 +38,7 @@
 
 {% block content %}
     <div>
-    <h1>Received Reviews</h1>
+    <h1>Reviews For {{student.person.userid}}</h1>
     {% if submitted|hash:student.person.userid %}
 		<a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=student.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download" /></a>
 	{% else %}
@@ -64,7 +64,7 @@
     {% else %}
         <p> This student has not received any reviews for this peer review assignment</p>
     {% endif %}
-    <h1>Given Reviews</h1>
+    <h1>Reviews By {{student.person.userid}}</h1>
     {% if given_reviews %}    
         {% for review in given_reviews %}
         {% with review as note %}
