@@ -4,8 +4,10 @@ import datetime
 from coredata.models import Unit, Person, Role
 from django.utils.safestring import mark_safe
 from grades.forms import CustomSplitDateTimeWidget
+from django.forms.models import BaseModelFormSet
+from django.forms import ModelForm
 
-from peerreview.models import PeerReviewComponent
+from peerreview.models import *
 
 class PeerReviewSplitDateTimeWidget(forms.SplitDateTimeWidget):
     """
@@ -42,3 +44,45 @@ class AddPeerReviewComponentForm(forms.Form):
 
 class StudentReviewForm(forms.Form):
     feedback = forms.CharField(required=False, label='', help_text='Type your review here', widget=forms.Textarea)
+    
+
+class ReviewComponentForm(ModelForm):
+    class Meta:
+        model = ReviewComponent
+        fields = ['title', 'description', 'max_mark']
+
+class BaseReviewComponentFormSet(BaseModelFormSet):
+    def __init__(self, *args, **kwargs):
+        self.peer_review_component =  ''
+        super(BaseReviewComponentFormSet, self).__init__(*args, **kwargs)
+        
+    def clean(self):
+        """Checks the following:
+        1. no two component have the same title  
+        2. max mark of each component is non-negative 
+        """
+        if any(self.errors):
+            # Don't bother validating the formset unless each form is valid on its own
+             return
+        # check titles
+        titles = []
+        for form in self.forms:
+            try: # since title is required, empty title triggers KeyError and don't consider this row
+                form.cleaned_data['title']
+            except KeyError:      
+                continue
+            else:  
+                title = form.cleaned_data['title']
+                if (not form.cleaned_data['deleted']) and title in titles:
+                    raise forms.ValidationError(u"Each component must have a unique title")
+                titles.append(title)  
+        
+        # check max marks
+        for form in self.forms:
+            try:
+                form.cleaned_data['title']
+            except KeyError:
+                continue                        
+            max_mark = form.cleaned_data['max_mark']
+            if max_mark < 0:
+                raise forms.ValidationError(u"Max mark of a component cannot be negative")        

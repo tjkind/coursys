@@ -17,6 +17,28 @@ class PeerReviewComponent(models.Model):
     hidden = models.BooleanField(null=False, default=False)
     config = JSONField(null=False, blank=False, default={}) 
 
+class ReviewComponent(models.Model):
+    peer_review_component = models.ForeignKey(PeerReviewComponent)
+    max_mark = models.IntegerField(null=True, blank=True)
+    title = models.CharField(max_length=50)
+    description = models.TextField(null=True, blank=True)
+    position = models.IntegerField()
+    deleted = models.BooleanField(default=False)
+    
+    def autoslug(self):
+        return make_slug(self.peer_review_component.activity.name + '-' + self.title)
+    slug = AutoSlugField(populate_from=autoslug, null=False, editable=False, unique=True)
+    config = JSONField(null=False, blank=False, default={})
+
+class StudentReview(models.Model):
+    review_component = models.ForeignKey(ReviewComponent)
+    peer_review_component = models.ForeignKey(PeerReviewComponent)
+    textbox = models.TextField()
+    mark = models.IntegerField(null=True, blank=True)
+    deleted = models.BooleanField(default=False)
+    createdat = models.DateTimeField(default=datetime.datetime.now())
+    lastmodified = models.DateTimeField()
+
 class StudentPeerReview(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
     reviewer = models.ForeignKey(Member, related_name="reviewer")
