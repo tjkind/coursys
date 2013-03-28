@@ -13,31 +13,26 @@ class PeerReviewComponent(models.Model):
     activity = models.ForeignKey(Activity)
     due_date = models.DateTimeField(null=True, help_text='Due date for Peer Reviews')
     number_of_reviews = models.IntegerField(null=True, help_text="This is the number of peer reviews each student is expected to perform")
-
     hidden = models.BooleanField(null=False, default=False)
     config = JSONField(null=False, blank=False, default={}) 
 
-class ReviewComponent(models.Model):
+class MarkingSection(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
-    max_mark = models.IntegerField(null=True, blank=True)
+    max_mark = models.DecimalField(max_digits=5, decimal_places=2, null = False)
     title = models.CharField(max_length=50)
     description = models.TextField(null=True, blank=True)
-    position = models.IntegerField()
+    position = models.IntegerField(null=True, blank=True)
     deleted = models.BooleanField(default=False)
-    
-    def autoslug(self):
-        return make_slug(self.peer_review_component.activity.name + '-' + self.title)
-    slug = AutoSlugField(populate_from=autoslug, null=False, editable=False, unique=True)
     config = JSONField(null=False, blank=False, default={})
 
-class StudentReview(models.Model):
-    review_component = models.ForeignKey(ReviewComponent)
+class StudentMark(models.Model):
+    review_component = models.ForeignKey(MarkingSection)
     peer_review_component = models.ForeignKey(PeerReviewComponent)
     textbox = models.TextField()
     mark = models.IntegerField(null=True, blank=True)
     deleted = models.BooleanField(default=False)
-    createdat = models.DateTimeField(default=datetime.datetime.now())
-    lastmodified = models.DateTimeField()
+    created_at = models.DateTimeField(default=datetime.datetime.now())
+    last_modified = models.DateTimeField(default=datetime.datetime.now())
 
 class StudentPeerReview(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)

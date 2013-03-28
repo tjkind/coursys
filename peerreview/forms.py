@@ -43,19 +43,14 @@ class AddPeerReviewComponentForm(forms.Form):
             return context
 
 class StudentReviewForm(forms.Form):
-    feedback = forms.CharField(required=False, label='', help_text='Type your review here', widget=forms.Textarea)
-    
+    feedback = forms.CharField(required=False, label='', help_text='Type your review here', widget=forms.Textarea)    
 
-class ReviewComponentForm(ModelForm):
+class MarkingSectionForm(ModelForm):
     class Meta:
-        model = ReviewComponent
+        model = MarkingSection
         fields = ['title', 'description', 'max_mark']
 
-class BaseReviewComponentFormSet(BaseModelFormSet):
-    def __init__(self, *args, **kwargs):
-        self.peer_review_component =  ''
-        super(BaseReviewComponentFormSet, self).__init__(*args, **kwargs)
-        
+class BaseMarkingSectionFormSet(BaseModelFormSet): 
     def clean(self):
         """Checks the following:
         1. no two component have the same title  

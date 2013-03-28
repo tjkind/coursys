@@ -19,8 +19,33 @@ from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
 
+
+def _save_marking_section(formset, peerreview_component):
+    position = 0
+    for form in formset.forms:
+        try:  # title is required, empty title triggers KeyError and don't consider this row
+            form.cleaned_data['title']
+        except KeyError:
+            continue
+        else:
+            instance = form.save(commit = False)
+            instance.peer_review_component = peerreview_component
+            instance.position = position
+            instance.save()
+            """
+            instance = MarkingSection.objects.create(
+                peer_review_component = peerreview_component,
+                title = form.cleaned_data['title'],
+                description = form.cleaned_data['description'],
+                max_mark = form.cleaned_data['max_mark'],
+                position = position
+            )
+            """
+            position += 1
+
 @requires_course_staff_by_slug
 def add_peer_review_component(request, course_slug, activity_slug):
+    error_info = None
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
     try:
@@ -31,15 +56,18 @@ def add_peer_review_component(request, course_slug, activity_slug):
         return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
         
     fields = ('title', 'description', 'max_mark', 'deleted',)
-    ComponentsFormSet = modelformset_factory(ReviewComponent, fields=fields, \
-                                              formset=BaseReviewComponentFormSet, \
-                                              can_delete = False, extra = 10) 
+    MarkingSectionFormSet = modelformset_factory(MarkingSection, fields=fields, \
+                                              formset=BaseMarkingSectionFormSet, \
+                                              can_delete = False, extra = 10)
 
     class_size = activity.offering.members.count()
     if request.method == 'POST':
         form = AddPeerReviewComponentForm(class_size, request.POST)
-        formset = ComponentsFormSet(request.POST)
-        if form.is_valid() and formset.is_valid():
+        formset = MarkingSectionFormSet(request.POST)
+        if not formset.is_valid(): 
+            if formset.non_form_errors(): # not caused by error of an individual form
+                error_info = formset.non_form_errors()[0]  
+        elif form.is_valid() and formset.is_valid():
             try: #see if peerreview component already exists for this activity
                 peerreview_component = PeerReviewComponent.objects.get(activity=activity)
                 peerreview_component.due_date = form.cleaned_data['due_date']
@@ -54,13 +82,15 @@ def add_peer_review_component(request, course_slug, activity_slug):
                 )
                 print "Created"
 
-            _save_components(formset, peerreview_component)
+            _save_marking_section(formset, peerreview_component)
                         
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
         form = AddPeerReviewComponentForm(class_size)
-        formset = ComponentsFormSet()
+        formset = MarkingSectionFormSet(queryset=MarkingSection.objects.none())
 
+    if error_info:
+        messages.add_message(request, messages.ERROR, error_info)
     context = {
         'form' : form,
         'formset' : formset,
@@ -69,25 +99,9 @@ def add_peer_review_component(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/add_peer_review_component.html", context)
 
-def _save_components(formset, peerreview_component):
-    position = 0
-    for form in formset.forms:
-        try:  # title is required, empty title triggers KeyError and don't consider this row
-            form.cleaned_data['title']
-        except KeyError:
-            continue
-        else:
-            instance = ReviewComponent.objects.create(
-                peer_review_component = peerreview_component,
-                title = form.cleaned_data['title'],
-                description = form.cleaned_data['description'],
-                max_mark = form.cleaned_data['max_mark'],
-                position = position
-            )
-            position += 1
-
 @requires_course_staff_by_slug
 def edit_peer_review_component(request, course_slug, activity_slug):
+    error_info = None
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
@@ -101,30 +115,35 @@ def edit_peer_review_component(request, course_slug, activity_slug):
         messages.error(request, "You do not have an activity lock, students may not access peer review without an effective activity lock.")
          
     fields = ('title', 'description', 'max_mark', 'deleted',)
-    ComponentsFormSet = modelformset_factory(ReviewComponent, fields=fields, \
-                                              formset=BaseReviewComponentFormSet, \
+    MarkingSectionFormSet = modelformset_factory(MarkingSection, fields=fields, \
+                                              formset=BaseMarkingSectionFormSet, \
                                               can_delete = False, extra = 10) 
     
-    qset = ReviewComponent.objects.filter(peer_review_component = peerreview_component, deleted = False) 
-    print "formset"
-    formset = ComponentsFormSet(queryset = qset)
+    qset = MarkingSection.objects.filter(peer_review_component=peerreview_component, deleted=False)
 
-    print "pass"
     if request.method == 'POST':
+        formset = MarkingSectionFormSet(request.POST, queryset=qset)
         form = AddPeerReviewComponentForm(class_size, request.POST)
-        if form.is_valid() and formset.is_valid():
+
+        if not formset.is_valid(): 
+            if formset.non_form_errors(): # not caused by error of an individual form
+                error_info = formset.non_form_errors()[0]   
+        elif form.is_valid() and formset.is_valid():
             peerreview_component.due_date = form.cleaned_data['due_date']
             peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
             peerreview_component.save()
-            _save_components(formset, peerreview_component)
-        return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
+            _save_marking_section(formset, peerreview_component)
+            return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
+        formset = MarkingSectionFormSet(queryset = qset)
         form = AddPeerReviewComponentForm(class_size, initial=
         {
             'due_date':peerreview_component.due_date,
             'number_of_reviews':peerreview_component.number_of_reviews,
         })
 
+    if error_info:
+        messages.add_message(request, messages.ERROR, error_info)
     context = {
         'form' : form,
         'formset' : formset,

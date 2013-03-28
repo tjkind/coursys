@@ -43,7 +43,7 @@ $(document).ready(function() {
 
 {% block content %}
     <div class="form_container">
-        <form action="{% url peerreview.views.add_peer_review_component course_slug=course.slug activity_slug=activity.slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
+        <form action="{% url peerreview.views.edit_peer_review_component course_slug=course.slug activity_slug=activity.slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>
             <legend>Edit Peer Review Component</legend>
             {{ form|as_dl }}
@@ -66,7 +66,11 @@ $(document).ready(function() {
 	                {% endfor %}
 	                {# you can add 9 more components #}
                     {% for form in formset.forms|slice:"-25:" %}
-                        {{ form|display_form_as_row:"hidden" }}
+                        {% if form.title.value %}
+                            {{ form|display_form_as_row }}
+                        {% else %}
+                            {{ form|display_form_as_row:"hidden" }}
+                        {% endif %}
                     {% endfor %}
                 </tbody>
                 </table>

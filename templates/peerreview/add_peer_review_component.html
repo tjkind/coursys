@@ -65,7 +65,11 @@ $(document).ready(function() {
 	                {% endfor %}
 	                {# you can add 9 more components #}
                     {% for form in formset.forms|slice:"-25:" %}
-                        {{ form|display_form_as_row:"hidden" }}
+                        {% if form.title.value %}
+                            {{ form|display_form_as_row }}
+                        {% else %}
+                            {{ form|display_form_as_row:"hidden" }}
+                        {% endif %}
                     {% endfor %}
                 </tbody>
                 </table>
