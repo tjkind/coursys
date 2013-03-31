@@ -47,9 +47,7 @@ $(document).ready(function() {
             <fieldset>
             <legend>Edit Peer Review Component</legend>
             {{ form|as_dl }}
-            <p><input type="submit" class="submit" value="Submit" /></p>
-            </fieldset>
-                        <div class="datatable_container"> 
+            <div class="datatable_container"> 
                 {{ formset.management_form }} 
                 <table class="display" id="review_components">
       	        <thead class="form_head">
@@ -73,8 +71,12 @@ $(document).ready(function() {
                     {% endfor %}
                 </tbody>
                 </table>
-                <p><input class="submit hidden" type="submit" value="Add more" id="button_more" /></p> 
+                <p><input class="submit hidden" type="submit" value="Add more" id="button_more" /></p>
+                <br></br>
+                <p><input type="submit" class="submit" value="Submit" /></p>
             </div>
+            
+            </fieldset>
         </form>
     </div>
 {% endblock %}

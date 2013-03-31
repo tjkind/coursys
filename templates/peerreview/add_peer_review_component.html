@@ -46,8 +46,7 @@ $(document).ready(function() {
             <fieldset>
             <legend>Add Peer Review Component</legend>
             {{ form|as_dl }}
-            <p><input type="submit" class="submit" value="Submit" /></p>
-            </fieldset>
+            <br></br>
             <div class="datatable_container"> 
                 {{ formset.management_form }} 
                 <table class="display" id="review_components">
@@ -73,7 +72,11 @@ $(document).ready(function() {
                 </tbody>
                 </table>
                 <p><input class="submit hidden" type="submit" value="Add more" id="button_more" /></p> 
+                <br></br>
+                <p><input type="submit" class="submit" value="Submit" /></p>
             </div>
+            
+            </fieldset>
         </form>
     </div>
 {% endblock %}
