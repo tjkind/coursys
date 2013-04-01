@@ -48,6 +48,8 @@ def add_peer_review_component(request, course_slug, activity_slug):
     error_info = None
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
+    if activity.group == True:
+        messages.error(request, "Coursys currently does not support group activity peer reviews!")
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
     except:
