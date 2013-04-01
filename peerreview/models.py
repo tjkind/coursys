@@ -18,21 +18,12 @@ class PeerReviewComponent(models.Model):
 
 class MarkingSection(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
-    max_mark = models.DecimalField(max_digits=5, decimal_places=2, null = False)
+    max_mark = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     title = models.CharField(max_length=50)
     description = models.TextField(null=True, blank=True)
     position = models.IntegerField(null=True, blank=True)
     deleted = models.BooleanField(default=False)
     config = JSONField(null=False, blank=False, default={})
-
-class StudentMark(models.Model):
-    review_component = models.ForeignKey(MarkingSection)
-    peer_review_component = models.ForeignKey(PeerReviewComponent)
-    textbox = models.TextField()
-    mark = models.IntegerField(null=True, blank=True)
-    deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=datetime.datetime.now())
-    last_modified = models.DateTimeField(default=datetime.datetime.now())
 
 class StudentPeerReview(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
@@ -60,6 +51,15 @@ class StudentPeerReview(models.Model):
                     url = reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': self.peer_review_component.activity.offering.slug, 'activity_slug': self.peer_review_component.activity.slug})
                 )
         news.save()
+
+class StudentMark(models.Model):
+    marking_section = models.ForeignKey(MarkingSection)
+    student_peer_review = models.ForeignKey(StudentPeerReview)
+    textbox = models.TextField(null=True, blank=True)
+    mark = models.IntegerField(null=True, blank=True)
+    deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=datetime.datetime.now())
+    last_modified = models.DateTimeField(default=datetime.datetime.now())
 
 def generate_peerreview(peerreview, students, student_member):
     review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))

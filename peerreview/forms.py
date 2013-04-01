@@ -42,19 +42,31 @@ class AddPeerReviewComponentForm(forms.Form):
             context = { 'due_date' : due_date, 'number_of_reviews' : number_of_reviews}
             return context
 
-class StudentReviewForm(forms.Form):
-    feedback = forms.CharField(required=False, label='', help_text='Type your review here', widget=forms.Textarea)    
-
-class MarkingSectionForm(ModelForm):
+class StudentMarkForm(ModelForm):
+    def __init__(self, max_mark, *args, **kwargs):
+        super(StudentMarkForm, self).__init__(*args, **kwargs)
+        self.max_mark = max_mark
+    textbox = forms.CharField(widget=forms.Textarea, label='Comments')
     class Meta:
-        model = MarkingSection
-        fields = ['title', 'description', 'max_mark']
+        model = StudentMark            
+        fields = ['textbox', 'mark']
+
+    def clean_mark(self):
+        mark = self.cleaned_data['mark']
+        if self.max_mark != None and self.max_mark != 0:
+            if mark == None:
+                raise forms.ValidationError(u"Need to input a mark")
+            elif mark < 0:
+                raise forms.ValidationError(u"Mark cannot be negative")
+            elif mark > self.max_mark:
+                raise forms.ValidationError(u"Mark cannot exceed " + str(self.max_mark))
+        return mark
 
 class BaseMarkingSectionFormSet(BaseModelFormSet): 
     def clean(self):
         """Checks the following:
         1. no two component have the same title  
-        2. max mark of each component is non-negative 
+        2. max mark of each section is non-negative 
         """
         if any(self.errors):
             # Don't bother validating the formset unless each form is valid on its own
@@ -79,5 +91,5 @@ class BaseMarkingSectionFormSet(BaseModelFormSet):
             except KeyError:
                 continue                        
             max_mark = form.cleaned_data['max_mark']
-            if max_mark < 0:
-                raise forms.ValidationError(u"Max mark of a component cannot be negative")        
+            if max_mark != None and max_mark < 0:
+                raise forms.ValidationError(u"Max mark of a component cannot be negative")

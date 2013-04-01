@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% load form_display %}
+{% load course_display %}
 
 {% block title %}{{student_review.identifier}}{% endblock %}
 {% block h1 %}{{student_review.identifier}}{% endblock %}
 
 {% block headextra %}
 <style type="text/css">
-.submission_component {
+.submission {
     padding-left:1em;
 }
-#id_feedback {
+.component_comment textarea {
     width: 70%;
 }
 </style>
@@ -23,14 +24,12 @@
 {% endblock %}
 
 {% block content%}
-<div class="form_container">
 <form action="{% url peerreview.views.student_review course_slug=course.slug activity_slug=activity.slug peerreview_slug=student_review.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
-<fieldset>
 {% ifequal submitted_pair|length 0 %}
     {# there is no component #}
 {% else %}
     {% for pair in submitted_components %}
-    <div class="submission_component">
+    <div class="submission">
     <h2>{{pair.0.title}}</h2>
 
     {% ifequal pair.1 None %}
@@ -44,12 +43,31 @@
 
 {% endifequal %}
 <div class="submission_component">
-    <h2>Comments</h2>
-    {{ form }}
+    {% for entry in student_mark_data %}        
+         <fieldset>
+         <legend>{{entry.title}}</legend>
+            <ul class="component">
+                <li>{{entry.description|linebreaks}}</li>
+                {% if entry.max_mark %}
+                <li class="component_mark"> 
+                    Mark {{entry.form.mark}} Out of {{entry.max_mark}}
+                    {% if entry.form.mark.errors %}                    
+                    <div class="errortext"><img src="{{MEDIA_URL}}icons/error.png" alt="error"/>&nbsp;{{entry.form.mark.errors.0}}</div>               
+                    {% endif %}
+                </li>
+                {% endif %}
+                <li class="component_comment">                               
+                    {{entry.form.textbox.label_tag}} {{ entry.form.textbox }}
+                    {% if entry.form.textbox.errors %}                  
+                    <div class="errortext"><img src="{{MEDIA_URL}}icons/error.png" alt="error"/>&nbsp;{{entry.form.textbox.errors.0}}</div>                                 
+                    {% endif %}                                     
+                </li>           
+            </ul>        
+      </fieldset>
+     {% endfor %}
 </div>
 <p><input type="submit" class="submit" value="Submit" /></p>
 </fieldset>
 </form>
-</div>
 
 {% endblock %}

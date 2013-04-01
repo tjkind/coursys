@@ -64,6 +64,12 @@
     margin-top:0.5em;
     float:right;
 }
+.empty {
+    margin-left:1em;
+}
+.mark_component {
+    color:red;
+}
 </style>
 {% endblock %}
 
@@ -85,9 +91,8 @@
     {% endif %}
 {% else %}
     {% if activity_lock %}
-        {% if reviewer_components %}
-            {% for review in reviewer_components %}
-            {% if review.feedback %}
+        {% for review in reviewer_components %}
+            {% if review.reviewed %}
                 <div class="reviewed">
                     <div class="identifier">{{ review.identifier }}</div>
                     <legend>reviewed</legend>
@@ -99,20 +104,29 @@
                     <button class="review_button" value="{{ review.slug }}">Review</button>
                 </div>
             {% endif %}
-            {% endfor %}
-        {% endif %}
+        {% endfor %}
     {% else %}
         <h2>Peer review is not available at this time; go for a coffee and try again later, cowboy.</h2>
     {% endif %}
 
     {% if reviewee_components %}
-    <br><h2>Other people's comments on your work thus far:</h2><br>
-    {% for review in reviewee_components %}
-        {% if review.feedback %}
-        <div class="feedback">
-            {{review.feedback|linebreaksbr}}
-        </div>
-        {% endif %}
+    <h2>Other people's comments on your work:</h2>
+    {% for component in reviewee_components %}
+        <h3>{{ component.title|linebreaks}}</h3>
+        {% if component.max_mark%}
+            <p class="empty mark_component">{{component.title}} has no mark component</p>
+        {% endif %}<br>
+        
+        {% for student_mark in component.student_marks %}
+            <div class="feedback">
+                {% if component.max_mark %}
+                <div class="mark_component">
+                    {{ student_mark.mark}} / {{component.max_mark}}
+                </div><br>
+                {% endif %}
+                {{student_mark.textbox|linebreaksbr}}
+            </div>
+        {% endfor %}
     {% endfor %}
     {% endif %}
 {% endif %}

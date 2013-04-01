@@ -248,6 +248,18 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     context = {'course': course, 'activity': activity, 'students': combined, 'peerreview':peerreview, 'submitted':submitted, 'subs':subs}
     return render(request, 'peerreview/peer_review_info_staff.html', context)
 
+def _create_reviewer_components(student_peer_reviews):
+    """
+    Check whether a student is already reviewed and return a list of assigned students to review
+    """
+    reviewer_components = []
+    for student_peer_review in student_peer_reviews:
+        reviewed = list(StudentMark.objects.filter(student_peer_review=student_peer_review).exclude(last_modified=None))
+        if len(reviewed) > 0:
+            student_peer_review.reviewed = True
+        reviewer_components.append(student_peer_review)
+    return reviewer_components
+
 @login_required
 def peer_review_info_student(request, course_slug, activity_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
@@ -263,20 +275,36 @@ def peer_review_info_student(request, course_slug, activity_slug):
     locked = is_student_locked(activity=activity, student=student_member)
 
     reviewer_components = []
-    if activity_lock and locked:
-        reviewer_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
-        if len(reviewer_components) < peerreview.number_of_reviews:
-            submitted_students = []
-            for student in student_member_list:
-                sub, sub_component = get_current_submission(student.person, activity)
-                if sub:
-                    submitted_students.append(student)
-            reviewer_components = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member)
-            
-        if len(reviewer_components) == 0:
-            messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
+    reviewee_components = []
+    if peerreview.due_date > datetime.datetime.now():
+        if activity_lock and locked:
+            """if student can perform peerreview, check the following:
+            1. student as a reviewer is NOT LESS than the number specified by instructor (may have more)
+            2. if student is assigned no peers to review, give warning message
+            """
+            times_reviewer = list(StudentPeerReview.objects.filter(reviewer=student_member))
+            if len(times_reviewer) < peerreview.number_of_reviews:
+                submitted_students = []
+                for student in student_member_list:
+                    sub, sub_component = get_current_submission(student.person, activity)
+                    if sub:
+                        submitted_students.append(student)
+                times_reviewer = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member)
+                
+            if len(times_reviewer) == 0:
+                messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
 
-    reviewee_components = list(StudentPeerReview.objects.filter(reviewee=student_member))
+            reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer)
+    else:
+        times_reviewee = StudentPeerReview.objects.filter(reviewee=student_member, peer_review_component=peerreview)
+        marking_sections = MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False)
+        for marking_section in marking_sections:
+            student_marks = StudentMark.objects.filter(marking_section=marking_section, student_peer_review__in=times_reviewee).values('textbox', 'mark')
+            reviewee_components.append({
+                'title':marking_section.title, 
+                'max_mark':marking_section.max_mark,
+                'student_marks': student_marks,
+            })
     
     context = {
         'locked':locked,
@@ -288,38 +316,91 @@ def peer_review_info_student(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/student_peer_review.html", context)
 
+def _create_student_marks(student_peer_review, marking_sections):
+    for marking_section in marking_sections:
+        StudentMark.objects.create(
+            marking_section=marking_section,
+            student_peer_review=student_peer_review
+        )
+
+def _get_student_marks(peerreview, student_review):
+    """
+    Returns a list of StudentMark objects
+    if StudentMark isn't created, creates them
+    """
+    marking_sections = list(MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False))
+    student_marks = list(StudentMark.objects.filter(student_peer_review=student_review, marking_section__in=marking_sections))
+
+    if len(student_marks) == 0:
+        _create_student_marks(student_peer_review=student_review, marking_sections=marking_sections)
+    elif len(student_marks) == len(marking_sections):
+        return student_marks
+    else:
+        uncreated_marking_sections = []
+        for marking_section in marking_sections:
+            try:
+                StudentMark.objects.get(marking_section=marking_section, student_peer_review=student_review)
+            except:
+                uncreated_marking_sections.append(marking_section)
+        _create_student_marks(student_peer_review=student_review, marking_sections=uncreated_marking_sections)
+
+    student_marks = list(StudentMark.objects.filter(student_peer_review=student_review, marking_section__in=marking_sections))
+    return student_marks
+
 @login_required
 def student_review(request, course_slug, activity_slug, peerreview_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-    student_review = StudentPeerReview.objects.get(slug=peerreview_slug)
+    student_review = get_object_or_404(StudentPeerReview, slug=peerreview_slug)
+
+    try:
+        activity_lock = ActivityLock.objects.get(activity=activity)
+    except:
+        activity_lock = None
+    locked = is_student_locked(activity=activity, student=student_member)
+
+    if request.user.username != student_review.reviewer.person.userid:
+        return ForbiddenResponse
+    elif not activity_lock or not locked:
+        return ForbiddenResponse
     
     submission, submitted_components = get_current_submission(student_review.reviewee.person, activity, include_deleted=False)
-    
+
+    postdata = None
     if request.method == 'POST':
-        form = StudentReviewForm(request.POST)
-        if form.is_valid():
-            student_review.feedback = form.cleaned_data['feedback']
-            student_review.save()
+        postdata = request.POST
+    
+    student_marks = _get_student_marks(peerreview=peerreview, student_review=student_review)
+    student_mark_data = []
+    i = 1
+    for student_mark in student_marks:
+        form = StudentMarkForm(student_mark.marking_section.max_mark, instance=student_mark, data=postdata, prefix="cmp-%s" % (i))
+        student_mark_data.append({
+            'title':student_mark.marking_section.title,
+            'description':student_mark.marking_section.description,
+            'max_mark':student_mark.marking_section.max_mark,
+            'form':form
+        })
+        i += 1
 
-            #send email notification to student
-            student_review.add_reviewee_NewsItem()
-
-        return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
-    else:
-        form_initials = {
-            'feedback' : student_review.feedback,
-        }
-        form = StudentReviewForm(initial=form_initials)
+    if request.method == 'POST':
+        if (False not in [entry['form'].is_valid() for entry in student_mark_data]):
+            for entry in student_mark_data:
+                c = entry['form']
+                instance = c.save()
+                instance.last_modified = datetime.datetime.now()
+                instance.save()
+            
+            return HttpResponseRedirect(reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
 
     context = {
         'submitted_components':submitted_components,
         'activity':activity,
         'course':course,
         'student_review':student_review,
-        'form':form,
+        'student_mark_data':student_mark_data,
     }
 
     return render(request, "peerreview/student_review.html", context)
@@ -355,72 +436,3 @@ def download_file(request, course_slug, activity_slug, component_slug, submissio
     else:
         # no component specified: give back the full ZIP file.
         return generate_zip_file(submission, submitted_components)
-
-
-#code used for reference NOTE: delete later       
-def _old_save_components(formset, activity, user):
-    total_mark = 0
-    for form in formset.forms:
-        try:  # title is required, empty title triggers KeyError and don't consider this row
-            form.cleaned_data['title']
-        except KeyError:
-            continue
-        else:
-            instance = form.save(commit = False)
-            instance.numeric_activity = activity            
-            instance.save()
-            
-            if not instance.deleted:
-                total_mark += instance.max_mark
-                action = 'saved'
-            else:
-                action = 'deleted'                           
-            #LOG EVENT#
-            l = LogEntry(userid=user,
-                  description=(u"%s marking component %s of %s") % 
-                              (action, instance, activity),
-                  related_object=instance)  
-            l.save()         
-            
-    return total_mark
-
-def manage_activity_components(request, course_slug, activity_slug):    
-    error_info = None
-    course = get_object_or_404(CourseOffering, slug = course_slug)   
-    activity = get_object_or_404(NumericActivity, offering = course, slug = activity_slug, deleted=False)   
-    fields = ('title', 'description', 'max_mark', 'deleted',)
-    ComponentsFormSet  = modelformset_factory(ActivityComponent, fields=fields, \
-                                              formset=BaseActivityComponentFormSet, \
-                                              can_delete = False, extra = 25) 
-    
-    qset = ActivityComponent.objects.filter(numeric_activity = activity, deleted=False)
-                 
-    if request.method == "POST":     
-        formset = ComponentsFormSet(activity, request.POST, queryset = qset)
-        
-        if not formset.is_valid(): 
-            if formset.non_form_errors(): # not caused by error of an individual form
-                error_info = formset.non_form_errors()[0] 
-        else:          
-            # save the formset  
-            now_max = _save_components(formset, activity, request.user.username)
-            messages.add_message(request, messages.SUCCESS, 'Components of %s Saved!' % activity.name)
-            # if the max grade changed
-            if now_max != activity.max_grade: 
-                old_max = activity.max_grade
-                activity.max_grade = now_max
-                activity.save()               
-                messages.add_message(request, messages.WARNING, \
-                                     "The max grade of %s updated from %s to %s" % (activity.name, old_max, now_max))
-           
-            return _redirct_response(request, course_slug, activity_slug)            
-    else: # for GET request
-        formset = ComponentsFormSet(activity, queryset = qset) 
-    
-    if error_info:
-        messages.add_message(request, messages.ERROR, error_info)
-    return render_to_response("marking/components.html", 
-                              {'course' : course, 'activity' : activity,\
-                               'formset' : formset },\
-                               context_instance=RequestContext(request))
-
