@@ -6,31 +6,28 @@
 
 {% block headextra %}
 <script type="text/javascript">
+function add_more() {
+        var count = 0;
+        $('#review_components tr.hidden').each(function() {
+            if (count < 1) {
+                count += 1;
+                $(this).removeClass('hidden');
+            }
+        })
+        if ( count < 1 ) {
+            $("#button_more").addClass("hidden");
+        }
+        return false;
+    }
+
 $(document).ready(function() {
     $("#id_due_date_0").datepicker({ buttonImageOnly: true, buttonImage: '{{MEDIA_URL}}images/grades/calendar.png',
                                 changeMonth: true, changeYear: true,
                                 dateFormat: 'yy-mm-dd', showOn: 'button'});
+    $("#button_more").removeClass("hidden");
+    $("#button_more").click(add_more);
+    add_more()
 });
-//<![CDATA[
-    function add_more() {
-    	var count = 0;
-    	$('#review_components tr.hidden').each(function() {
-    		if (count < 1) {
-    			count += 1;
- 		   		$(this).removeClass('hidden');
-    		}
-    	})
-    	if ( count < 1 ) {
-    		$("#button_more").addClass("hidden");
-    	}
-	    return false;
-	}
-    $(document).ready(function() {
-	$("#button_more").removeClass("hidden");
-	$("#button_more").click(add_more);
-	add_more();
-    });
-//]]>
 </script>
 {% endblock %}
 
@@ -60,10 +57,6 @@ $(document).ready(function() {
                     </tr>         
                 </thead>  
                 <tbody>
-	                {% for form in formset.forms|slice:":-25" %} 	      
-		                {{ form|display_form_as_row:"deleted_flag"}}
-	                {% endfor %}
-	                {# you can add 9 more components #}
                     {% for form in formset.forms|slice:"-25:" %}
                         {% if form.title.value %}
                             {{ form|display_form_as_row }}
