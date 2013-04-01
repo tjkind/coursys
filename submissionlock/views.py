@@ -162,7 +162,7 @@ def staff_edit_activity_lock(request, course_slug, activity_slug):
                 lock_status = 'unlocked'
             lock_date = activity_lock.display_lock_date()
         else:
-            lock_status = 'locked'
+            lock_status = 'unlocked'
             if activity.due_date:
                 lock_date = activity.due_date
             else:
