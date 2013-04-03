@@ -185,26 +185,34 @@ def staff_review_student(request, course_slug, activity_slug, userid):
     try:
         received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
         received_student_marks = StudentMark.objects.filter(student_peer_review = received_reviews)
-        print "Received reviews: %i" %(received_reviews.count())
     except:
         print "Received retrieve failed"
         pass
     try:
         given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewer = student_member)
         given_student_marks = StudentMark.objects.filter(student_peer_review = given_reviews)
-        print "Given reviews: %i" %(given_reviews.count())
     except:
         print "Given retrieve failed"
         pass
     try:
-        marking_sections = MarkingSection.objects.filter(peer_review_component = peer_review_component).distinct()
-        print "Marking sections: %i" %(marking_sections.count())
+        marking_sections = MarkingSection.objects.filter(peer_review_component = peer_review_component).filter(deleted = False).distinct()
     except:
         print "Marking sections retrieve failed"
         pass
     
-    combined_reviewed = zip(received_reviews, received_student_marks)
-    combined_given = zip(given_reviews, given_student_marks)
+    try:
+        combined_reviewed = zip(received_reviews, received_student_marks)
+    except:
+        print "Reviewed Combined failed"
+        pass
+    
+    try:
+        combined_given = zip(given_reviews, given_student_marks)
+    except:
+        print "Given Combined failed"
+        pass
+
+    print "Combined reviewed: %i, Combined given: %i" %(len(combined_reviewed), len(combined_given))
     
     context = {
         'student': student_member,
@@ -212,8 +220,8 @@ def staff_review_student(request, course_slug, activity_slug, userid):
         'course': course,
         'sub_comps': sub_comps,
         'submitted': submitted,
-        'reviewed': combined_reviewed,
-        'given': combined_given,
+        'combined_reviewed': combined_reviewed,
+        'combined_given': combined_given,
         #'received_reviews': received_reviews,
         #'received_student_marks': received_student_marks,
         #'given_reviews': given_reviews,
@@ -257,11 +265,13 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     if (peerreview):
         for student in students:
             try:
-                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewee = student, feedback__gt='')))
+                received_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewee = student)))
+                #, feedback__gt=''
             except:
                 pass
             try:
-                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewer = student, feedback__gt='')))
+                given_reviews.append(len(StudentPeerReview.objects.filter(peer_review_component = peerreview, reviewer = student)))
+                #, feedback__gt=''
             except:
                 pass
 

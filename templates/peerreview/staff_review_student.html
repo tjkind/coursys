@@ -56,16 +56,14 @@
                 <th scope="col">Reviewer</th>      
             </tr>         
         </thead>  
-    {% if received_reviews %}
+    {% if combined_reviewed %}
     <tbody>
         {% for review in combined_reviewed %}
-        {% if review.1.textbox %}
             <tr>
-                <td>review.1.textbox</td>
-                <td>review.1.mark</td>
-                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewer.person.userid %}">{{ review.0.reviewer.person.userid }}</a></td>
-            
-        {% endif %}
+                <td>{{review.1.textbox}}</td>
+                <td>{{review.1.mark}}</td>
+                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.0.reviewer.person.userid %}">{{ review.0.reviewer.person.userid }}</a></td>
+
         {% endfor %}
     {% else %}
                 <td>None</td>
@@ -91,14 +89,14 @@
                 <th scope="col">Reviewee</th>      
             </tr>         
         </thead>  
-    {% if received_reviews %}
+    {% if combined_given %}
     <tbody>
         {% for review in combined_given %}
         {% if review.1.textbox %}
             <tr>
-                <td>review.1.textbox</td>
-                <td>review.1.mark</td>
-                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.0.reviewee.person.userid }}</a></td>
+                <td>{{review.1.textbox}}</td>
+                <td>{{review.1.mark}}</td>
+                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.0.reviewee.person.userid %}">{{ review.0.reviewee.person.userid }}</a></td>
         {% endif %}
         {% endfor %}
     {% else %}
