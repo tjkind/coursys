@@ -44,53 +44,72 @@
 	{% else %}
 	    <p>No Submission to Download</p>
 	{% endif %}
+	{% for section in marking_sections %}
+	<h3>Title: {{ section.title }}</h3>
+	<h3>Description: {{ section.description }}</h3>
+                
+	<table class="display" id="reviewed_components">
+        <thead class="form_head">
+            <tr>
+                <th scope="col">Comments: </th>
+                <th scope="col">Mark out of {{ section.max_mark }}</th>
+                <th scope="col">Reviewer</th>      
+            </tr>         
+        </thead>  
     {% if received_reviews %}
-        {% for review in received_reviews %}
-        {% with review as note %}
-        {% if note.feedback %}
-
-        <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
-	        <p>From: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewer.person.userid %}">{{ review.reviewer.person.userid }}</a></p>
-	    </h2>
-        <div class="note-box" id="note-box-{{note.id}}">
-            <div class="note-content">
-                {{note.feedback|linebreaks}}
-            </div>
-        </div>
-        
+    <tbody>
+        {% for review in combined_reviewed %}
+        {% if review.1.textbox %}
+            <tr>
+                <td>review.1.textbox</td>
+                <td>review.1.mark</td>
+                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewer.person.userid %}">{{ review.0.reviewer.person.userid }}</a></td>
+            
         {% endif %}
-        {% endwith %}
         {% endfor %}
     {% else %}
+                <td>None</td>
+                <td>None</td>
+                <td>None</td>
+            </tr>
+    </tbody>
         <p> This student has not received any reviews for this peer review assignment</p>
     {% endif %}
+    </table>
+    {% endfor %}
+    
     <h1>Reviews By {{student.person.userid}}</h1>
-    {% if given_reviews %}    
-        {% for review in given_reviews %}
-        {% with review as note %}
-        {%if note.feedback %}
-        
-        <h2 class="note{% if not note.hidden %} show{% endif %}" id="note-{{note.id}}">
-	        <p>For: <a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a></p>
-	    </h2>
-
-        <div class="note-box" id="note-box-{{note.id}}">
-            {% if submitted|hash:review.reviewee.person.userid %}
-		        <a href="{% url submission.views.download_file course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}" class="calculate"> Download Submission <img src="{{MEDIA_URL}}icons/page_compressed.png" title="download ZIP" alt="Download"/></a>
-	        {% else %}
-	            <p>No Submission to Download</p>
-	        {% endif %}
-            <div class="note-content">
-                {{note.feedback|linebreaks}}
-            </div>
-        </div>
-        
+    {% for section in marking_sections %}
+	<h3>Title: {{ section.title }}</h3>
+	<h3>Description: {{ section.description }}</h3>
+                
+	<table class="display" id="given_components">
+        <thead class="form_head">
+            <tr>
+                <th scope="col">Comments: </th>
+                <th scope="col">Mark out of {{ section.max_mark }}</th>
+                <th scope="col">Reviewee</th>      
+            </tr>         
+        </thead>  
+    {% if received_reviews %}
+    <tbody>
+        {% for review in combined_given %}
+        {% if review.1.textbox %}
+            <tr>
+                <td>review.1.textbox</td>
+                <td>review.1.mark</td>
+                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.0.reviewee.person.userid }}</a></td>
         {% endif %}
-        {% endwith %}
         {% endfor %}
     {% else %}
-        <p> No Submission to Download</p>
+                <td>None</td>
+                <td>None</td>
+                <td>None</td>
+            </tr>
+    </tbody>
         <p> This student has not given any reviews for this peer review assignment</p>
     {% endif %}
+    </table>
+    {% endfor %} 
     </div>
 {% endblock %}

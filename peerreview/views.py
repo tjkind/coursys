@@ -184,12 +184,27 @@ def staff_review_student(request, course_slug, activity_slug, userid):
 
     try:
         received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
+        received_student_marks = StudentMark.objects.filter(student_peer_review = received_reviews)
+        print "Received reviews: %i" %(received_reviews.count())
     except:
+        print "Received retrieve failed"
         pass
     try:
         given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewer = student_member)
+        given_student_marks = StudentMark.objects.filter(student_peer_review = given_reviews)
+        print "Given reviews: %i" %(given_reviews.count())
     except:
+        print "Given retrieve failed"
         pass
+    try:
+        marking_sections = MarkingSection.objects.filter(peer_review_component = peer_review_component).distinct()
+        print "Marking sections: %i" %(marking_sections.count())
+    except:
+        print "Marking sections retrieve failed"
+        pass
+    
+    combined_reviewed = zip(received_reviews, received_student_marks)
+    combined_given = zip(given_reviews, given_student_marks)
     
     context = {
         'student': student_member,
@@ -197,8 +212,13 @@ def staff_review_student(request, course_slug, activity_slug, userid):
         'course': course,
         'sub_comps': sub_comps,
         'submitted': submitted,
-        'received_reviews': received_reviews,
-        'given_reviews': given_reviews
+        'reviewed': combined_reviewed,
+        'given': combined_given,
+        #'received_reviews': received_reviews,
+        #'received_student_marks': received_student_marks,
+        #'given_reviews': given_reviews,
+        #'given_student_marks': given_student_marks,
+        'marking_sections': marking_sections
     }
     
     return render(request, "peerreview/staff_review_student.html", context)
