@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response, get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import get_current_site
 from django.contrib import messages
+from django.db import transaction
 from django.forms.models import modelformset_factory
 
 from datetime import date, datetime
@@ -102,6 +103,7 @@ def add_peer_review_component(request, course_slug, activity_slug):
     return render(request, "peerreview/add_peer_review_component.html", context)
 
 @requires_course_staff_by_slug
+@transaction.commit_on_success
 def edit_peer_review_component(request, course_slug, activity_slug):
     error_info = None
     course = get_object_or_404(CourseOffering, slug = course_slug)
@@ -153,6 +155,39 @@ def edit_peer_review_component(request, course_slug, activity_slug):
         'activity' : activity,
     }
     return render(request, "peerreview/edit_peer_review_component.html", context)
+
+@requires_course_staff_by_slug
+@transaction.commit_on_success
+def manage_component_positions(request, course_slug, activity_slug): 
+    course = get_object_or_404(CourseOffering, slug = course_slug)
+    #activity = get_object_or_404(NumericActivity, offering = course, slug = activity_slug, deleted=False)
+    activity = get_object_or_404(Activity, slug = activity_slug)
+    #components =  ActivityComponent.objects.filter(numeric_activity = activity, deleted=False)
+    peerreview_component = get_object_or_404(PeerReviewComponent, activity = activity)
+    components = MarkingSection.objects.filter(peer_review_component = peerreview_component, deleted=False);
+    
+    if request.method == 'POST':
+        if request.is_ajax():
+            component_ids = request.POST.getlist('ids[]') 
+            position = 1;
+            for cid in component_ids:
+                comp = get_object_or_404(components, id=cid)
+                comp.position = position
+                comp.save()
+                position += 1
+            
+            #LOG EVENT
+            l = LogEntry(userid=request.user.username,
+                  description=(u"updated positions of marking components in %s") % activity,
+                  related_object=activity)
+            l.save()        
+                
+            return HttpResponse("Positions of components updated !")
+           
+    return render_to_response("peerreview/component_positions.html",
+                              {'course' : course, 'activity' : activity,\
+                               'components': components, 'components': components},\
+                               context_instance=RequestContext(request))
 
 @requires_course_staff_by_slug
 def staff_review_student(request, course_slug, activity_slug, userid):

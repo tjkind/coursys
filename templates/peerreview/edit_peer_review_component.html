@@ -37,6 +37,10 @@ $(document).ready(function() {
 {% endblock %}
 
 {% block content %}
+    <ul id="form_nav">
+        <li class="current"><a href="{% url peerreview.views.edit_peer_review_component course_slug=course.slug activity_slug=activity.slug %}">Edit Components Content</a></li>  
+        <li><a href="{% url peerreview.views.manage_component_positions course_slug=course.slug activity_slug=activity.slug %}">Edit Components Order</a></li>  
+    </ul>
     <div class="form_container">
         <form action="{% url peerreview.views.edit_peer_review_component course_slug=course.slug activity_slug=activity.slug%}" enctype="multipart/form-data" method="post">{% csrf_token %}
             <fieldset>

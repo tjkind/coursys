@@ -18,11 +18,11 @@ class PeerReviewComponent(models.Model):
 
 class MarkingSection(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
-    max_mark = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    title = models.CharField(max_length=50)
+    max_mark = models.DecimalField(max_digits=5, decimal_places=2, null=False, blank=False)
+    title = models.CharField(max_length=50, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
     position = models.IntegerField(null=True, blank=True)
-    deleted = models.BooleanField(default=False)
+    deleted = models.BooleanField(null = False, db_index = True, default = False)
     config = JSONField(null=False, blank=False, default={})
 
 class StudentPeerReview(models.Model):

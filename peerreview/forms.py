@@ -62,7 +62,7 @@ class StudentMarkForm(ModelForm):
                 raise forms.ValidationError(u"Mark cannot exceed " + str(self.max_mark))
         return mark
 
-class BaseMarkingSectionFormSet(BaseModelFormSet): 
+class BaseMarkingSectionFormSet(BaseModelFormSet):                
     def clean(self):
         """Checks the following:
         1. no two component have the same title  
@@ -70,7 +70,8 @@ class BaseMarkingSectionFormSet(BaseModelFormSet):
         """
         if any(self.errors):
             # Don't bother validating the formset unless each form is valid on its own
-             return
+            raise forms.ValidationError(u"Error!")
+            return
         # check titles
         titles = []
         for form in self.forms:
