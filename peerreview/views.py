@@ -7,6 +7,7 @@ from django.contrib.sites.models import get_current_site
 from django.contrib import messages
 from django.db import transaction
 from django.forms.models import modelformset_factory
+from django.http import HttpResponse
 
 from datetime import date, datetime
 from urlparse import urlparse
@@ -19,6 +20,7 @@ from peerreview.forms import *
 from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
+from log.models import LogEntry
 
 
 def _save_marking_section(formset, peerreview_component):
