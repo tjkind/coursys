@@ -44,70 +44,80 @@
 	{% else %}
 	    <p>No Submission to Download</p>
 	{% endif %}
-	{% for section in marking_sections %}
-	<h3>Title: {{ section.title }}</h3>
-	<h3>Description: {{ section.description }}</h3>
-                
-	<table class="display" id="reviewed_components">
-        <thead class="form_head">
-            <tr>
-                <th scope="col">Comments: </th>
-                <th scope="col">Mark out of {{ section.max_mark }}</th>
-                <th scope="col">Reviewer</th>      
-            </tr>         
-        </thead>  
-    {% if combined_reviewed %}
-    <tbody>
-        {% for review in combined_reviewed %}
-            <tr>
-                <td>{{review.1.textbox}}</td>
-                <td>{{review.1.mark}}</td>
-                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.0.reviewer.person.userid %}">{{ review.0.reviewer.person.userid }}</a></td>
 
-        {% endfor %}
-    {% else %}
-                <td>None</td>
-                <td>None</td>
-                <td>None</td>
-            </tr>
-    </tbody>
-        <p> This student has not received any reviews for this peer review assignment</p>
-    {% endif %}
-    </table>
+	{% for section in marking_sections %}
+        <h3>Title: {{ section.title }}</h3>
+        <h3>Description: {{ section.description }}</h3>
+                    
+        <table class="display" id="reviewed_components">
+            <thead class="form_head">
+                <tr>
+                    <th scope="col">Comments: </th>
+                    <th scope="col">Mark out of {{ section.max_mark }}</th>
+                    <th scope="col">Reviewer</th>      
+                </tr>         
+            </thead>  
+            {% if section.received_reviews %}
+                <tbody>
+                {% for review in section.received_reviews %}
+                    {% for mark in review.marks %}
+                        <tr>
+                            <td>{{mark.textbox}}</td>
+                            <td>{{mark.mark}}</td>
+                            <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a></td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+                </tbody>
+            {% else %}
+                <tbody>
+                    <tr> 
+                        <td>None</td>
+                        <td>None</td>
+                        <td>None</td>
+                    </tr>
+                </tbody>
+                <p> This student has not received any reviews for this peer review assignment</p>
+            {% endif %}
+        </table>
     {% endfor %}
     
     <h1>Reviews By {{student.person.userid}}</h1>
     {% for section in marking_sections %}
-	<h3>Title: {{ section.title }}</h3>
-	<h3>Description: {{ section.description }}</h3>
-                
-	<table class="display" id="given_components">
-        <thead class="form_head">
-            <tr>
-                <th scope="col">Comments: </th>
-                <th scope="col">Mark out of {{ section.max_mark }}</th>
-                <th scope="col">Reviewee</th>      
-            </tr>         
-        </thead>  
-    {% if combined_given %}
-    <tbody>
-        {% for review in combined_given %}
-        {% if review.1.textbox %}
-            <tr>
-                <td>{{review.1.textbox}}</td>
-                <td>{{review.1.mark}}</td>
-                <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.0.reviewee.person.userid %}">{{ review.0.reviewee.person.userid }}</a></td>
+        <h3>Title: {{ section.title }}</h3>
+        <h3>Description: {{ section.description }}</h3>
+                    
+        <table class="display" id="given_components">
+            <thead class="form_head">
+                <tr>
+                    <th scope="col">Comments: </th>
+                    <th scope="col">Mark out of {{ section.max_mark }}</th>
+                    <th scope="col">Reviewee</th>      
+                </tr>         
+            </thead>  
+        {% if section.given_reviews %}
+            <tbody>
+            {% for review in section.given_reviews %}
+                {% for mark in review.marks %}
+                    <tr>
+                        <td>{{mark.textbox}}</td>
+                        <td>{{mark.mark}}</td>
+                        <td><a href="{% url peerreview.views.staff_review_student course_slug=course.slug activity_slug=activity.slug userid=review.reviewee.person.userid %}">{{ review.reviewee.person.userid }}</a></td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        {% else %}
+            <tbody>
+                <tr> 
+                    <td>None</td>
+                    <td>None</td>
+                    <td>None</td>
+                </tr>
+            </tbody>
+            <p> This student has not given any reviews for this peer review assignment</p>
         {% endif %}
-        {% endfor %}
-    {% else %}
-                <td>None</td>
-                <td>None</td>
-                <td>None</td>
-            </tr>
-    </tbody>
-        <p> This student has not given any reviews for this peer review assignment</p>
-    {% endif %}
-    </table>
+        </table>
     {% endfor %} 
     </div>
 {% endblock %}

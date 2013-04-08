@@ -21,6 +21,7 @@ from peerreview.models import *
 from submissionlock.models import is_student_locked, SubmissionLock, ActivityLock
 from submission.models import SubmissionComponent, GroupSubmission, StudentSubmission, get_current_submission, select_all_submitted_components, select_all_components
 from log.models import LogEntry
+import copy
 
 
 def _save_marking_section(formset, peerreview_component):
@@ -193,76 +194,46 @@ def manage_component_positions(request, course_slug, activity_slug):
 
 @requires_course_staff_by_slug
 def staff_review_student(request, course_slug, activity_slug, userid):
-    try:
-        student_member = get_object_or_404(Member, person__userid=userid, offering__slug=course_slug)
-        print "student found"
-        print student_member.person.userid
-    except:
-        print "student not found"
+    student_member = get_object_or_404(Member, person__userid=userid, offering__slug=course_slug)
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug, offering=course)
     peer_review_component = get_object_or_404(PeerReviewComponent, activity = activity)
     
     # collect submission status
-    sub_comps = [sc.title for sc in SubmissionComponent.objects.filter(activity=activity, deleted=False)]
     submitted = {}
     if activity.group:
-        print "is group"
         subs = GroupSubmission.objects.filter(activity=activity).select_related('group')
         for s in subs:
             members = s.group.groupmember_set.filter(activity=activity)
             for m in members:
                 submitted[m.student.person.userid] = True
     else:
-        print "not group"
         subs = StudentSubmission.objects.filter(activity=activity)
         for s in subs:
             submitted[s.member.person.userid] = True
 
-    try:
-        received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
-        received_student_marks = StudentMark.objects.filter(student_peer_review = received_reviews)
-    except:
-        print "Received retrieve failed"
-        pass
-    try:
-        given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewer = student_member)
-        given_student_marks = StudentMark.objects.filter(student_peer_review = given_reviews)
-    except:
-        print "Given retrieve failed"
-        pass
-    try:
-        marking_sections = MarkingSection.objects.filter(peer_review_component = peer_review_component).filter(deleted = False).distinct()
-    except:
-        print "Marking sections retrieve failed"
-        pass
+    received_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewee = student_member)
+    given_reviews = StudentPeerReview.objects.filter(peer_review_component = peer_review_component, reviewer = student_member)
+    marking_sections = MarkingSection.objects.filter(peer_review_component = peer_review_component).filter(deleted = False).distinct()
     
-    try:
-        combined_reviewed = zip(received_reviews, received_student_marks)
-    except:
-        print "Reviewed Combined failed"
-        pass
-    
-    try:
-        combined_given = zip(given_reviews, given_student_marks)
-    except:
-        print "Given Combined failed"
-        pass
-
-    print "Combined reviewed: %i, Combined given: %i" %(len(combined_reviewed), len(combined_given))
+    for section in marking_sections:
+        section.given_reviews = []
+        section.received_reviews = []
+        for review in given_reviews:
+            a = copy.deepcopy( review ) 
+            a.marks = StudentMark.objects.filter(student_peer_review = review, marking_section = section ); 
+            section.given_reviews.append(a)
+        for review in received_reviews:
+            a = copy.deepcopy( review ) 
+            a.marks = StudentMark.objects.filter(student_peer_review = review, marking_section = section ); 
+            section.received_reviews.append(a)
     
     context = {
         'student': student_member,
         'activity': activity,
         'course': course,
-        'sub_comps': sub_comps,
         'submitted': submitted,
-        'combined_reviewed': combined_reviewed,
-        'combined_given': combined_given,
-        #'received_reviews': received_reviews,
-        #'received_student_marks': received_student_marks,
-        #'given_reviews': given_reviews,
-        #'given_student_marks': given_student_marks,
+        'received_reviews': received_reviews,
         'marking_sections': marking_sections
     }
     
