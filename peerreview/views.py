@@ -34,7 +34,7 @@ def ping(request):
     return HttpResponseRedirect(reverse('dashboard.views.index'))
 
 
-def _save_marking_section(formset, peerreview_component):
+def _save_marking_section(formset, peer_review_component):
     position = 0
     for form in formset.forms:
         try:  # title is required, empty title triggers KeyError and don't consider this row
@@ -43,18 +43,9 @@ def _save_marking_section(formset, peerreview_component):
             continue
         else:
             instance = form.save(commit = False)
-            instance.peer_review_component = peerreview_component
+            instance.peer_review_component = peer_review_component
             instance.position = position
             instance.save()
-            """
-            instance = MarkingSection.objects.create(
-                peer_review_component = peerreview_component,
-                title = form.cleaned_data['title'],
-                description = form.cleaned_data['description'],
-                max_mark = form.cleaned_data['max_mark'],
-                position = position
-            )
-            """
             position += 1
 
 @requires_course_staff_by_slug
@@ -85,20 +76,20 @@ def add_peer_review_component(request, course_slug, activity_slug):
                 error_info = formset.non_form_errors()[0]  
         elif form.is_valid() and formset.is_valid():
             try: #see if peerreview component already exists for this activity
-                peerreview_component = PeerReviewComponent.objects.get(activity=activity)
-                peerreview_component.due_date = form.cleaned_data['due_date']
-                peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
-                peerreview_component.save()
+                peer_review_component = PeerReviewComponent.objects.get(activity=activity)
+                peer_review_component.due_date = form.cleaned_data['due_date']
+                peer_review_component.number_of_reviews = form.cleaned_data['number_of_reviews']
+                peer_review_component.save()
                 print "Exists and edited"
             except: #else create a peerreview component
-                peerreview_component = PeerReviewComponent.objects.create(
+                peer_review_component = PeerReviewComponent.objects.create(
                     activity = activity,
                     due_date = form.cleaned_data['due_date'],
                     number_of_reviews = form.cleaned_data['number_of_reviews'],
                 )
                 print "Created"
 
-            _save_marking_section(formset, peerreview_component)
+            _save_marking_section(formset, peer_review_component)
                         
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
@@ -122,7 +113,7 @@ def edit_peer_review_component(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
     class_size = activity.offering.members.count()
-    peerreview_component = get_object_or_404(PeerReviewComponent, activity=activity)
+    peer_review_component = get_object_or_404(PeerReviewComponent, activity=activity)
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
         if activity_lock.display_lock_status() != "Locked":
@@ -136,7 +127,7 @@ def edit_peer_review_component(request, course_slug, activity_slug):
                                               formset=BaseMarkingSectionFormSet, \
                                               can_delete = False, extra = 10) 
     
-    qset = MarkingSection.objects.filter(peer_review_component=peerreview_component, deleted=False).order_by('position')
+    qset = MarkingSection.objects.filter(peer_review_component=peer_review_component, deleted=False).order_by('position')
 
     if request.method == 'POST':
         formset = MarkingSectionFormSet(request.POST, queryset=qset)
@@ -146,17 +137,17 @@ def edit_peer_review_component(request, course_slug, activity_slug):
             if formset.non_form_errors(): # not caused by error of an individual form
                 error_info = formset.non_form_errors()[0]   
         elif form.is_valid() and formset.is_valid():
-            peerreview_component.due_date = form.cleaned_data['due_date']
-            peerreview_component.number_of_reviews = form.cleaned_data['number_of_reviews']
-            peerreview_component.save()
-            _save_marking_section(formset, peerreview_component)
+            peer_review_component.due_date = form.cleaned_data['due_date']
+            peer_review_component.number_of_reviews = form.cleaned_data['number_of_reviews']
+            peer_review_component.save()
+            _save_marking_section(formset, peer_review_component)
             return HttpResponseRedirect(reverse('grades.views.activity_info', kwargs={'course_slug': course_slug, 'activity_slug': activity_slug}))
     else:
         formset = MarkingSectionFormSet(queryset = qset)
         form = AddPeerReviewComponentForm(class_size, initial=
         {
-            'due_date':peerreview_component.due_date,
-            'number_of_reviews':peerreview_component.number_of_reviews,
+            'due_date':peer_review_component.due_date,
+            'number_of_reviews':peer_review_component.number_of_reviews,
         })
 
     if error_info:
@@ -174,8 +165,8 @@ def edit_peer_review_component(request, course_slug, activity_slug):
 def manage_component_positions(request, course_slug, activity_slug): 
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug = activity_slug)
-    peerreview_component = get_object_or_404(PeerReviewComponent, activity = activity)
-    components = MarkingSection.objects.filter(peer_review_component = peerreview_component, deleted=False).order_by('position');
+    peer_review_component = get_object_or_404(PeerReviewComponent, activity = activity)
+    components = MarkingSection.objects.filter(peer_review_component = peer_review_component, deleted=False).order_by('position');
     
     if request.method == 'POST':
         if request.is_ajax():
@@ -316,8 +307,8 @@ def peer_review_info_student(request, course_slug, activity_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
-    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-    marking_sections = MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False).order_by('position')
+    peer_review_component = get_object_or_404(PeerReviewComponent, activity=activity)
+    marking_sections = MarkingSection.objects.filter(peer_review_component=peer_review_component, deleted=False).order_by('position')
     student_member_list = Member.objects.filter(offering=course, role="STUD").exclude(pk=student_member.pk)
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
@@ -328,27 +319,27 @@ def peer_review_info_student(request, course_slug, activity_slug):
 
     reviewer_components = []
     reviewee_components = []
-    if peerreview.due_date > datetime.datetime.now():
+    if peer_review_component.due_date > datetime.datetime.now():
         if activity_lock and locked:
             """if student can perform peerreview, check the following:
             1. student as a reviewer is NOT LESS than the number specified by instructor (may have more)
             2. if student is assigned no peers to review, give warning message
             """
             times_reviewer = list(StudentPeerReview.objects.filter(reviewer=student_member))
-            if len(times_reviewer) < peerreview.number_of_reviews:
+            if len(times_reviewer) < peer_review_component.number_of_reviews:
                 submitted_students = []
                 for student in student_member_list:
                     sub, sub_component = get_current_submission(student.person, activity)
                     if sub:
                         submitted_students.append(student)
-                times_reviewer = generate_student_peer_reviews(peer_review_component=peerreview, students=submitted_students, student_member=student_member)
+                times_reviewer = generate_student_peer_reviews(peer_review_component=peer_review_component, students=submitted_students, student_member=student_member)
                 
             if len(times_reviewer) == 0:
                 messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
 
             reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer, marking_sections=marking_sections)
     else:
-        times_reviewee = StudentPeerReview.objects.filter(reviewee=student_member, peer_review_component=peerreview)
+        times_reviewee = StudentPeerReview.objects.filter(reviewee=student_member, peer_review_component=peer_review_component)
         for marking_section in marking_sections:
             student_marks = StudentMark.objects.filter(marking_section=marking_section, student_peer_review__in=times_reviewee).values('textbox', 'mark')
             reviewee_components.append({
@@ -365,7 +356,7 @@ def peer_review_info_student(request, course_slug, activity_slug):
         'course':course,
         'activity':activity,
     }
-    return render(request, "peerreview/student_peer_review.html", context)
+    return render(request, "peerreview/peer_review_info_student.html", context)
 
 def _create_student_marks(student_peer_review, marking_sections):
     for marking_section in marking_sections:
@@ -374,12 +365,12 @@ def _create_student_marks(student_peer_review, marking_sections):
             student_peer_review=student_peer_review
         )
 
-def _get_student_marks(peerreview, student_review):
+def _get_student_marks(peer_review_component, student_review):
     """
     Returns a list of StudentMark objects
     if StudentMark isn't created, creates them
     """
-    marking_sections = list(MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False).order_by('position'))
+    marking_sections = list(MarkingSection.objects.filter(peer_review_component=peer_review_component, deleted=False).order_by('position'))
     student_marks = []
     for marking_section in marking_sections:
         student_marks = student_marks + list(StudentMark.objects.filter(student_peer_review=student_review, marking_section=marking_section))
@@ -401,12 +392,12 @@ def _get_student_marks(peerreview, student_review):
     return student_marks
 
 @login_required
-def student_review(request, course_slug, activity_slug, peerreview_slug):
+def student_review_student(request, course_slug, activity_slug, studentreview_slug):
     student_member = get_object_or_404(Member, person__userid=request.user.username, offering__slug=course_slug, role='STUD')
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
-    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
-    student_review = get_object_or_404(StudentPeerReview, slug=peerreview_slug)
+    peer_review_component = get_object_or_404(PeerReviewComponent, activity=activity)
+    student_review = get_object_or_404(StudentPeerReview, slug=studentreview_slug)
 
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
@@ -425,7 +416,7 @@ def student_review(request, course_slug, activity_slug, peerreview_slug):
     if request.method == 'POST':
         postdata = request.POST
     
-    student_marks = _get_student_marks(peerreview=peerreview, student_review=student_review)
+    student_marks = _get_student_marks(peer_review_component=peer_review_component, student_review=student_review)
     student_mark_data = []
     i = 1
     for student_mark in student_marks:
@@ -456,14 +447,13 @@ def student_review(request, course_slug, activity_slug, peerreview_slug):
         'student_mark_data':student_mark_data,
     }
 
-    return render(request, "peerreview/student_review.html", context)
+    return render(request, "peerreview/student_review_student.html", context)
 
 @login_required
-def download_file(request, course_slug, activity_slug, component_slug, submission_id, peerreview_slug):
+def download_file(request, course_slug, activity_slug, component_slug, submission_id, studentreview_slug):
     course = get_object_or_404(CourseOffering, slug=course_slug)
     activity = get_object_or_404(course.activity_set, slug = activity_slug, deleted=False)
-    student_review = get_object_or_404(StudentPeerReview, slug=peerreview_slug)
-    peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+    student_review = get_object_or_404(StudentPeerReview, slug=studentreview_slug)
     reviewer = student_review.reviewer
     reviewee = student_review.reviewee
 

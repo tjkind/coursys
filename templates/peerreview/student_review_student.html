@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content%}
-<form action="{% url peerreview.views.student_review course_slug=course.slug activity_slug=activity.slug peerreview_slug=student_review.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
+<form action="{% url peerreview.views.student_review_student course_slug=course.slug activity_slug=activity.slug studentreview_slug=student_review.slug %}" enctype="multipart/form-data" method="post">{% csrf_token %}
 {% ifequal submitted_pair|length 0 %}
     {# there is no component #}
 {% else %}
@@ -36,7 +36,7 @@
             <img src="{{MEDIA_URL}}icons/cancel.png" alt="warning" />
             Doesn't seem to be anything here
     {% else %}
-            <img src="{{MEDIA_URL}}icons/attach.png" alt="download" /><a href="{% url peerreview.views.download_file course_slug=course.slug activity_slug=activity.slug component_slug=pair.0.slug submission_id=pair.1.submission.id peerreview_slug=student_review.slug %}">Download {% if pair.1.get_filename %}{{ pair.1.get_filename }}{% else %}submission{% endif %}</a>
+            <img src="{{MEDIA_URL}}icons/attach.png" alt="download" /><a href="{% url peerreview.views.download_file course_slug=course.slug activity_slug=activity.slug component_slug=pair.0.slug submission_id=pair.1.submission.id studentreview_slug=student_review.slug %}">Download {% if pair.1.get_filename %}{{ pair.1.get_filename }}{% else %}submission{% endif %}</a>
     {% endifequal %}
     </div>
     {% endfor %}
