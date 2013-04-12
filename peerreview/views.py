@@ -292,7 +292,7 @@ def peer_review_info_staff(request, course_slug, activity_slug):
 
 def _create_reviewer_components(student_peer_reviews, marking_sections):
     """
-    Check whether a student is already reviewed and return a list of assigned students to review
+    Check the list of students to review and mark those already reviewed
     """
     reviewer_components = []
     for student_peer_review in student_peer_reviews:
@@ -319,25 +319,23 @@ def peer_review_info_student(request, course_slug, activity_slug):
 
     reviewer_components = []
     reviewee_components = []
-    if peer_review_component.due_date > datetime.datetime.now():
-        if activity_lock and locked:
-            """if student can perform peerreview, check the following:
-            1. student as a reviewer is NOT LESS than the number specified by instructor (may have more)
-            2. if student is assigned no peers to review, give warning message
-            """
-            times_reviewer = list(StudentPeerReview.objects.filter(reviewer=student_member))
-            if len(times_reviewer) < peer_review_component.number_of_reviews:
-                submitted_students = []
-                for student in student_member_list:
-                    sub, sub_component = get_current_submission(student.person, activity)
-                    if sub:
-                        submitted_students.append(student)
-                times_reviewer = generate_student_peer_reviews(peer_review_component=peer_review_component, students=submitted_students, student_member=student_member)
-                
-            if len(times_reviewer) == 0:
-                messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
+    if peer_review_component.due_date > datetime.datetime.now() and activity_lock and locked:
+        times_reviewer = list(StudentPeerReview.objects.filter(reviewer=student_member))
+        
+        # if student has less reviewee assigned than specified by instructor, assign more
+        if len(times_reviewer) < peer_review_component.number_of_reviews:
+            submitted_students = []
+            for student in student_member_list:
+                sub, sub_component = get_current_submission(student.person, activity)
+                if sub:
+                    submitted_students.append(student)
+            times_reviewer = generate_student_peer_reviews(peer_review_component=peer_review_component, students=submitted_students, student_member=student_member)
 
-            reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer, marking_sections=marking_sections)
+        # if student after assigning reviewees still have 0 to review, throw warning message
+        if len(times_reviewer) == 0:
+            messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
+
+        reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer, marking_sections=marking_sections)
     else:
         times_reviewee = StudentPeerReview.objects.filter(reviewee=student_member, peer_review_component=peer_review_component)
         for marking_section in marking_sections:
@@ -358,37 +356,18 @@ def peer_review_info_student(request, course_slug, activity_slug):
     }
     return render(request, "peerreview/peer_review_info_student.html", context)
 
-def _create_student_marks(student_peer_review, marking_sections):
-    for marking_section in marking_sections:
-        StudentMark.objects.create(
-            marking_section=marking_section,
-            student_peer_review=student_peer_review
-        )
-
 def _get_student_marks(peer_review_component, student_review):
-    """
-    Returns a list of StudentMark objects
-    if StudentMark isn't created, creates them
-    """
     marking_sections = list(MarkingSection.objects.filter(peer_review_component=peer_review_component, deleted=False).order_by('position'))
     student_marks = []
     for marking_section in marking_sections:
-        student_marks = student_marks + list(StudentMark.objects.filter(student_peer_review=student_review, marking_section=marking_section))
-
-    if len(student_marks) == 0:
-        _create_student_marks(student_peer_review=student_review, marking_sections=marking_sections)
-    elif len(student_marks) == len(marking_sections):
-        return student_marks
-    else:
-        uncreated_marking_sections = []
-        for marking_section in marking_sections:
-            try:
-                StudentMark.objects.get(marking_section=marking_section, student_peer_review=student_review)
-            except:
-                uncreated_marking_sections.append(marking_section)
-        _create_student_marks(student_peer_review=student_review, marking_sections=uncreated_marking_sections)
-
-    student_marks = list(StudentMark.objects.filter(student_peer_review=student_review, marking_section__in=marking_sections))
+        try:
+            student_marks.append(StudentMark.objects.get(marking_section=marking_section, student_peer_review=student_review))
+        except:
+            student_mark = StudentMark.objects.create(
+                marking_section=marking_section,
+                student_peer_review=student_review
+            )
+            student_marks.append(student_mark)
     return student_marks
 
 @login_required
