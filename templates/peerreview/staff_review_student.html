@@ -52,9 +52,9 @@
         <table class="display" id="reviewed_components">
             <thead class="form_head">
                 <tr>
-                    <th scope="col">Comments: </th>
-                    <th scope="col">Mark out of {{ section.max_mark }}</th>
-                    <th scope="col">Reviewer</th>      
+                    <th scope="col" width="70%">Comments: </th>
+                    <th scope="col" width="15%">Mark out of {{ section.max_mark }}</th>
+                    <th scope="col" width="15%">Reviewer</th>      
                 </tr>         
             </thead>  
             {% if section.received_reviews %}
@@ -90,9 +90,9 @@
         <table class="display" id="given_components">
             <thead class="form_head">
                 <tr>
-                    <th scope="col">Comments: </th>
-                    <th scope="col">Mark out of {{ section.max_mark }}</th>
-                    <th scope="col">Reviewee</th>      
+                    <th scope="col" width="70%">Comments: </th>
+                    <th scope="col" width="15%">Mark out of {{ section.max_mark }}</th>
+                    <th scope="col" width="15%">Reviewee</th>      
                 </tr>         
             </thead>  
         {% if section.given_reviews %}

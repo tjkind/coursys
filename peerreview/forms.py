@@ -83,7 +83,12 @@ class BaseMarkingSectionFormSet(BaseModelFormSet):
                 title = form.cleaned_data['title']
                 if (not form.cleaned_data['deleted']) and title in titles:
                     raise forms.ValidationError(u"Each component must have a unique title")
-                titles.append(title)  
+                if not form.cleaned_data['deleted']:
+                    titles.append(title)  
+        
+        # check # of titels, need to greater than 1
+        if len(titles)<1:
+            raise forms.ValidationError(u"Need to include at least one component")
         
         # check max marks
         for form in self.forms:

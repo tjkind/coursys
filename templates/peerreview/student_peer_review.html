@@ -113,16 +113,12 @@
     <h2>Other people's comments on your work:</h2>
     {% for component in reviewee_components %}
         <h3>{{ component.title|linebreaks}}</h3>
-        {% if component.max_mark%}
-            <p class="empty mark_component">{{component.title}} has no mark component</p>
-        {% endif %}<br>
-        
         {% for student_mark in component.student_marks %}
             <div class="feedback">
                 {% if component.max_mark %}
-                <div class="mark_component">
-                    {{ student_mark.mark}} / {{component.max_mark}}
-                </div><br>
+                    <div class="mark_component">
+                        {{ student_mark.mark}} / {{component.max_mark}}
+                    </div><br>
                 {% endif %}
                 {{student_mark.textbox|linebreaksbr}}
             </div>

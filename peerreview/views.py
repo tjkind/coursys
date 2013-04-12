@@ -23,6 +23,16 @@ from submission.models import SubmissionComponent, GroupSubmission, StudentSubmi
 from log.models import LogEntry
 import copy
 
+"""
+A ping function for checking PeerReviewComponents that are past due date.
+Creates news item and email the students for the past due PeerReviewComponents
+"""
+def ping(request):
+    due_peer_review_components = PeerReviewComponent.objects.filter(due_date__lt=datetime.datetime.now())
+    for peer_review_component in due_peer_review_components:
+        peer_review_component.add_class_NewsItem()
+    return HttpResponseRedirect(reverse('dashboard.views.index'))
+
 
 def _save_marking_section(formset, peerreview_component):
     position = 0
@@ -126,7 +136,7 @@ def edit_peer_review_component(request, course_slug, activity_slug):
                                               formset=BaseMarkingSectionFormSet, \
                                               can_delete = False, extra = 10) 
     
-    qset = MarkingSection.objects.filter(peer_review_component=peerreview_component, deleted=False)
+    qset = MarkingSection.objects.filter(peer_review_component=peerreview_component, deleted=False).order_by('position')
 
     if request.method == 'POST':
         formset = MarkingSectionFormSet(request.POST, queryset=qset)
@@ -163,11 +173,9 @@ def edit_peer_review_component(request, course_slug, activity_slug):
 @transaction.commit_on_success
 def manage_component_positions(request, course_slug, activity_slug): 
     course = get_object_or_404(CourseOffering, slug = course_slug)
-    #activity = get_object_or_404(NumericActivity, offering = course, slug = activity_slug, deleted=False)
     activity = get_object_or_404(Activity, slug = activity_slug)
-    #components =  ActivityComponent.objects.filter(numeric_activity = activity, deleted=False)
     peerreview_component = get_object_or_404(PeerReviewComponent, activity = activity)
-    components = MarkingSection.objects.filter(peer_review_component = peerreview_component, deleted=False);
+    components = MarkingSection.objects.filter(peer_review_component = peerreview_component, deleted=False).order_by('position');
     
     if request.method == 'POST':
         if request.is_ajax():
@@ -228,6 +236,9 @@ def staff_review_student(request, course_slug, activity_slug, userid):
             a.marks = StudentMark.objects.filter(student_peer_review = review, marking_section = section ); 
             section.received_reviews.append(a)
     
+
+    if peer_review_component.due_date > datetime.datetime.now():
+        messages.warning(request, "Students may still alter their reviews until " + str(peer_review_component.due_date))
     context = {
         'student': student_member,
         'activity': activity,
@@ -288,13 +299,13 @@ def peer_review_info_staff(request, course_slug, activity_slug):
     context = {'course': course, 'activity': activity, 'students': combined, 'peerreview':peerreview, 'submitted':submitted, 'subs':subs}
     return render(request, 'peerreview/peer_review_info_staff.html', context)
 
-def _create_reviewer_components(student_peer_reviews):
+def _create_reviewer_components(student_peer_reviews, marking_sections):
     """
     Check whether a student is already reviewed and return a list of assigned students to review
     """
     reviewer_components = []
     for student_peer_review in student_peer_reviews:
-        reviewed = list(StudentMark.objects.filter(student_peer_review=student_peer_review).exclude(last_modified=None))
+        reviewed = list(StudentMark.objects.filter(student_peer_review=student_peer_review, marking_section__in=marking_sections).exclude(last_modified=None))
         if len(reviewed) > 0:
             student_peer_review.reviewed = True
         reviewer_components.append(student_peer_review)
@@ -306,6 +317,7 @@ def peer_review_info_student(request, course_slug, activity_slug):
     course = get_object_or_404(CourseOffering, slug = course_slug)
     activity = get_object_or_404(Activity, slug=activity_slug, offering=course)
     peerreview = get_object_or_404(PeerReviewComponent, activity=activity)
+    marking_sections = MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False).order_by('position')
     student_member_list = Member.objects.filter(offering=course, role="STUD").exclude(pk=student_member.pk)
     try:
         activity_lock = ActivityLock.objects.get(activity=activity)
@@ -329,15 +341,14 @@ def peer_review_info_student(request, course_slug, activity_slug):
                     sub, sub_component = get_current_submission(student.person, activity)
                     if sub:
                         submitted_students.append(student)
-                times_reviewer = generate_peerreview(peerreview=peerreview, students=submitted_students, student_member=student_member)
+                times_reviewer = generate_student_peer_reviews(peer_review_component=peerreview, students=submitted_students, student_member=student_member)
                 
             if len(times_reviewer) == 0:
                 messages.warning(request, "There doesn't seem to be any submission assigned to you for review, contact the instructor if this is not suppose to happen")
 
-            reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer)
+            reviewer_components = _create_reviewer_components(student_peer_reviews=times_reviewer, marking_sections=marking_sections)
     else:
         times_reviewee = StudentPeerReview.objects.filter(reviewee=student_member, peer_review_component=peerreview)
-        marking_sections = MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False)
         for marking_section in marking_sections:
             student_marks = StudentMark.objects.filter(marking_section=marking_section, student_peer_review__in=times_reviewee).values('textbox', 'mark')
             reviewee_components.append({
@@ -368,8 +379,10 @@ def _get_student_marks(peerreview, student_review):
     Returns a list of StudentMark objects
     if StudentMark isn't created, creates them
     """
-    marking_sections = list(MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False))
-    student_marks = list(StudentMark.objects.filter(student_peer_review=student_review, marking_section__in=marking_sections))
+    marking_sections = list(MarkingSection.objects.filter(peer_review_component=peerreview, deleted=False).order_by('position'))
+    student_marks = []
+    for marking_section in marking_sections:
+        student_marks = student_marks + list(StudentMark.objects.filter(student_peer_review=student_review, marking_section=marking_section))
 
     if len(student_marks) == 0:
         _create_student_marks(student_peer_review=student_review, marking_sections=marking_sections)

@@ -347,6 +347,7 @@ urlpatterns += patterns('',
     url(r'^admin/(?P<unit_slug>[\w-]+)/instr$', 'coredata.views.missing_instructors'),
     
     # PeerReview
+    url(r'^peerreview/ping/$', 'peerreview.views.ping'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/add/$', 'peerreview.views.add_peer_review_component'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/edit/$', 'peerreview.views.edit_peer_review_component'),
     url(r'^peerreview/' + COURSE_ACTIVITY_SLUG + '/component/edit/positions/$', 'peerreview.views.manage_component_positions'),

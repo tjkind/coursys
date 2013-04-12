@@ -14,7 +14,16 @@ class PeerReviewComponent(models.Model):
     due_date = models.DateTimeField(null=True, help_text='Due date for Peer Reviews')
     number_of_reviews = models.IntegerField(null=True, help_text="This is the number of peer reviews each student is expected to perform")
     hidden = models.BooleanField(null=False, default=False)
-    config = JSONField(null=False, blank=False, default={}) 
+    config = JSONField(null=False, blank=False, default={})
+
+    def add_class_NewsItem(self):
+        NewsItem.for_members(member_kwargs={'offering': self.activity.offering, 'role':'STUD'}, newsitem_kwargs={
+                    'author': None, 'course': self.activity.offering, 'source_app': 'peerreview',
+                    'title': "%s reviews available" % (self.activity.name),
+                    'content': 'Reviews from peers have been released for %s in %s.'
+                      % (self.activity.name, self.activity.offering.name()),
+                    'url': reverse('peerreview.views.peer_review_info_student', kwargs={'course_slug': self.activity.offering.slug, 'activity_slug': self.activity.slug})}
+                )
 
 class MarkingSection(models.Model):
     peer_review_component = models.ForeignKey(PeerReviewComponent)
@@ -56,17 +65,17 @@ class StudentMark(models.Model):
     marking_section = models.ForeignKey(MarkingSection)
     student_peer_review = models.ForeignKey(StudentPeerReview)
     textbox = models.TextField(null=True, blank=True)
-    mark = models.IntegerField(null=True, blank=True)
+    mark = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=datetime.datetime.now())
-    last_modified = models.DateTimeField(default=datetime.datetime.now())
+    last_modified = models.DateTimeField(null=True, blank=True)
 
-def generate_peerreview(peerreview, students, student_member):
-    review_components = list(StudentPeerReview.objects.filter(reviewer=student_member))
-    number_of_reviews = peerreview.number_of_reviews
+def generate_student_peer_reviews(peer_review_component, students, student_member):
+    review_components = list(StudentPeerReview.objects.filter(reviewer=student_member, peer_review_component=peer_review_component))
+    number_of_reviews = peer_review_component.number_of_reviews
     student_pending = []
 
-    priority_list = _generate_priority_list(students=students, student_member=student_member, peerreview=peerreview)
+    priority_list = _generate_priority_list(students=students, student_member=student_member, peer_review_component=peer_review_component)
 
     for student, reviewed in priority_list:
         if (len(student_pending)+len(review_components)>=number_of_reviews):
@@ -76,31 +85,31 @@ def generate_peerreview(peerreview, students, student_member):
 
     for student in student_pending:        
         new_review = StudentPeerReview.objects.create(
-            peer_review_component = peerreview,
+            peer_review_component = peer_review_component,
             reviewer = student_member,
             reviewee = student,
-            identifier = _unique_identifier_generator(),
+            identifier = _unique_identifier_generator(peer_review_component=peer_review_component),
         )
         review_components.append(new_review)
 
     return review_components
 
-def _generate_priority_list(students, student_member, peerreview):
+def _generate_priority_list(students, student_member, peer_review_component):
     priority_list = []
     for student in students:
         #check if student_member is already reviewing student's work
-        if len(StudentPeerReview.objects.filter(peer_review_component=peerreview, reviewer=student_member, reviewee=student))==0:
+        if len(StudentPeerReview.objects.filter(peer_review_component=peer_review_component, reviewer=student_member, reviewee=student))==0:
             reviewed_times = len(StudentPeerReview.objects.filter(reviewee=student))
             priority_list.append((student, reviewed_times))
 
     return sorted(priority_list, key=lambda student:student[1])
 
-def _unique_identifier_generator():
+def _unique_identifier_generator(peer_review_component):
     identifier = _name_generator() + " " + _name_generator()
     unique = False
     while not unique:
         try:
-            check_unique = StudentPeerReview.objects.get(peer_review_component=peerreview, identifier=identifier)
+            check_unique = StudentPeerReview.objects.get(peer_review_component=peer_review_component, identifier=identifier)
             identifier = _name_generator() + " " + _name_generator()
         except:
             unique = True
