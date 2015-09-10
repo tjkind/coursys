@@ -39,9 +39,75 @@ VISA_STATUSES = ( # as taken from SIMS ps_visa_permit_tbl
         ('Live-in Ca', 'Live-in Caregiver'),
         )
 
-class Person(models.Model, ConditionalSaveMixin):
+
+
+class AnyPerson(models.Model, ConditionalSaveMixin):
     """
-    A person in the system (students, instuctors, etc.).
+    An abstract base class to represent a human.
+    """
+    last_name = models.CharField(max_length=32)
+    first_name = models.CharField(max_length=32)
+    middle_name = models.CharField(max_length=32, null=True, blank=True)
+    pref_first_name = models.CharField(max_length=32, null=True, blank=True)
+    title = models.CharField(max_length=4, null=True, blank=True)
+    config = JSONField(null=False, blank=False, default={}) # addition configuration stuff
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return "%s, %s" % (self.last_name, self.first_name)
+
+    def name(self):
+        return "%s %s" % (self.first_name, self.last_name)
+
+    def sortname(self):
+        return "%s, %s" % (self.last_name, self.first_name)
+
+    def initials(self):
+        return "%s%s" % (self.first_name[0], self.last_name[0])
+
+    def real_pref_first(self):
+        return self.config.get('pref_first_name', None) or self.pref_first_name or self.first_name
+
+    def name_pref(self):
+        return "%s %s" % (self.real_pref_first(), self.last_name)
+
+    def first_with_pref(self):
+        name = self.first_name
+        pref = self.real_pref_first()
+        if pref != self.first_name:
+            name += ' (%s)' % (pref)
+        return name
+
+    def sortname_pref(self):
+        return "%s, %s" % (self.last_name, self.first_with_pref())
+
+    def name_with_pref(self):
+        return "%s %s" % (self.first_with_pref(), self.last_name)
+
+    def letter_name(self):
+        if 'letter_name' in self.config:
+            return self.config['letter_name']
+        else:
+            return self.name()
+
+    def get_title(self):
+        if 'title' in self.config:
+            return self.config['title']
+        elif self.title:
+            return self.title
+        elif 'gender' in self.config and self.config['gender'] == 'M':
+            return 'Mr'
+        elif 'gender' in self.config and self.config['gender'] == 'F':
+            return 'Ms'
+        else:
+            return 'M'
+
+
+class Person(AnyPerson):
+    """
+    A person in the system: a real person in SIMS with an emplid.
     """
     emplid = models.PositiveIntegerField(db_index=True, unique=True, null=False,
                                          verbose_name="ID #",
@@ -49,13 +115,8 @@ class Person(models.Model, ConditionalSaveMixin):
     userid = models.CharField(max_length=8, null=True, blank=True, db_index=True, unique=True,
                               verbose_name="User ID",
         help_text='SFU Unix userid (i.e. part of SFU email address before the "@").')
-    last_name = models.CharField(max_length=32)
-    first_name = models.CharField(max_length=32)
-    middle_name = models.CharField(max_length=32, null=True, blank=True)
-    pref_first_name = models.CharField(max_length=32, null=True, blank=True)
-    title = models.CharField(max_length=4, null=True, blank=True)
     temporary = models.BooleanField(default=False)
-    config = JSONField(null=False, blank=False, default={}) # addition configuration stuff
+    #config:
         # 'email': email, if not the default userid@sfu.ca
         # 'pref_first_name': really, truly preferred first name (which can be set in DB if necessary)
         # 'phones': dictionary of phone number values. Possible keys: 'pref', 'home', 'cell', 'main'
@@ -93,6 +154,9 @@ class Person(models.Model, ConditionalSaveMixin):
     nonstudent_notes, set_nonstudent_notes = getter_setter('nonstudent_notes')
     _, set_title = getter_setter('title')
 
+    class Meta:
+        verbose_name_plural = "People"
+        ordering = ['last_name', 'first_name', 'userid']
 
     @staticmethod
     def emplid_header():
@@ -101,46 +165,9 @@ class Person(models.Model, ConditionalSaveMixin):
     def userid_header():
         return "Userid"
 
-    def __unicode__(self):
-        return "%s, %s" % (self.last_name, self.first_name)
-    def name(self):
-        return "%s %s" % (self.first_name, self.last_name)
-    def sortname(self):
-        return "%s, %s" % (self.last_name, self.first_name)
-    def initials(self):
-        return "%s%s" % (self.first_name[0], self.last_name[0])
     def full_email(self):
         return "%s <%s>" % (self.name(), self.email())
-    def real_pref_first(self):
-        return self.config.get('pref_first_name', None) or self.pref_first_name or self.first_name
-    def name_pref(self):
-        return "%s %s" % (self.real_pref_first(), self.last_name)
-    def first_with_pref(self):
-        name = self.first_name
-        pref = self.real_pref_first()
-        if pref != self.first_name:
-            name += ' (%s)' % (pref)
-        return name
-    def sortname_pref(self):
-        return "%s, %s" % (self.last_name, self.first_with_pref())
-    def name_with_pref(self):
-        return "%s %s" % (self.first_with_pref(), self.last_name)
-    def letter_name(self):
-        if 'letter_name' in self.config:
-            return self.config['letter_name']
-        else:
-            return self.name()
-    def get_title(self):
-        if 'title' in self.config:
-            return self.config['title']
-        elif self.title:
-            return self.title
-        elif 'gender' in self.config and self.config['gender'] == 'M':
-            return 'Mr'
-        elif 'gender' in self.config and self.config['gender'] == 'F':
-            return 'Ms'
-        else:
-            return 'M'
+
     def email(self):
         if 'email' in self.config:
             return self.config['email']
@@ -150,19 +177,17 @@ class Person(models.Model, ConditionalSaveMixin):
             return self.config['applic_email']
         else:
             return None
+
     def userid_or_emplid(self):
         "userid if possible or emplid if not: inverse of find_userid_or_emplid searching"
         return self.userid or str(self.emplid)
 
     def __cmp__(self, other):
         return cmp((self.last_name, self.first_name, self.userid), (other.last_name, other.first_name, other.userid))
-    class Meta:
-        verbose_name_plural = "People"
-        ordering = ['last_name', 'first_name', 'userid']
-    
+
     def delete(self, *args, **kwargs):
         raise NotImplementedError, "This object cannot be deleted because it is used as a foreign key."
-    
+
     def email_mailto(self):
         "A mailto: URL for this person's email address: handles the case where we don't know an email for them."
         email = self.email()
@@ -170,6 +195,7 @@ class Person(models.Model, ConditionalSaveMixin):
             return mark_safe('<a href="mailto:%s">%s</a>' % (escape(email), escape(email)))
         else:
             return "None"
+
     def search_label_value(self):
         return "%s (%s), %s" % (self.name(), self.userid, self.emplid)
 
