@@ -216,6 +216,20 @@ class Person(UseridPerson):
         return "tmp-"+str(Person.next_available_temp_emplid())[5:]
 
 
+class RoleAccount(UseridPerson):
+    """
+    A role account that allows login and email, but isn't a real person for decision-making purposes.
+    """
+    pass
+
+
+class TemporaryPerson(AnyPerson):
+    """
+    Class for people that we expect to become a Person, once they receive an emplid.
+    """
+    pass
+
+
 class Semester(models.Model):
     """
     A semester object: not imported, must be created manually.
