@@ -123,14 +123,50 @@ class AnyPerson(models.Model, ConditionalSaveMixin):
             return 'M'
 
 
-class Person(AnyPerson):
+class UseridPerson(AnyPerson):
+    """
+    A person who has a userid (and thus might log in or receive email)
+    """
+    # TODO: userid should be required here, but not in Person.
+    userid = models.CharField(max_length=8, null=True, blank=True, db_index=True, unique=True, verbose_name="User ID",
+        help_text='SFU Unix userid (i.e. part of SFU email address before the "@").')
+
+    class Meta:
+        abstract = True
+        verbose_name_plural = "People"
+        ordering = ['last_name', 'first_name', 'userid']
+
+    def __cmp__(self, other):
+        return cmp((self.last_name, self.first_name, self.userid), (other.last_name, other.first_name, other.userid))
+
+    def email(self):
+        if 'email' in self.config:
+            return self.config['email']
+        elif self.userid:
+            return "%s@sfu.ca" % (self.userid)
+        elif 'applic_email' in self.config:
+            return self.config['applic_email']
+        else:
+            return None
+
+    def full_email(self):
+        return "%s <%s>" % (self.name(), self.email())
+
+    def email_mailto(self):
+        "A mailto: URL for this person's email address: handles the case where we don't know an email for them."
+        email = self.email()
+        if email:
+            return mark_safe('<a href="mailto:%s">%s</a>' % (escape(email), escape(email)))
+        else:
+            return "None"
+
+
+class Person(UseridPerson):
     """
     A person in the system: a real person in SIMS with an emplid.
     """
     emplid = models.PositiveIntegerField(db_index=True, unique=True, null=False, verbose_name="ID #",
         help_text='Employee ID (i.e. student number)')
-    userid = models.CharField(max_length=8, null=True, blank=True, db_index=True, unique=True, verbose_name="User ID",
-        help_text='SFU Unix userid (i.e. part of SFU email address before the "@").')
     temporary = models.BooleanField(default=False)
     #config:
         # 'applic_email': application email address
@@ -153,10 +189,6 @@ class Person(AnyPerson):
     nonstudent_colg, set_nonstudent_colg = getter_setter('nonstudent_colg')
     nonstudent_notes, set_nonstudent_notes = getter_setter('nonstudent_notes')
 
-    class Meta:
-        verbose_name_plural = "People"
-        ordering = ['last_name', 'first_name', 'userid']
-
     @staticmethod
     def emplid_header():
         return "ID Number"
@@ -164,36 +196,9 @@ class Person(AnyPerson):
     def userid_header():
         return "Userid"
 
-    def full_email(self):
-        return "%s <%s>" % (self.name(), self.email())
-
-    def email(self):
-        if 'email' in self.config:
-            return self.config['email']
-        elif self.userid:
-            return "%s@sfu.ca" % (self.userid)
-        elif 'applic_email' in self.config:
-            return self.config['applic_email']
-        else:
-            return None
-
     def userid_or_emplid(self):
         "userid if possible or emplid if not: inverse of find_userid_or_emplid searching"
         return self.userid or str(self.emplid)
-
-    def __cmp__(self, other):
-        return cmp((self.last_name, self.first_name, self.userid), (other.last_name, other.first_name, other.userid))
-
-    def delete(self, *args, **kwargs):
-        raise NotImplementedError, "This object cannot be deleted because it is used as a foreign key."
-
-    def email_mailto(self):
-        "A mailto: URL for this person's email address: handles the case where we don't know an email for them."
-        email = self.email()
-        if email:
-            return mark_safe('<a href="mailto:%s">%s</a>' % (escape(email), escape(email)))
-        else:
-            return "None"
 
     def search_label_value(self):
         return "%s (%s), %s" % (self.name(), self.userid, self.emplid)
