@@ -51,6 +51,24 @@ class AnyPerson(models.Model, ConditionalSaveMixin):
     pref_first_name = models.CharField(max_length=32, null=True, blank=True)
     title = models.CharField(max_length=4, null=True, blank=True)
     config = JSONField(null=False, blank=False, default={}) # addition configuration stuff
+        # 'email': email, if not the default userid@sfu.ca
+        # 'pref_first_name': really, truly preferred first name (which can be set in DB if necessary)
+        # 'gender': 'M', 'F', 'U'
+        # 'addresses': dictionary of phone number values. Possible keys: 'home', 'mail'
+        # 'sin': Social Insurance Number (usually populated by TA/RA contracts)
+        # 'citizen': country of citizenship (e.g. 'Canada')
+        # 'visa': Canadian visa status (e.g. 'No visa st', 'Perm resid')
+        # 'phones': dictionary of phone number values. Possible keys: 'pref', 'home', 'cell', 'main'
+        # 'birthdate': birth date (e.g. '1980-12-31')
+
+    defaults = {'email': None, 'gender': 'U', 'addresses': {}, 'visa': None, 'citizen': None, 'sin': '000000000'}
+    _, set_title = getter_setter('title')
+    _, set_email = getter_setter('email')
+    gender, _ = getter_setter('gender')
+    visa, _ = getter_setter('visa') # see VISA_STATUSES above for list of possibilities
+    citizen, _ = getter_setter('citizen')
+    sin, set_sin = getter_setter('sin')
+    addresses, _ = getter_setter('addresses')
 
     class Meta:
         abstract = True
@@ -109,26 +127,15 @@ class Person(AnyPerson):
     """
     A person in the system: a real person in SIMS with an emplid.
     """
-    emplid = models.PositiveIntegerField(db_index=True, unique=True, null=False,
-                                         verbose_name="ID #",
+    emplid = models.PositiveIntegerField(db_index=True, unique=True, null=False, verbose_name="ID #",
         help_text='Employee ID (i.e. student number)')
-    userid = models.CharField(max_length=8, null=True, blank=True, db_index=True, unique=True,
-                              verbose_name="User ID",
+    userid = models.CharField(max_length=8, null=True, blank=True, db_index=True, unique=True, verbose_name="User ID",
         help_text='SFU Unix userid (i.e. part of SFU email address before the "@").')
     temporary = models.BooleanField(default=False)
     #config:
-        # 'email': email, if not the default userid@sfu.ca
-        # 'pref_first_name': really, truly preferred first name (which can be set in DB if necessary)
-        # 'phones': dictionary of phone number values. Possible keys: 'pref', 'home', 'cell', 'main'
-        # 'addresses': dictionary of phone number values. Possible keys: 'home', 'mail'
-        # 'gender': 'M', 'F', 'U'
-        # 'citizen': country of citizenship (e.g. 'Canada')
-        # 'visa': Canadian visa status (e.g. 'No visa st', 'Perm resid')
-        # 'birthdate': birth date (e.g. '1980-12-31')
         # 'applic_email': application email address
         # 'gpa': Most recent CGPA for this student
         # 'ccredits': Number of completed credits
-        # 'sin': Social Insurance Number (usually populated by TA/RA contracts)
         # 'nonstudent_hs': highschool field from NonStudent record
         # 'nonstudent_colg': college field from NonStudent record
         # 'nonstudent_notes': notes field from NonStudent record
@@ -136,23 +143,15 @@ class Person(AnyPerson):
         # 'form_email': email address to be used by the onlineforms app for this person
         # 'external_email': external email for non-SFU grad committee members
 
-    defaults = {'email': None, 'gender': 'U', 'addresses': {}, 'gpa': 0.0, 'ccredits': 0.0, 'visa': None,
-                'citizen': None, 'nonstudent_hs': '',  'nonstudent_colg': '', 'nonstudent_notes': None,
-                'sin': '000000000', 'phone_ext': None}
-    _, set_email = getter_setter('email')
-    gender, _ = getter_setter('gender')
-    addresses, _ = getter_setter('addresses')
+    defaults = AnyPerson.defaults.copy()
+    defaults.update({'gpa': 0.0, 'ccredits': 0.0, 'nonstudent_hs': '',  'nonstudent_colg': '', 'nonstudent_notes': None, 'phone_ext': None})
+
     gpa, _ = getter_setter('gpa')
     ccredits, _ = getter_setter('ccredits')
-    # see VISA_STATUSES above for list of possibilities
-    visa, _ = getter_setter('visa')
-    citizen, _ = getter_setter('citizen')
-    sin, set_sin = getter_setter('sin')
     phone_ext, set_phone_ext = getter_setter('phone_ext')
     nonstudent_hs, set_nonstudent_hs = getter_setter('nonstudent_hs')
     nonstudent_colg, set_nonstudent_colg = getter_setter('nonstudent_colg')
     nonstudent_notes, set_nonstudent_notes = getter_setter('nonstudent_notes')
-    _, set_title = getter_setter('title')
 
     class Meta:
         verbose_name_plural = "People"
