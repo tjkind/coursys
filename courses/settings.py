@@ -31,7 +31,7 @@ else:
 #print "DEPLOY_MODE: ", DEPLOY_MODE
 
 DEBUG = DEPLOY_MODE != 'production'
-TEMPLATE_DEBUG = DEBUG
+# TEMPLATE_DEBUG = DEBUG
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -57,7 +57,7 @@ INSTALLED_APPS = (
     # 'south',
     'compressor',
     'haystack',
-    'djcelery',
+    #'djcelery',
     'djcelery_email',
     'featureflags',
     'django_nose',
@@ -92,7 +92,7 @@ INSTALLED_APPS = (
     'api',
     'visas',
 )
-MIDDLEWARE_CLASSES = global_settings.MIDDLEWARE_CLASSES + (
+MIDDLEWARE_CLASSES = global_settings.MIDDLEWARE_CLASSES + [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -101,13 +101,26 @@ MIDDLEWARE_CLASSES = global_settings.MIDDLEWARE_CLASSES + (
     'django_cas.middleware.CASMiddleware',
     'courselib.impersonate.ImpersonateMiddleware',
     #'piwik_middleware.middleware.PiwikMiddleware',
-)
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'templates'),
-)
-TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + (
-    'dashboard.context.media',
-)
+]
+# TEMPLATE_DIRS = (os.path.join(BASE_DIR, 'templates'),)
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'OPTIONS': {
+            'context_processors': global_settings.TEMPLATE_CONTEXT_PROCESSORS + [
+                'dashboard.context.media'],
+        }
+
+    },
+]
+
+#TEMPLATE_CONTEXT_PROCESSORS = global_settings.TEMPLATE_CONTEXT_PROCESSORS + [
+#    'dashboard.context.media',
+#]
 AUTHENTICATION_BACKENDS = (
     'django_cas.backends.CASBackend',
 )
