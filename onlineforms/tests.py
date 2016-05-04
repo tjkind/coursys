@@ -457,7 +457,7 @@ class FieldTestCase(TestCase):
         self.assertEqual(field_submission.data["info"], test_input)
 
     def test_lrgtxt_field(self):
-        test_input = repeat_to_length("The quick brown fox jumps over the lazy dog.", 444)
+        test_input = repeat_to_length("The quick brown fox jumps over the lazy dog.", 444).strip()
         config = self.standard_config.copy()
         config["min_length"] = 401
         config["max_length"] = 490

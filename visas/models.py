@@ -112,7 +112,7 @@ class Visa (models.Model):
         :return: A list of visas
         :rtype: list
         """
-        return Visa.objects.filter(person__in=people).visible().order_by('start_date')
+        return Visa.objects.visible().filter(person__in=people).order_by('start_date')
 
 
 def visa_attachment_upload_to(instance, filename):

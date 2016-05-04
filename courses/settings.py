@@ -57,7 +57,7 @@ INSTALLED_APPS = (
     # 'south',
     'compressor',
     'haystack',
-    #'djcelery',
+    'djcelery',
     'djcelery_email',
     'featureflags',
     'django_nose',
