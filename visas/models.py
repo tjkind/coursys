@@ -30,13 +30,15 @@ def timezone_today():
     return timezone.now().date()
 
 
-class VisaQuerySet(QuerySet):
+class VisaManager(models.Manager):
 
         def visible(self):
-            return self.filter(hidden=False)
+            qs = self.get_queryset()
+            return qs.filter(hidden=False)
 
         def visible_given_user(self, person):
-            return self.filter(hidden=False, person=person)
+            qs = self.get_queryset()
+            return qs.filter(hidden=False, person=person)
 
 
 class Visa (models.Model):
@@ -47,7 +49,7 @@ class Visa (models.Model):
     config = JSONField(null=False, blank=False, editable=False, default=dict)  # For future fields
     hidden = models.BooleanField(default=False, editable=False)
 
-    objects = PassThroughManager.for_queryset_class(VisaQuerySet)()
+    objects = VisaManager()
 
     class Meta:
         ordering = ('start_date',)

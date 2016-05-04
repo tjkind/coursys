@@ -21,7 +21,7 @@ class MyOfferings(CacheMixin, generics.ListAPIView):
     serializer_class = ShortCourseOfferingSerializer
 
     def get_queryset(self):
-        all = self.request.QUERY_PARAMS.get('all', None)
+        all = self.request.query_params.get('all', None)
         if all == 'yes':
             memberships = Member.objects.exclude(role="DROP").exclude(offering__component="CAN") \
                     .filter(offering__graded=True, person__userid=self.request.user.username)
