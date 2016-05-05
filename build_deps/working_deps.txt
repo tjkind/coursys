@@ -6,9 +6,7 @@ Genshi==0.7
 #South==1.0.1
 Unidecode>=0.04.18
 # argparse==1.3.0 # in Python>=2.7
-#django-autoslug==1.9.3
-#hg+https://bitbucket.org/ggbaker/django-autoslug/@f65bfaf#egg=django-autoslug # addresses https://bitbucket.org/neithere/django-autoslug/issue/34/django-migrations-fail-if-autoslugfield
-git+git://github.com/philb61/django-autoslug.git@fe538d1c7ab79dae740fc93041ce2d9e247772b7
+django-autoslug==1.9.4-dev
 #django-cas==2.0.3 # should "pip uninstall django-cas"
 django-debug-toolbar==1.3.0
 django-timezones==0.2
