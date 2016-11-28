@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.core.urlresolvers import reverse
 from django.db.models import Q
@@ -49,13 +49,11 @@ def _create_news(person, url, from_user, accept_deadline):
         # See if we can find a supervisor to notify.  The student shouldn't have Senior, CoSenior, and Potential
         #  supervisors, so we'll just get all of those and grab the first one.
         supervisors = Supervisor.objects.filter(student=gradstudent, supervisor_type__in=['SEN', 'COS', 'POT'])
-        supervisor_url = reverse('ta.views.instr_offers')
         if len(supervisors) > 0:
             supervisor = supervisors[0].supervisor
             n = NewsItem(user=supervisor,
                          source_app="ta_contract",
                          title=u"TA Contract Offer for %s" % person,
-                         url=supervisor_url,
                          author=from_user,
                          content=u"Your student %s has been offered a TA contract." % person
                          )
@@ -319,13 +317,14 @@ def edit_application(request, post_slug, userid):
 def _new_application(request, post_slug, manual=False, userid=None):
     posting = get_object_or_404(TAPosting, slug=post_slug)
     editing = bool(userid)
+    is_ta_admin = False
     
     if editing:
         if userid == request.user.username and posting.is_open():
             # can edit own application until closes
             pass
         elif has_role('TAAD', request) and posting.unit in request.units:
-            # admin can always edit
+            is_ta_admin = True
             pass
         else:
             return ForbiddenResponse(request)
@@ -348,10 +347,15 @@ def _new_application(request, post_slug, manual=False, userid=None):
         application = None
     
     if not manual:
-        try:
-            person = ensure_person_from_userid(request.user.username)
-        except SIMSProblem:
-            return HttpError(request, status=503, title="Service Unavailable", error="Currently unable to handle the request.", errormsg="Problem with SIMS connection while trying to find your account info")
+        """
+        Don't change the person in the case of a TA Admin editing, as we don't want to save this application as the
+        Admin's, but as the original user's.
+        """
+        if not is_ta_admin:
+            try:
+                person = ensure_person_from_userid(request.user.username)
+            except SIMSProblem:
+                return HttpError(request, status=503, title="Service Unavailable", error="Currently unable to handle the request.", errormsg="Problem with SIMS connection while trying to find your account info")
 
         if not person:
             return NotFoundResponse(request, "Unable to find your computing account in the system: this is likely because your account was recently activated, and it should be fixed tomorrow. If not, email coursys-help@sfu.ca.")
@@ -382,10 +386,10 @@ def _new_application(request, post_slug, manual=False, userid=None):
                 return HttpResponseRedirect(reverse('ta.views.view_application', kwargs={'post_slug': existing_app[0].posting.slug, 'userid': existing_app[0].person.userid}))
         
         if editing:
-            ta_form = TAApplicationForm(request.POST, prefix='ta', instance=application)
+            ta_form = TAApplicationForm(request.POST, request.FILES, prefix='ta', instance=application)
         else:
-            ta_form = TAApplicationForm(request.POST, prefix='ta')
-        
+            ta_form = TAApplicationForm(request.POST, request.FILES, prefix='ta')
+
         ta_form.add_extra_questions(posting)
 
         courses_formset = CoursesFormSet(request.POST)
@@ -424,7 +428,25 @@ def _new_application(request, post_slug, manual=False, userid=None):
                 app.person = person
                 if manual:
                     app.admin_create = True
-                    
+
+                # Add our attachments (resume and transcript if included.)
+                if request.FILES and 'ta-resume' in request.FILES:
+                    resume = request.FILES['ta-resume']
+                    resume_file_type = resume.content_type
+                    if resume.charset:
+                        resume_file_type += "; charset=" + resume.charset
+                    app.resume = resume
+                    app.resume_mediatype = resume_file_type
+
+                if request.FILES and 'ta-transcript' in request.FILES:
+                    transcript = request.FILES['ta-transcript']
+                    transcript_file_type = transcript.content_type
+                    if transcript.charset:
+                        transcript_file_type += "; charset=" + transcript.charset
+                    app.transcript = transcript
+                    app.transcript_mediatype = transcript_file_type
+
+
                 app.save()
                 ta_form.save_m2m()
                 
@@ -486,6 +508,12 @@ def _new_application(request, post_slug, manual=False, userid=None):
         # editing: build initial form from existing values
         
         ta_form = TAApplicationForm(prefix='ta', instance=application)
+        # Stupidly, the filefields don't consider themselves "filled" if we have a previous instance that contained
+        # the right fields anyway.  Manually check and clear the required part.
+        if application.resume:
+            ta_form.fields['resume'].required = False
+        if application.transcript:
+            ta_form.fields['transcript'].required = False
         ta_form.add_extra_questions(posting)
         cp_init = [{'course': cp.course, 'taken': cp.taken, 'exper':cp.exper} for cp in old_coursepref]
         search_form = None
@@ -574,6 +602,24 @@ def view_all_applications(request,post_slug):
     return render(request, 'ta/view_all_applications.html', context)
 
 @requires_role("TAAD")
+def download_all_applications(request, post_slug):
+    posting = get_object_or_404(TAPosting, slug=post_slug, unit__in=request.units)
+    applications = TAApplication.objects.filter(posting=posting)
+    response = HttpResponse(content_type='text/csv')
+
+    response['Content-Disposition'] = 'inline; filename="ta_applications-%s-%s.csv"' % \
+                                      (posting.semester.name, datetime.datetime.now().strftime('%Y%m%d'))
+    writer = csv.writer(response)
+    if applications:
+        writer.writerow(['Person', 'Category', 'Program', 'Assigned BUs', 'Max BUs', 'Ranked', 'Assigned'])
+
+        for a in applications:
+            writer.writerow([a.person.sortname(), a.get_category_display(), a.current_program, a.base_units_assigned(),
+                             a.base_units, a.course_pref_display(), a.course_assigned_display()])
+    return response
+
+
+@requires_role("TAAD")
 def print_all_applications(request,post_slug):
     posting = get_object_or_404(TAPosting, slug=post_slug, unit__in=request.units)
     applications = TAApplication.objects.filter(posting=posting).order_by('person')
@@ -633,17 +679,14 @@ def print_all_applications_by_course(request,post_slug):
 @login_required
 def view_application(request, post_slug, userid):
     application = get_object_or_404(TAApplication, posting__slug=post_slug, person__userid=userid)
-    roles = Role.objects.filter(role="TAAD", person__userid=request.user.username)
-   
-    #Only TA Administrator or owner of application can view it
-    if application.person.userid != request.user.username:
-        units = [r.unit for r in roles]
-        if roles.count() == 0:
-            return ForbiddenResponse(request, 'You cannot access this application')
-        elif application.posting.unit not in units:
-            return ForbiddenResponse(request, 'You cannot access this application')
-    else:
-        units = [application.posting.unit]
+    is_ta_admin = Role.objects.filter(role="TAAD", person__userid=request.user.username,
+                                      unit=application.posting.unit).count() > 0
+
+    # Only TA Administrator or owner of application can view it
+    if application.person.userid != request.user.username and not is_ta_admin:
+        return ForbiddenResponse(request, 'You cannot access this application')
+
+    units = [application.posting.unit]
    
     application.courses = CoursePreference.objects.filter(app=application).exclude(rank=0).order_by('rank')
     application.skills = SkillLevel.objects.filter(app=application).select_related('skill')
@@ -654,7 +697,7 @@ def view_application(request, post_slug, userid):
     application.grad_programs = GradStudent.objects \
                  .filter(program__unit__in=units, person=application.person)
 
-    if roles and application.courses:
+    if is_ta_admin and application.courses:
         contract = application.courses[0]
     else:
         contract = None
@@ -662,8 +705,71 @@ def view_application(request, post_slug, userid):
     context = {
             'application':application,
             'contract': contract,
+            'is_ta_admin': is_ta_admin,
             }
     return render(request, 'ta/view_application.html', context)
+
+
+@requires_role("TAAD")
+def view_resume(request, post_slug, userid):
+    application = get_object_or_404(TAApplication, posting__slug=post_slug, person__userid=userid)
+    is_ta_admin = Role.objects.filter(role="TAAD", person__userid=request.user.username,
+                                      unit=application.posting.unit).count() > 0
+    if not is_ta_admin:
+        return ForbiddenResponse(request, 'You cannot access this application')
+    resume = application.resume
+    filename = resume.name.rsplit('/')[-1]
+    resp = StreamingHttpResponse(resume.chunks(), content_type=application.resume_mediatype)
+    resp['Content-Disposition'] = 'inline; filename="' + filename + '"'
+    resp['Content-Length'] = resume.size
+    return resp
+
+
+@requires_role("TAAD")
+def download_resume(request, post_slug, userid):
+    application = get_object_or_404(TAApplication, posting__slug=post_slug, person__userid=userid)
+    is_ta_admin = Role.objects.filter(role="TAAD", person__userid=request.user.username,
+                                      unit=application.posting.unit).count() > 0
+    if not is_ta_admin:
+        return ForbiddenResponse(request, 'You cannot access this application')
+    resume = application.resume
+    filename = resume.name.rsplit('/')[-1]
+    resp = StreamingHttpResponse(resume.chunks(), content_type=application.resume_mediatype)
+    resp['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    resp['Content-Length'] = resume.size
+    return resp
+
+
+@requires_role("TAAD")
+def view_transcript(request, post_slug, userid):
+    application = get_object_or_404(TAApplication, posting__slug=post_slug, person__userid=userid)
+    is_ta_admin = Role.objects.filter(role="TAAD", person__userid=request.user.username,
+                                      unit=application.posting.unit).count() > 0
+    if not is_ta_admin:
+        return ForbiddenResponse(request, 'You cannot access this application')
+    transcript = application.transcript
+    filename = transcript.name.rsplit('/')[-1]
+    resp = StreamingHttpResponse(transcript.chunks(), content_type=application.transcript_mediatype)
+    resp['Content-Disposition'] = 'inline; filename="' + filename + '"'
+    resp['Content-Length'] = transcript.size
+    return resp
+
+
+@requires_role("TAAD")
+def download_transcript(request, post_slug, userid):
+    application = get_object_or_404(TAApplication, posting__slug=post_slug, person__userid=userid)
+    is_ta_admin = Role.objects.filter(role="TAAD", person__userid=request.user.username,
+                                      unit=application.posting.unit).count() > 0
+    if not is_ta_admin:
+        return ForbiddenResponse(request, 'You cannot access this application')
+    transcript = application.transcript
+    filename = transcript.name.rsplit('/')[-1]
+    resp = StreamingHttpResponse(transcript.chunks(), content_type=application.transcript_mediatype)
+    resp['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    resp['Content-Length'] = transcript.size
+    return resp
+
+
 
 @requires_role("TAAD")
 def view_late_applications(request,post_slug):
@@ -1357,6 +1463,8 @@ def edit_posting(request, post_slug=None):
     if current_contact:
         contact_choices.append((current_contact.id, current_contact.name()))
     contact_choices = list(set(contact_choices))
+    # Let's sort these choices by name at least.
+    contact_choices = sorted(contact_choices, key=lambda name: name[1])
     
     if request.method == "POST":
         form = TAPostingForm(data=request.POST, instance=posting)
@@ -1505,8 +1613,8 @@ def generate_csv(request, post_slug):
     csvWriter = csv.writer(response)
     
     #First csv row: all the course names
-    off = ['Name', 'Categ', 'Program (Reported)', 'Program (System)', 'Status', 'Unit', 'Start Sem', 'BU', 'Campus',
-           'Assigned Course(s)', 'Assigned BUs'] + [str(o.course) + ' ' + str(o.section) for o in offerings]
+    off = ['Rank', 'Name', 'Categ', 'Program (Reported)', 'Program (System)', 'Status', 'Unit', 'Start Sem', 'BU',
+           'Campus', 'Assigned Course(s)', 'Assigned BUs'] + [str(o.course) + ' ' + str(o.section) for o in offerings]
     csvWriter.writerow(off)
     
     # next row: campuses
@@ -1515,6 +1623,7 @@ def generate_csv(request, post_slug):
     
     apps = TAApplication.objects.filter(posting=posting).order_by('person')
     for app in apps:
+        rank = 'P%d' % app.rank
         system_program = ''
         startsem = ''
         status = ''
@@ -1555,7 +1664,7 @@ def generate_csv(request, post_slug):
                 assigned_courses = ', '.join([tacourse.course.name() for tacourse in ta_courses])
                 assigned_bus = sum([t.total_bu for t in ta_courses])
 
-        row = [app.person.sortname(), app.category, app.current_program, system_program, status, unit, startsem,
+        row = [rank, app.person.sortname(), app.category, app.current_program, system_program, status, unit, startsem,
                app.base_units, campuspref, assigned_courses, assigned_bus]
         
         for off in offerings:
@@ -1588,7 +1697,7 @@ def generate_csv_by_course(request, post_slug):
     csvWriter = csv.writer(response)
     
     #First csv row: all the course names
-    off = ['Name', 'Student ID', 'Email', 'Category', 'Program', 'BU']
+    off = ['Rank', 'Name', 'Student ID', 'Email', 'Category', 'Program', 'BU']
     extra_questions = []
     if 'extra_questions' in posting.config and len(posting.config['extra_questions']) > 0:
         for question in posting.config['extra_questions']:
@@ -1601,8 +1710,8 @@ def generate_csv_by_course(request, post_slug):
         applications_for_this_offering = [pref.app for pref in prefs if 
             (pref.course.number == offering.course.number and pref.course.subject == offering.course.subject)]
         for app in applications_for_this_offering:
-            
-            row = [app.person.sortname(), app.person.emplid, app.person.email(), app.category, app.current_program, app.base_units]
+            rank = 'P%d' % app.rank
+            row = [rank, app.person.sortname(), app.person.emplid, app.person.email(), app.category, app.current_program, app.base_units]
             if 'extra_questions' in posting.config and len(posting.config['extra_questions']) > 0 and 'extra_questions' in app.config:
                 for question in extra_questions:
                     try:
@@ -1667,10 +1776,11 @@ def contact_tas(request, post_slug):
             from_person = Person.objects.get(userid=request.user.username)
             if 'url' in form.cleaned_data and form.cleaned_data['url']:
                 url = form.cleaned_data['url']
+            else:
+                url = ''
             # message each person
             count = 0
             for person in people:
-                url = ''
                 n = NewsItem(user=person, author=from_person, course=None, source_app='ta_contract',
                              title=form.cleaned_data['subject'], content=form.cleaned_data['text'], url=url)
                 n.save()
@@ -1731,25 +1841,3 @@ def new_description(request):
         form.fields['unit'].choices = unit_choices
     context = {'form': form}
     return render(request, 'ta/new_description.html', context)
-
-from grad.models import STATUS_ACTIVE, STATUS_INACTIVE
-@login_required
-def instr_offers(request):
-    p = get_object_or_404(Person, userid=request.user.username)
-    cutoff = datetime.date.today() - datetime.timedelta(days=60)
-    members = Member.objects.filter(person=p, role="INST", offering__semester__start__gte=cutoff) \
-              .select_related('offering')
-    offerings = [m.offering for m in members]
-    tacrses = TACourse.objects.filter(course__in=offerings, bu__gt=0,
-                                      contract__status__in=['OPN','REJ','ACC','SGN']) \
-                              .select_related('contract__application__person')
-
-    for crs in tacrses:
-        p = crs.contract.application.person
-        gradprog = GradStudent.objects.filter(person=p, current_status__in=STATUS_ACTIVE+STATUS_INACTIVE) \
-                   .select_related('program__unit')
-        crs.gradprog = ', '.join("%s %s" % (gp.program.label, gp.program.unit.label) for gp in gradprog)
-    
-    context = {'tacrses': tacrses}    
-    return render(request, 'ta/instr_offers.html', context)
-

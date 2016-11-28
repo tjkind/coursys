@@ -1,6 +1,5 @@
 # coding=utf-8
 
-from testboost.testcase import FastFixtureTestCase as TestCase
 from grades.formulas import parse, cols_used, eval_parse, EvalException, ParseException
 from grades.models import Activity, NumericActivity, LetterActivity, CalNumericActivity, CalLetterActivity, \
     NumericGrade, LetterGrade, GradeHistory, all_activities_filter, ACTIVITY_STATUS, sorted_letters, \
@@ -114,14 +113,18 @@ class GradesTest(TestCase):
         expr = "[Assignment #2]"
         tree = parse(expr, c, ca)
         
-        # unreleased assignment (with grade)
+        # unreleased assignment (with grade) should not be included in the calculation
         a2.status='URLS'
         a2.save()
         activities = NumericActivity.objects.filter(offering=c)
         act_dict = activities_dictionary(activities)
         res = eval_parse(tree, ca, act_dict, m, True)
         self.assertAlmostEqual(res, 0.0)
-        
+        # ... unless the instructor said to do so.
+        ca.set_calculation_leak(True)
+        res = eval_parse(tree, ca, act_dict, m, True)
+        self.assertAlmostEqual(res, 30.0)
+
         # explicit no grade (released assignment)
         g.flag="NOGR"
         g.save(entered_by='ggbaker')

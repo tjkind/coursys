@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>CourSys Backup Server Config</title>
+<style type="text/css">
+body {
+  margin-bottom: 5em;
+}
+h2 {
+  margin-top: 2em;
+}
+dt {
+  margin-top: 1em;
+  font-weight: bold;
+}
+code.file {
+  font-weight: bold;
+}
+.del {
+  text-decoration: line-through;
+}
+</style>
+</head>
+<body>
+<h1>CourSys Backup Server Config</h1>
+
+<p>This describes the method used to set up the production backup server in November 2016.</p>
+
+<h2 id="base">Base System Setup</h2>
+<dl>
+    <dt>Base system</dt>
+    <dd>
+        <p>VM provided by CSTS with Ubuntu 14.04 base system installed.</p>
+        <p>Basic setup needed to bootstsrap the coursys user:</p>
+        <blockquote><pre>sudo apt-get update
+sudo apt-get dist-upgrade
+sudo apt-get install git
+sudo adduser coursys
+sudo gpasswd -a coursys sudo
+sudo su coursys</pre></blockquote>
+    </dd>
+
+    <dt>Configure Production Server</dt>
+    <dd>
+        <p>Install or create the GPG key for backup encryption. Store the key and passphrase somewhere safe.</p>
+        <p>On the production server, in <code class="file">courses/secrets.py</code>, set the variables <code>BACKUP_SERVER</code>, <code>BACKUP_USER</code>, <code>BACKUP_PATH</code>, <code>BACKUP_PASSPHRASE</code>.</p>
+    </dd>
+    <dt>Configure Backup Server</dt>
+    <dd>
+        <p>Make sure there is a disk with lots of space mounted covering <code>BACKUP_PATH</code>.</p>
+        <blockquote><pre>sudo mkdir $BACKUP_PATH
+sudo chown $BACKUP_USER $BACKUP_PATH</pre></blockquote>
+        <p>Copy the coursys user's public key from production to <code class="file">~/.ssh/authorized_keys</code>. Make sure you can <code>ssh</code> from production to the backup server.</p>
+    </dd>
+    <dt>Bootstrap/Try It</dt>
+    <dd>
+        <p>Make sure things are working, and do the initial full backup:</p>
+        <blockquote><pre>./manage.py backup_remote --db-only --full --dry-run
+./manage.py backup_remote --full</pre></blockquote>
+    </dd>
+    <dt>Restoring</dt>
+    <dd>
+        <p>If you need the backups, they can be retrieved with the commands given by:</p>
+        <blockquote><pre>./manage.py backup_remote --retrieve-commands</pre></blockquote>
+        <p>The workflow to restore after complete and total failure would be something like:</p>
+        <blockquote><pre>zcat db_dump/???.dump.gz | ./manage.py dbshell
+cp -a submitted_files/* $SUBMISSION_PATH</pre></blockquote>
+        <p>Let's hope it never comes to that.</p>
+    </dd>
+
+</dl>
+
+
+
+</body>
+</html>
+
+

@@ -148,6 +148,7 @@ def copy_course_setup(request, course_slug):
                     source_course = select_form.cleaned_data['course'].offering
                     source_setup = Activity.objects.filter(offering=source_course, deleted=False)
                     source_pages = Page.objects.filter(offering=source_course).exclude(can_read='NONE', can_write='NONE')
+                    source_pages = (p for p in source_pages if not p.current_version().redirect)
                     conflicting_acts = _find_setup_conflicts(source_setup, target_setup)
                     rename_forms = [ ActivityRenameForm(prefix=act.id) for act in conflicting_acts ]
                     page_form = PageRedirectForm(prefix='pages')
@@ -288,7 +289,7 @@ def manage_activity_components(request, course_slug, activity_slug):
 
 
 @requires_course_staff_by_slug
-def import_components(request, course_slug, activity_slug):
+def OFF_import_components(request, course_slug, activity_slug):
     """
     Quick (but not pretty) view to allow importing marking setup from the old system.  Not well tested, but seems to work well enough.
     """

@@ -23,6 +23,7 @@ from onlineforms.models import FormSubmission, SheetSubmission, FieldSubmission
 from onlineforms.models import FormFiller, SheetSubmissionSecretUrl, FormLogEntry, reorder_sheet_fields
 
 from coredata.models import Person, Role, Unit
+from coredata.queries import ensure_person_from_userid
 from log.models import LogEntry
 import unicodecsv as csv
 import json
@@ -101,6 +102,12 @@ def add_group_member(request, formgroup_slug):
                     # search returns Person object
                     person = search_form.cleaned_data['search']
                     email = search_form.cleaned_data['email']
+                    # If this FormGroupMember already exists, catch it instead of throwing an exception because of
+                    # a violated UNIQUE constraint.
+                    if FormGroupMember.objects.filter(person=person, formgroup=group).exists():
+                        messages.error(request, "This person is already in this Form Group")
+                        return HttpResponseRedirect(
+                            reverse('onlineforms.views.manage_group', kwargs={'formgroup_slug': formgroup_slug}))
                     member = FormGroupMember(person=person, formgroup=group)
                     member.set_email(email)
                     member.save()
@@ -108,6 +115,7 @@ def add_group_member(request, formgroup_slug):
                          description=(u"added %s to form group %s (%i)") % (person.userid_or_emplid(), group, group.id),
                          related_object=member)
                     l.save()
+                    messages.success(request, u"%s added to this Form Group." % person)
                     return HttpResponseRedirect(reverse('onlineforms.views.manage_group', kwargs={'formgroup_slug': formgroup_slug}))
             else: # if accidentally don't search for anybody
                 return HttpResponseRedirect(reverse('onlineforms.views.manage_group', kwargs={'formgroup_slug': formgroup_slug }))
@@ -360,6 +368,15 @@ def admin_return_sheet(request, form_slug, formsubmit_slug, sheetsubmit_slug):
         form_submission = get_object_or_404(FormSubmission, form__slug=form_slug, slug=formsubmit_slug,
                                             owner__in=request.formgroups)
         sheet_submission = get_object_or_404(SheetSubmission, form_submission=form_submission, slug=sheetsubmit_slug)
+
+        # There shouldn't be a link to this anymore, but either way, we don't allow returning of the initial
+        # sheet.  Since we can't assign an initial sheet, we shouldn't return it, which is the same thing.
+        # This caused problems with the auto-cleanup code where there were suddenly open initial sheets that
+        # where older than our cutoff period:
+        if sheet_submission.sheet.is_initial:
+            messages.error(request, u'You cannot return the initial sheet.')
+            return HttpResponseRedirect(reverse('onlineforms.views.view_submission',
+                                                kwargs={'form_slug': form_slug, 'formsubmit_slug': formsubmit_slug}))
 
         if request.method == 'POST':
             form = AdminReturnForm(data=request.POST)
@@ -1157,9 +1174,8 @@ def _sheet_submission(request, form_slug, formsubmit_slug=None, sheet_slug=None,
 
         # get their info if they are logged in
         if request.user.is_authenticated():
-            try:
-                loggedin_user = Person.objects.get(userid=request.user.username)
-            except Person.DoesNotExist:
+            loggedin_user = ensure_person_from_userid(request.user.username)
+            if loggedin_user is None:
                 return ForbiddenResponse(request, u"The userid '%s' isn't known to this system. If this is a 'role' account, please log in under your primary SFU userid. Otherwise, please contact coursys-help@sfu.ca for assistance." % (request.user.username))
             logentry_userid = loggedin_user.userid
             nonSFUFormFillerForm = None

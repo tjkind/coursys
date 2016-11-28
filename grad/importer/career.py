@@ -202,7 +202,7 @@ class GradCareer(object):
         student_info = {
             'student': self.gradstudent,
             'career': self,
-            'statuses': list(GradStatus.objects.filter(student=self.gradstudent)
+            'statuses': list(GradStatus.objects.filter(student=self.gradstudent, hidden=False)
                 .select_related('start').order_by('start__name', 'start_date')),
             'programs': list(GradProgramHistory.objects.filter(student=self.gradstudent)
                 .select_related('start_semester', 'program').order_by('start_semester__name', 'starting')),
@@ -243,15 +243,14 @@ class GradCareer(object):
 
         # are there any GradProgramHistory objects happening before the student actually started (because they
         # deferred)? If so, defer them too.
-        if self.unit.slug != 'cmpt':
-            premature_gph = GradProgramHistory.objects.filter(student=self.gradstudent,
-                                                              start_semester__name__lt=self.admit_term)
-            for gph in premature_gph:
-                gph.start_semester = STRM_MAP[self.admit_term]
-                if verbosity:
-                    print "Deferring program start for %s/%s to %s." % (self.emplid, self.unit.slug, self.admit_term)
-                if not dry_run:
-                    gph.save()
+        premature_gph = GradProgramHistory.objects.filter(student=self.gradstudent,
+                                                          start_semester__name__lt=self.admit_term)
+        for gph in premature_gph:
+            gph.start_semester = STRM_MAP[self.admit_term]
+            if verbosity:
+                print "Deferring program start for %s/%s to %s." % (self.emplid, self.unit.slug, self.admit_term)
+            if not dry_run:
+                gph.save()
 
         # TODO: should we set GradStudent.config['start_semester'] here and be done with it?
 
@@ -267,9 +266,9 @@ class GradCareer(object):
         extra_statuses = [s for s in self.student_info['statuses'] if SIMS_SOURCE not in s.config]
         extra_programs = [p for p in self.student_info['programs'] if SIMS_SOURCE not in p.config]
         extra_committee = [c for c in self.student_info['committee'] if SIMS_SOURCE not in c.config]
-        if self.unit.slug == 'cmpt':
-            # doesn't make sense for CMPT, since we're not importing everything else
-            return
+        # if self.unit.slug == 'cmpt':
+        #     # doesn't make sense for CMPT, since we're not importing everything else
+        #     return
 
         if verbosity:
             for s in extra_statuses:

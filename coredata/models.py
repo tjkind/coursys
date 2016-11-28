@@ -58,13 +58,15 @@ ROLE_CHOICES = (
         ('FDCC', 'Grad Funding Reminder CC'),
         ('TECH', 'Tech Staff'),
         ('GPA', 'GPA conversion system admin'),
+        ('OUTR', 'Outreach Administrator'),
+        ('INV', 'Inventory Administrator'),
         ('SYSA', 'System Administrator'),
         ('NONE', 'none'),
         )
 ROLES = dict(ROLE_CHOICES)
 # roles departmental admins ('ADMN') are allowed to assign within their unit
 UNIT_ROLES = ['ADVS', 'DISC', 'DICC', 'TAAD', 'GRAD', 'FUND', 'FDCC', 'GRPD',
-              'FAC', 'SESS', 'COOP', 'INST', 'SUPV'] # 'PLAN', 'TADM', 'TECH'
+              'FAC', 'SESS', 'COOP', 'INST', 'SUPV', 'OUTR', 'INV']  # 'PLAN', 'TADM', 'TECH'
 # help text for the departmental admin on those roles
 ROLE_DESCR = {
         'ADVS': 'Has access to the advisor notes.',
@@ -84,8 +86,10 @@ ROLE_DESCR = {
         'INST': 'Instructors outside of the department or others who teach courses',
         'REPR': 'Has Reporting Database access.',
         'SUPV': 'Others who can supervise RAs or grad students, in addition to faculty',
+        'OUTR': 'Can manage outreach events',
+        'INV': 'Can manage assets',
               }
-INSTR_ROLES = ["FAC","SESS","COOP",'INST'] # roles that are given to categorize course instructors
+INSTR_ROLES = ["FAC", "SESS", "COOP", 'INST']  # roles that are given to categorize course instructors
 
 
 class Person(models.Model, ConditionalSaveMixin):
@@ -392,6 +396,74 @@ class AnyPerson(models.Model):
         if not self.get_person():
             return "None"
         return self.get_person().name()
+
+    #  The following three methods to easily get attributes that are in Person and FuturePerson but not in RoleAccount.
+    def last_name(self):
+        try:
+            return self.get_person().last_name
+        except AttributeError:
+            return None
+
+    def first_name(self):
+        try:
+            return self.get_person().first_name
+        except AttributeError:
+            return None
+
+    def middle_name(self):
+        try:
+            return self.get_person().middle_name
+        except AttributeError:
+            return None
+
+    # Two more that only exist in Person objects.
+    def userid(self):
+        try:
+            return self.get_person().userid
+        except AttributeError:
+            return None
+
+    def emplid(self):
+        try:
+            return self.get_person().emplid
+        except AttributeError:
+            return None
+
+    @classmethod
+    def get_or_create_for(cls, person=None, role_account=None, future_person=None):
+        """
+        A method to either return (if one exists) or create an AnyPerson based on the possible
+        parameters.  Only exactly one of these parameters should get passed in.  
+        """
+        if person:
+            if role_account or future_person:
+                raise ValidationError('More than one argument given.')
+            if AnyPerson.objects.filter(person=person).exists():
+                return AnyPerson.objects.filter(person=person)[0]
+            else:
+                anyperson = AnyPerson(person=person)
+                anyperson.save()
+                return anyperson
+        elif role_account:
+            if person or future_person:
+                raise ValidationError('More than one argument given.')
+            if AnyPerson.objects.filter(role_account=role_account).exists():
+                return AnyPerson.objects.filter(role_account=role_account)[0]
+            else:
+                anyperson = AnyPerson(role_account=role_account)
+                anyperson.save()
+                return anyperson
+        elif future_person:
+            if person or role_account:
+                raise ValidationError('More than one argument given.')
+            if AnyPerson.objects.filter(future_person=future_person).exists():
+                return AnyPerson.objects.filter(future_person=future_person)[0]
+            else:
+                anyperson = AnyPerson(future_person=future_person)
+                anyperson.save()
+                return anyperson
+        else:
+            raise ValidationError('You must supply exactly one of the three possible arguments')
 
     @classmethod
     def delete_empty_anypersons(cls):
@@ -804,6 +876,7 @@ INSTR_MODE_CHOICES = [ # from ps_instruct_mode in reporting DB
     ('GI', 'Graduate Internship'),
     ('P', 'In Person'),
     ('PO', 'In Person - Off Campus'),
+    ('PR', 'Practicum'),
     ]
 INSTR_MODE = dict(INSTR_MODE_CHOICES)
 
@@ -843,6 +916,7 @@ class CourseOffering(models.Model, ConditionalSaveMixin):
         # 'taemail': TAs' contact email (if not their personal email)
         # 'labtut': are there lab sections? (default False)
         # 'labtas': TAs get the LAB_BONUS lab/tutorial bonus (default False)
+        # 'labtut_use': the instructor cares about labs/tutorials and wants them displayed more
         # 'uses_svn': create SVN repos for this course? (default False)
         # 'indiv_svn': do instructors/TAs have access to student SVN repos? (default False)
         # 'instr_rw_svn': can instructors/TAs *write* to student SVN repos? (default False)
@@ -858,8 +932,9 @@ class CourseOffering(models.Model, ConditionalSaveMixin):
     defaults = {'taemail': None, 'url': None, 'labtut': False, 'labtas': False, 'indiv_svn': False,
                 'uses_svn': False, 'extra_bu': '0', 'page_creators': 'STAF', 'discussion': False,
                 'instr_rw_svn': False, 'joint_with': (), 'group_min': None, 'group_max': None,
-                'maillist': None}
+                'maillist': None, 'labtut_use': False}
     labtut, set_labtut = getter_setter('labtut')
+    labtut_use, set_labtut_use = getter_setter('labtut_use')
     _, set_labtas = getter_setter('labtas')
     url, set_url = getter_setter('url')
     taemail, set_taemail = getter_setter('taemail')
@@ -1305,8 +1380,10 @@ MEETINGTYPE_CHOICES = (
         ("LAB", "Lab/Tutorial"),
         )
 MEETINGTYPES = dict(MEETINGTYPE_CHOICES)
+
+
 class MeetingTime(models.Model):
-    offering = models.ForeignKey(CourseOffering, null=False)
+    offering = models.ForeignKey(CourseOffering, null=False, related_name='meeting_time')
     weekday = models.PositiveSmallIntegerField(null=False, choices=WEEKDAY_CHOICES,
         help_text='Day of week of the meeting')
     start_time = models.TimeField(null=False, help_text='Start time of the meeting')

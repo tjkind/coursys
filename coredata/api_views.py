@@ -47,3 +47,4 @@ class OfferingInfo(CacheMixin, generics.RetrieveAPIView):
     lookup_url_kwarg = 'course_slug'
 
     queryset = CourseOffering.objects.exclude(component='CAN')
+

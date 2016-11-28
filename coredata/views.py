@@ -45,7 +45,7 @@ def role_list(request):
     """
     Display list of who has what role
     """
-    roles = Role.objects.exclude(role="NONE")
+    roles = Role.objects.exclude(role="NONE").select_related('person', 'unit')
     
     return render(request, 'coredata/roles.html', {'roles': roles})
 
@@ -121,7 +121,8 @@ def edit_unit(request, unit_slug=None):
 
 @requires_global_role("SYSA")
 def members_list(request):
-    members = Member.objects.exclude(added_reason="AUTO").exclude(added_reason="CTA").exclude(added_reason="TAC")
+    members = Member.objects.exclude(added_reason="AUTO").exclude(added_reason="CTA").exclude(added_reason="TAC") \
+            .select_related('offering__semester')
     return render(request, 'coredata/members_list.html', {'members': members})
 
 
@@ -153,12 +154,18 @@ def edit_member(request, member_id=None):
 @requires_global_role("SYSA")
 def user_summary(request, userid):
     query = find_userid_or_emplid(userid)
-    user = get_object_or_404(Person, query)
+    person = get_object_or_404(Person, query)
+
+    if request.method == 'POST':
+        from coredata.importer import import_person
+        grad_data = 'import-grad' in request.POST
+        person = import_person(person, commit=True, grad_data=grad_data)
+        messages.success(request, 'Imported SIMS data for %s.' % (person.userid_or_emplid()))
     
-    memberships = Member.objects.filter(person=user)
-    roles = Role.objects.filter(person=user).exclude(role="NONE")
+    memberships = Member.objects.filter(person=person)
+    roles = Role.objects.filter(person=person).exclude(role="NONE").select_related('unit')
     
-    context = {'user': user, 'memberships': memberships, 'roles': roles}
+    context = {'person': person, 'memberships': memberships, 'roles': roles}
     return render(request, "coredata/user_summary.html", context)
 
 @requires_global_role("SYSA")
@@ -279,6 +286,7 @@ def new_combined(request):
             combined.class_nbr = _new_fake_class_nbr(combined.semester)
             combined.save()
             combined.offerings.add(offering)
+            combined.create_combined_offering()
             #LOG EVENT#
             l = LogEntry(userid=request.user.username,
                   description=("created combined offering %i with %s") % (combined.id, offering.slug),
@@ -316,6 +324,7 @@ def add_combined_offering(request, pk):
                 messages.error(request, 'That offering is already in the combined section.')
             else:
                 combined.offerings.add(offering)
+                combined.create_combined_offering()
                 #LOG EVENT#
                 l = LogEntry(userid=request.user.username,
                       description=("added %s to combined offering %i") % (offering.slug, combined.id),

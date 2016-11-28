@@ -10,7 +10,9 @@ from courselib.text import normalize_newlines
 from django.template.loader import get_template
 from django.template import Context
 from django.core.mail import EmailMultiAlternatives
-import datetime
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+import datetime, os
 
 
 HIRING_CATEGORY_CHOICES = (
@@ -48,12 +50,55 @@ PAY_FREQUENCY_CHOICES = (
 # chunks. 
 SEMESTER_SLIDE = 15
 
+NoteSystemStorage = FileSystemStorage(location=settings.SUBMISSION_PATH, base_url=None)
+
+
+class ProgramQueryset(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
+
+    def visible_by_unit(self, units):
+        return self.visible().filter(unit__in=units)
+
+
+class Program(models.Model):
+    """
+    A field required for the new Chart of Accounts
+    """
+    unit = models.ForeignKey(Unit)
+    program_number = models.PositiveIntegerField()
+    title = models.CharField(max_length=60)
+    objects = ProgramQueryset.as_manager()
+
+    def autoslug(self):
+        return make_slug(self.unit.label + '-' + unicode(self.program_number).zfill(5))
+
+    slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
+    hidden = models.BooleanField(null=False, default=False)
+
+    class Meta:
+        ordering = ['program_number']
+
+    def __unicode__(self):
+        return "%05d, %s" % (self.program_number, self.title)
+
+    def delete(self, *args, **kwargs):
+        self.hidden = True
+        self.save()
+
+    def get_program_number_display(self):
+        return str(self.program_number).zfill(5)
+
+
 class Project(models.Model):
     """
     A table to look up the appropriate fund number based on the project number
     """
     unit = models.ForeignKey(Unit, null=False, blank=False)
-    project_number = models.PositiveIntegerField()
+    department_code = models.PositiveIntegerField(default=0)
+    project_prefix = models.CharField("Prefix", max_length=1, null=True, blank=True,
+                                      help_text="If the project number has a prefix of 'R', 'X', etc, add it here")
+    project_number = models.PositiveIntegerField(null=True, blank=True)
     fund_number = models.PositiveIntegerField()
     def autoslug(self):
         return make_slug(self.unit.label + '-' + unicode(self.project_number))
@@ -64,10 +109,17 @@ class Project(models.Model):
         ordering = ['project_number']
 
     def __unicode__(self):
-        return "%06i (%s)" % (self.project_number, self.fund_number)
+        return "%06i (%s) - %s" % (self.department_code, self.fund_number, self.project_number)
+
     def delete(self, *args, **kwargs):
         self.hidden = True
         self.save()
+
+    def get_full_project_number(self):
+        if self.project_number:
+            return (self.project_prefix or '').upper() + str(self.project_number).zfill(6)
+        else:
+            return ''
 
 class Account(models.Model):
     """
@@ -87,6 +139,7 @@ class Account(models.Model):
 
     def __unicode__(self):
         return "%06i (%s)" % (self.account_number, self.title)
+
     def delete(self, *args, **kwargs):
         self.hidden = True
         self.save()
@@ -134,6 +187,7 @@ DEFAULT_LETTERS = {
     'POSTDOC': ('RA Letter for Post-Doc', DEFAULT_LETTER_POSTDOC_LUMPSUM, DEFAULT_LETTER_POSTDOC_BIWEEKLY),
 }   # note to self: if allowing future configuration per-unit, make sure the keys are globally-unique.
 
+
 class RAAppointment(models.Model):
     """
     This stores information about a (Research Assistant)s application and pay.
@@ -147,7 +201,8 @@ class RAAppointment(models.Model):
     hiring_category = models.CharField(max_length=4, choices=HIRING_CATEGORY_CHOICES, default='GRA')
     scholarship = models.ForeignKey(Scholarship, null=True, blank=True, help_text='Scholarship associated with this appointment. Optional.')
     project = models.ForeignKey(Project, null=False, blank=False)
-    account = models.ForeignKey(Account, null=False, blank=False)
+    account = models.ForeignKey(Account, null=False, blank=False, help_text='This is now called "Object" in the new PAF')
+    program = models.ForeignKey(Program, null=True, blank=True, help_text='If none is provided,  "00000" will be added in the PAF')
     start_date = models.DateField(auto_now=False, auto_now_add=False)
     end_date = models.DateField(auto_now=False, auto_now_add=False)
     pay_frequency = models.CharField(max_length=60, choices=PAY_FREQUENCY_CHOICES, default='B')
@@ -160,9 +215,12 @@ class RAAppointment(models.Model):
     reappointment = models.BooleanField(default=False, help_text="Are we re-appointing to the same position?")
     medical_benefits = models.BooleanField(default=False, help_text="50% of Medical Service Plan")
     dental_benefits = models.BooleanField(default=False, help_text="50% of Dental Plan")
-    notes = models.TextField(blank=True, help_text="Biweekly emplyment earnings rates must include vacation pay, hourly rates will automatically have vacation pay added. The employer cost of statutory benefits will be charged to the amount to the earnings rate.")
-    comments = models.TextField(blank=True, help_text="For internal use")
+    #  The two following fields verbose names are reversed for a reason.  They were named incorrectly with regards to
+    #  the PAF we generate, so the verbose names are correct.
+    notes = models.TextField("Comments", blank=True, help_text="Biweekly employment earnings rates must include vacation pay, hourly rates will automatically have vacation pay added. The employer cost of statutory benefits will be charged to the amount to the earnings rate.")
+    comments = models.TextField("Notes", blank=True, help_text="For internal use")
     offer_letter_text = models.TextField(null=True, help_text="Text of the offer letter to be signed by the RA and supervisor.")
+
     def autoslug(self):
         if self.person.userid:
             ident = self.person.userid
@@ -301,7 +359,7 @@ class RAAppointment(models.Model):
         """
         today = datetime.datetime.now()
         min_age = datetime.datetime.now() + datetime.timedelta(days=14)
-        expiring_ras = RAAppointment.objects.filter(end_date__gt=today, end_date__lte=min_age)
+        expiring_ras = RAAppointment.objects.filter(end_date__gt=today, end_date__lte=min_age, deleted=False)
         ras = [ra for ra in expiring_ras if 'reminded' not in ra.config or not ra.config['reminded']]
         return ras
 
@@ -311,7 +369,7 @@ class RAAppointment(models.Model):
         Emails the supervisors of the RAs who have appointments that are about to expire.
         """
         subject = 'RA appointment expiry reminder'
-        from_email = "nobody@courses.cs.sfu.ca"
+        from_email = settings.DEFAULT_FROM_EMAIL
 
         expiring_ras = cls.expiring_appointments()
         template = get_template('ra/emails/reminder.txt')
@@ -337,8 +395,59 @@ class RAAppointment(models.Model):
             msg.send()
             raappt.mark_reminded()
 
+    def get_program_display(self):
+        if self.program:
+            return self.program.get_program_number_display()
+        else:
+            return '00000'
 
 
+def ra_attachment_upload_to(instance, filename):
+    """
+    callback to avoid path in the filename(that we have append folder structure to) being striped
+    """
+    fullpath = os.path.join(
+        'raattachments',
+        instance.appointment.person.userid_or_emplid(),
+        str(instance.appointment.id),
+        datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+        filename.encode('ascii', 'ignore'))
+    return fullpath
+
+
+class RAAppointmentAttachmentQueryset(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
+
+
+class RAAppointmentAttachment(models.Model):
+    """
+    Like most of our contract-based objects, an attachment object that can be attached to them.
+    """
+    appointment = models.ForeignKey(RAAppointment, null=False, blank=False, related_name="attachments")
+    title = models.CharField(max_length=250, null=False)
+    slug = AutoSlugField(populate_from='title', null=False, editable=False, unique_with=('appointment',))
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(Person, help_text='Document attachment created by.')
+    contents = models.FileField(storage=NoteSystemStorage, upload_to=ra_attachment_upload_to, max_length=500)
+    mediatype = models.CharField(max_length=200, null=True, blank=True, editable=False)
+    hidden = models.BooleanField(default=False, editable=False)
+
+    objects = RAAppointmentAttachmentQueryset.as_manager()
+
+    def __unicode__(self):
+        return self.contents.name
+
+    class Meta:
+        ordering = ("created_at",)
+        unique_together = (("appointment", "slug"),)
+
+    def contents_filename(self):
+        return os.path.basename(self.contents.name)
+
+    def hide(self):
+        self.hidden = True
+        self.save()
 
 
 class SemesterConfig(models.Model):
@@ -383,5 +492,4 @@ class SemesterConfig(models.Model):
 
     def set_end_date(self, date):
         self.config['end_date'] = date.strftime('%Y-%m-%d')
-
 

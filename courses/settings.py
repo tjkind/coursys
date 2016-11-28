@@ -60,7 +60,7 @@ INSTALLED_APPS = (
     'djcelery',
     'djcelery_email',
     'featureflags',
-    'django_nose',
+    #'django_nose',
     'rest_framework',
     'oauth_provider',
     'rest_framework_swagger',
@@ -91,6 +91,9 @@ INSTALLED_APPS = (
     'tacontracts',
     'api',
     'visas',
+    'outreach',
+    'sessionals',	
+    'inventory',
 )
 MIDDLEWARE_CLASSES = global_settings.MIDDLEWARE_CLASSES + [
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -146,14 +149,12 @@ USE_I18N = False
 USE_L10N = False
 USE_TZ = False
 FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
-#TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-NOSE_ARGS = ['--exe',
-            '--with-progressive',
-            '--progressive-editor=vim',
-            '--with-timer',
-            '--with-fixture-bundling',
-            '--timer-top-n=10',
-            '--exclude=(test_views|basic_page_tests|get_test_file|test_auth|create_test_offering|field_test)']
+#TEST_RUNNER = 'django_coverage.coverage_runner.CoverageRunner'
+
+# Disable migrations only when running tests.
+if 'test' in sys.argv[1:]:
+    from test_without_migrations.management.commands.test import DisableMigrations
+    MIGRATION_MODULES = DisableMigrations()
 
 # security-related settings
 ALLOWED_HOSTS = getattr(localsettings, 'ALLOWED_HOSTS', ['courses.cs.sfu.ca', 'coursys.cs.sfu.ca'])
@@ -336,7 +337,7 @@ MAX_SUBMISSION_SIZE = 30000 # kB
 CAS_SERVER_URL = "https://cas.sfu.ca/cas/"
 CAS_VERSION = '2'
 EMAIL_HOST = 'localhost'
-DEFAULT_FROM_EMAIL = 'nobody@courses.cs.sfu.ca'
+DEFAULT_FROM_EMAIL = 'CourSys <nobody@courses.cs.sfu.ca>'
 DEFAULT_SENDER_EMAIL = 'helpdesk@cs.sfu.ca'
 SVN_URL_BASE = "https://punch.cs.sfu.ca/svn/"
 SIMS_USER = getattr(secrets, 'SIMS_USER', 'ggbaker')
@@ -352,6 +353,11 @@ EMPLID_API_SECRET = getattr(secrets, 'EMPLID_API_SECRET', '')
 #PIWIK_CELERY_TASK_KWARGS = {'queue': 'batch', 'rate_limit': '5/s', 'max_retries': 6, 'default_retry_delay': 600}
 #PIWIK_FAIL_SILENTLY = True
 #PIWIK_FORCE_HOST = 'courses.cs.sfu.ca'
+
+BACKUP_SERVER = getattr(secrets, 'BACKUP_SERVER', None)
+BACKUP_USER = getattr(secrets, 'BACKUP_USER', None)
+BACKUP_PATH = getattr(secrets, 'BACKUP_PATH', None)
+BACKUP_PASSPHRASE = getattr(secrets, 'BACKUP_PASSPHRASE', None)
 
 DATE_FORMAT = "D N d Y"
 SHORT_DATE_FORMAT = "N d Y"

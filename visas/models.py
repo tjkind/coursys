@@ -7,12 +7,10 @@ from django.db import models
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
-from coredata.models import VISA_STATUSES as REAL_VISA_STATUSES, Person
+from coredata.models import VISA_STATUSES as REAL_VISA_STATUSES, Person, Unit
 from django.utils import timezone
 from courselib.json_fields import JSONField
 from coredata.models import Semester
-from django.db.models.query import QuerySet
-from model_utils.managers import PassThroughManager
 
 # "citizen" isn't truly a visa status, but it's something we want to track here.
 # SIMS has no Work Visa status, so we're adding that here too.
@@ -22,6 +20,7 @@ EXPIRY_STATUSES = ['Expired', 'Expiring Soon', 'Valid']
 
 NoteSystemStorage = FileSystemStorage(location=settings.SUBMISSION_PATH, base_url=None)
 
+
 def timezone_today():
     """
     Return the timezone-aware version of datetime.date.today()
@@ -29,27 +28,27 @@ def timezone_today():
     # field default must be a callable (so it's the "today" of the request, not the "today" of the server startup)
     return timezone.now().date()
 
+class VisaQuerySet(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
 
-class VisaManager(models.Manager):
+    def visible_by_unit(self, units):
+        return self.visible().filter(unit__in=units)
 
-        def visible(self):
-            qs = self.get_queryset()
-            return qs.filter(hidden=False)
-
-        def visible_given_user(self, person):
-            qs = self.get_queryset()
-            return qs.filter(hidden=False, person=person)
+    def visible_given_user(self, person):
+        return self.filter(hidden=False, person=person)
 
 
 class Visa (models.Model):
     person = models.ForeignKey(Person, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False)
     status = models.CharField(max_length=50, choices=VISA_STATUSES, default='')
     start_date = models.DateField('Start Date', default=timezone_today, help_text='First day of visa validity')
     end_date = models.DateField('End Date', blank=True, null=True, help_text='Expiry of the visa (if known)')
     config = JSONField(null=False, blank=False, editable=False, default=dict)  # For future fields
     hidden = models.BooleanField(default=False, editable=False)
 
-    objects = VisaManager()
+    objects = VisaQuerySet.as_manager()
 
     class Meta:
         ordering = ('start_date',)
@@ -82,6 +81,9 @@ class Visa (models.Model):
 
     def hide(self):
         self.hidden = True
+
+    def has_attachments(self):
+        return VisaDocumentAttachment.objects.visible().filter(visa=self).count() > 0
 
     @staticmethod
     def import_for(people):
@@ -128,10 +130,9 @@ def visa_attachment_upload_to(instance, filename):
     return fullpath
 
 
-class VisaDocumentAttachmentManager(models.Manager):
+class VisaDocumentAttachmentQueryset(models.QuerySet):
     def visible(self):
-        qs = self.get_queryset()
-        return qs.filter(hidden=False)
+        return self.filter(hidden=False)
 
 
 class VisaDocumentAttachment(models.Model):
@@ -147,7 +148,7 @@ class VisaDocumentAttachment(models.Model):
     mediatype = models.CharField(max_length=200, null=True, blank=True, editable=False)
     hidden = models.BooleanField(default=False, editable=False)
 
-    objects = VisaDocumentAttachmentManager()
+    objects = VisaDocumentAttachmentQueryset.as_manager()
 
     def __unicode__(self):
         return self.contents.name

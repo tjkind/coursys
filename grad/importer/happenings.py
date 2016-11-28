@@ -49,8 +49,8 @@ def build_reverse_program_map():
         rev_program_map[gradprog].append(acad_prog)
 
     cmptunit = Unit.objects.get(label="CMPT")
-    rev_program_map[GradProgram.objects.get(label="MSc Thesis", unit=cmptunit)].append('CPMCW')
-    rev_program_map[GradProgram.objects.get(label="MSc Course", unit=cmptunit)].append('CPMSC')
+    rev_program_map[GradProgram.objects.get(label="MSc Thesis", unit=cmptunit)].append('CPMSC')
+    rev_program_map[GradProgram.objects.get(label="MSc Course", unit=cmptunit)].append('CPMCW')
     rev_program_map[GradProgram.objects.get(label="MSc Proj", unit=cmptunit)].append('CPMSC')
     return rev_program_map
 
@@ -314,8 +314,8 @@ class ProgramStatusChange(GradHappening):
         Find/update GradStatus object for this happening
         """
         # don't manage for CMPT, except completed application status for recent applicants
-        if self.unit.slug == 'cmpt' and (self.status not in ['COMP', 'REJE'] or self.admit_term < CMPT_CUTOFF):
-            return
+        # if self.unit.slug == 'cmpt' and (self.status not in ['COMP', 'REJE'] or self.admit_term < CMPT_CUTOFF):
+        #     return
 
         statuses = student_info['statuses']
         if self.gradstatus:
@@ -362,10 +362,6 @@ class ProgramStatusChange(GradHappening):
         """
         programs = student_info['programs']
 
-        if self.unit.slug == 'cmpt' and programs:
-            # CMPT students get only their initial application gradprogramhistory filled in.
-            return
-
         key = self.import_key()
         if self.strm < student_info['real_admit_term']:
             # program change could happen before admit: we take those as effective the student's admit term
@@ -385,6 +381,17 @@ class ProgramStatusChange(GradHappening):
                         and p.program == self.grad_program]
                 if similar_history:
                     ph = similar_history[0]
+                    #  We need to check if we have a different date for this action than the matching entry.
+                    #  in some cases (like adding an active status afterwards), we need this date to be maximized
+                    #  to show the correct current program.
+                    if ph.starting != self.effdt:
+                        if verbosity > 1:
+                            print "Changing start of similar program %s/%s in %s from %s to %s" % \
+                                  (self.emplid, self.unit.slug, self.grad_program.slug, ph.starting, self.effdt)
+                        ph.starting = self.effdt
+                        if not dry_run:
+                            ph.save()
+
                 else:
                     need_ph = True
 
@@ -475,8 +482,8 @@ class GradSemester(GradHappening):
         pass
 
     def update_local_data(self, student_info, verbosity, dry_run):
-        if self.grad_program.unit.slug == 'cmpt':
-            return
+        # if self.grad_program.unit.slug == 'cmpt':
+        #     return
 
         # make sure the student is "active" as of the start of this semester, since they're taking courses
         statuses = student_info['statuses']
@@ -565,8 +572,8 @@ class CommitteeMembership(GradHappening):
         return [self.committee_id, self.effdt, self.committee_type, self.sup_emplid, self.committee_role]
 
     def update_local_data(self, student_info, verbosity, dry_run):
-        if self.grad_program.unit.slug == 'cmpt':
-            return
+        # if self.grad_program.unit.slug == 'cmpt':
+        #     return
 
         key = self.import_key()
         local_committee = student_info['committee']
