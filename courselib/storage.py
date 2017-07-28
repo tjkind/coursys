@@ -1,10 +1,14 @@
 import uuid
 import os.path
-from django.core.files.storage import FileSystemStorage
 from django.conf import settings
+from hybrid_storage.storage import HybridStorage
+from django.core.files.storage import FileSystemStorage
 
 
-UploadedFileStorage = FileSystemStorage(location=settings.SUBMISSION_PATH, base_url=None)
+UploadedFileStorage = HybridStorage(
+    location=settings.SUBMISSION_PATH + '/new',
+    legacy_storage=FileSystemStorage(location=settings.SUBMISSION_PATH, base_url=None)
+)
 
 
 def upload_path(*path_components):

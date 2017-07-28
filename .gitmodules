@@ -1,0 +1,3 @@
+[submodule "hybrid-storage"]
+	path = hybrid-storage
+	url = git@csil-git1.cs.surrey.sfu.ca:ggbaker/hybrid-storage.git
