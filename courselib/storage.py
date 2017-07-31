@@ -6,7 +6,8 @@ from django.core.files.storage import FileSystemStorage
 
 
 UploadedFileStorage = HybridStorage(
-    location=settings.SUBMISSION_PATH + '/new',
+    storage_id = 'UploadedFileStorage',
+    location = settings.UPLOAD_PATH,
     legacy_storage=FileSystemStorage(location=settings.SUBMISSION_PATH, base_url=None)
 )
 

@@ -272,6 +272,7 @@ if DEPLOY_MODE == 'production':
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SUBMISSION_PATH = '/data/submitted_files'
+    UPLOAD_PATH = '/data/uploaded_files'
     BASE_ABS_URL = "https://courses.cs.sfu.ca"
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # changed below if using Celery
     SVN_DB_CONNECT = {'host': '127.0.0.1', 'user': 'svnuser', 'passwd': getattr(secrets, 'SVN_DB_PASS'),
@@ -279,6 +280,7 @@ if DEPLOY_MODE == 'production':
 
 else:
     SUBMISSION_PATH = "submitted_files"
+    UPLOAD_PATH = 'uploaded_files'
     BASE_ABS_URL = getattr(localsettings, 'BASE_ABS_URL', "http://localhost:8000")
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # todo: could use Malm or something
     SVN_DB_CONNECT = None
