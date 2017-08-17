@@ -266,6 +266,9 @@ HAYSTACK_SIGNAL_PROCESSOR = getattr(localsettings, 'HAYSTACK_SIGNAL_PROCESSOR', 
 HAYSTACK_CONNECTIONS = getattr(localsettings, 'HAYSTACK_CONNECTIONS', HAYSTACK_CONNECTIONS)
 #HAYSTACK_SILENTLY_FAIL = False
 
+HYBRID_STORAGE_LOCATIONS = {'csts', 'its'}
+HYBRID_STORAGE_THIS_LOCATION = getattr(localsettings, 'HYBRID_STORAGE_THIS_LOCATION', 'csts')
+
 # things only relevant to the true production environment
 if DEPLOY_MODE == 'production':
     MIDDLEWARE = ['courselib.middleware.MonitoringMiddleware'] + MIDDLEWARE
@@ -284,8 +287,6 @@ else:
     BASE_ABS_URL = getattr(localsettings, 'BASE_ABS_URL', "http://localhost:8000")
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # todo: could use Malm or something
     SVN_DB_CONNECT = None
-
-
 
 
 # should we use the Celery task queue (for sending email, etc)?  Must have celeryd running to process jobs.
