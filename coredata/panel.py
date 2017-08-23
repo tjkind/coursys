@@ -276,6 +276,7 @@ def deploy_checks(request=None):
     dirs_to_check = [
         (settings.DB_BACKUP_DIR, 'DB backup dir'),
         (settings.SUBMISSION_PATH, 'submitted files path'),
+        (settings.UPLOAD_PATH, 'submitted files path'),
         (os.path.join(settings.COMPRESS_ROOT, 'CACHE'), 'compressed media root'),
     ]
     for directory, label in dirs_to_check:
