@@ -2,6 +2,7 @@ import copy
 import django
 from django.db import models, IntegrityError
 from django.core.urlresolvers import reverse
+from django.core.files import File
 from django.core.files.base import ContentFile
 from grades.models import Activity, NumericActivity, LetterActivity, CalNumericActivity, CalLetterActivity, NumericGrade,LetterGrade,LETTER_GRADE_CHOICES
 from grades.models import all_activities_filter, neaten_activity_positions, get_entry_person, COMMENT_LENGTH
@@ -602,27 +603,7 @@ def copy_setup_pages(course_copy_from, course_copy_to):
             new_v.comment = "Page migrated from %s" % (course_copy_from)
 
             if new_v.file_attachment:
-                # copy the file (so we can safely remove old semesters'
-                # files without leaving bad path reference)
-                src = v.file_attachment.path
-                path = attachment_upload_to(new_v, new_v.file_name)
-                dst = UploadedFileStorage.path(path)
-                dstpath, dstfile = os.path.split(dst)
-                while os.path.exists(os.path.join(dstpath, dstfile)):
-                    # handle duplicates by mangling the directory name
-                    dstpath += "_"
-                dst = os.path.join(dstpath, dstfile)
-                new_v.file_attachment = dst
-
-                if not os.path.exists(dstpath):
-                    os.makedirs(dstpath)
-
-                try:
-                    os.link(src, dst)
-                except:
-                    # any problems with the hardlink: try simple copy
-                    import shutil
-                    shutil.copyfile(src, dst)
+                new_v.file_attachment = File(v.file_attachment, name=v.file_attachment.name)
 
             new_v.save(force_insert=True)
 
