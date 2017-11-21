@@ -948,3 +948,81 @@ class PositionDocumentAttachment(models.Model):
     def hide(self):
         self.hidden = True
         self.save()
+
+
+#  Choices and other goodies for the Study Leave Application
+
+TENURE_CHOICES = (
+    ('YES', 'Yes'),
+    ('INPR', 'Tenure Application In Process'),
+    ('NO', 'No'),
+)
+
+STUDY_LEAVE_OPTION = (
+    ('A', 'A - 3 consecutive semesters at 80% after 6 years of service'),
+    ('B', 'B - 2 consecutive semesters at 90% after 6 years of service'),
+    ('C', 'C - 1 consecutive semester at 100% after 6 years of service'),
+    ('D', 'D - 2 consecutive semesters at 80% after 4 years of service'),
+    ('E', 'E - 1 consecutive semester at 90% after 3 years of service'),
+)
+
+# An easy way to represent a boolean field with yes/no radio buttons, see
+# https://stackoverflow.com/questions/854683/django-booleanfield-as-radio-buttons
+BOOL_CHOICES = ((True, 'Yes'), (False, 'No'))
+
+DEFER_HELP_TEXT = "The faculty member may choose to defer part of salary prior to the study leave in order to spread " \
+                  "the impact of the salary reduction. When the faculty member chooses this feature, the salary will " \
+                  "be reduced following the approval of the study leave by the Vice President, Academic. The salary " \
+                  "deferral arrangements must be completed by the end of the study leave. Salary deferral may be " \
+                  "exercised only for a leave which exceeds six months. " \
+                  "/n" \
+                  "Example: A study leave Option A - 80% for 12 months, is approved in December 2017 with the study " \
+                  "leave schedule to start on September 1, 2019. This would result in a salary at the level of 88% " \
+                  "over the 20 month period from January 1, 2018 to August 31, 2019."
+
+FIRST_STUDY_LEAVE_OPTIONS = (
+    ('YES', 'Yes'),
+    ('NO', 'No'),
+    ('NA', 'N/A'),
+)
+
+
+class StudyLeaveApplication(models.Model):
+    """
+    This is an application to be filled by faculty members.
+    """
+    person = models.ForeignKey(Person, null=False, blank=False, editable=False)
+    tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=True, null=True)
+    tenure_date = models.DateField("if yes, date awarded", null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
+    end_date = models.DateField(null=True, blank=True, help_text='End date requested')
+    leave_option = models.CharField(max_length=1, choices=STUDY_LEAVE_OPTION, blank=True, null=True)
+    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT)
+    first_study_leave = models.CharField("Is this your first study leave after being granted tenure", max_length=3,
+                                         choices=FIRST_STUDY_LEAVE_OPTIONS)
+    appointed_tenure = models.CharField("Were you appointed with tenure", max_length=3,
+                                        choices=FIRST_STUDY_LEAVE_OPTIONS)
+    first_study_leave_after_6_years = models.CharField("Continuing Teaching Faculty, Continuing Librarians/Archivist, "
+                                                       "is this your first study leave after six years service",
+                                                       max_length=3, choices=FIRST_STUDY_LEAVE_OPTIONS)
+    service_credits = models.CharField("List all academic service credits from other similar institutions (for first "
+                                       "study leave only)", max_length=400, blank=True, null=True)
+    leave_1_start_date = models.DateField("1st leave start date", null=True, blank=True,
+                                          help_text="List all previous study leaves since first continuing "
+                                                    "appointment.")
+    leave_1_end_date = models.DateField("1st leave end date", null=False, blank=True)
+    leave_2_start_date = models.DateField("2nd leave start date", null=True, blank=True)
+    leave_2_end_date = models.DateField("2nd leave end date", null=False, blank=True)
+    leave_3_start_date = models.DateField("3rd leave start date", null=True, blank=True)
+    leave_3_end_date = models.DateField("3rd leave end date", null=False, blank=True)
+    leave_4_start_date = models.DateField("4th leave start date", null=True, blank=True)
+    leave_4_end_date = models.DateField("4th leave end date", null=False, blank=True)
+    leave_5_start_date = models.DateField("5th leave start date", null=True, blank=True)
+    leave_5_end_date = models.DateField("5th leave end date", null=False, blank=True)
+    leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
+    leave_6_end_date = models.DateField("6th leave end date", null=False, blank=True)
+
+    config = JSONField(blank=True, null=True, default={})  # addition configuration
+
+
+
