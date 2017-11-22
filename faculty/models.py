@@ -23,6 +23,7 @@ from courselib.text import normalize_newlines, many_newlines
 from courselib.storage import UploadedFileStorage, upload_path
 from cache_utils.decorators import cached
 
+from courselib.urlparts import SEMESTER
 from faculty.event_types.awards import FellowshipEventHandler
 from faculty.event_types.awards import GrantApplicationEventHandler
 from faculty.event_types.awards import AwardEventHandler
@@ -36,7 +37,8 @@ from faculty.event_types.career import StudyLeaveEventHandler
 from faculty.event_types.career import AccreditationFlagEventHandler
 from faculty.event_types.career import PromotionApplicationEventHandler
 from faculty.event_types.career import SalaryReviewEventHandler
-from faculty.event_types.career import ContractReviewEventHandler 
+from faculty.event_types.career import ContractReviewEventHandler
+from faculty.event_types.career import RANK_CHOICES
 from faculty.event_types.constants import EVENT_FLAGS
 from faculty.event_types.info import CommitteeMemberHandler
 from faculty.event_types.info import ExternalAffiliationHandler
@@ -987,11 +989,19 @@ FIRST_STUDY_LEAVE_OPTIONS = (
 )
 
 
+class StudyLeaveApplicationQuerySet(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
+
+
 class StudyLeaveApplication(models.Model):
     """
     This is an application to be filled by faculty members.
     """
     person = models.ForeignKey(Person, null=False, blank=False, editable=False)
+    rank = models.CharField(max_length=4, choices=RANK_CHOICES, blank=True, null=True)
+    primary_department = models.ForeignKey(Unit, null=False, blank=False)
+    secondary_department = models.ForeignKey(Unit, null=True, blank=True)
     tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=True, null=True)
     tenure_date = models.DateField("if yes, date awarded", null=True, blank=True)
     start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
@@ -1022,7 +1032,41 @@ class StudyLeaveApplication(models.Model):
     leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
     leave_6_end_date = models.DateField("6th leave end date", null=False, blank=True)
 
-    config = JSONField(blank=True, null=True, default={})  # addition configuration
+    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, null=True,
+                                        blank=True)
+    masters_students = models.PositiveIntegerField("Number of Masters Students", null=True, blank=True)
+    phd_students = models.PositiveIntegerField("Number of PhD/EdD Students", null=True, blank=True)
+    manage_students_during_leave = models.CharField("If you plan to manage Graduate Students during the study leave "
+                                                    "period, please provide details", max_length=400, null=True,
+                                                    blank=True)
+
+    hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
+    config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+
+    objects = StudyLeaveApplicationQuerySet.as_manager()
 
 
+ACTIVITY_CHOICES = (
+    ('ADMN', 'Admin Leave'),
+    ('MEDC', 'Medical Leave'),
+    ('OTHR', 'Other'),
+    ('PARN', 'Parent Leave'),
+    ('RESC', 'Research'),
+    ('STUD', 'Study Leave'),
+    ('TEAC', 'Teaching'),
+)
 
+
+class StudyLeaveSemesterActivityQuerySet(models.QuerySet):
+    def visible(self):
+        return self.filter(hidden=False)
+
+
+class StudyLeaveSemesterActivity(models.Model):
+    application = models.ForeignKey(StudyLeaveApplication, related_name='activities')
+    semester = models.ForeignKey(Semester, null=False, blank=False)
+    activity = models.CharField(max_length=4, choices=ACTIVITY_CHOICES, null=False, blank=False)
+    hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
+    config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+
+    objects = StudyLeaveApplicationQuerySet.as_manager()
