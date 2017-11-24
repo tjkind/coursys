@@ -1000,8 +1000,8 @@ class StudyLeaveApplication(models.Model):
     """
     person = models.ForeignKey(Person, null=False, blank=False, editable=False)
     rank = models.CharField(max_length=4, choices=RANK_CHOICES, blank=True, null=True)
-    primary_department = models.ForeignKey(Unit, null=False, blank=False)
-    secondary_department = models.ForeignKey(Unit, null=True, blank=True)
+    primary_department = models.ForeignKey(Unit, null=False, blank=False, related_name='studyleaveapplications')
+    secondary_department = models.ForeignKey(Unit, null=True, blank=True, related_name='+')
     tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=True, null=True)
     tenure_date = models.DateField("if yes, date awarded", null=True, blank=True)
     start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
@@ -1032,8 +1032,7 @@ class StudyLeaveApplication(models.Model):
     leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
     leave_6_end_date = models.DateField("6th leave end date", null=False, blank=True)
 
-    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, null=True,
-                                        blank=True)
+    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES)
     masters_students = models.PositiveIntegerField("Number of Masters Students", null=True, blank=True)
     phd_students = models.PositiveIntegerField("Number of PhD/EdD Students", null=True, blank=True)
     manage_students_during_leave = models.CharField("If you plan to manage Graduate Students during the study leave "
