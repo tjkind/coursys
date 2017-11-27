@@ -15,6 +15,7 @@ from faculty.models import Grant
 from faculty.models import Memo
 from faculty.models import MemoTemplate
 from faculty.models import Position
+from faculty.models import StudyLeaveApplication
 from faculty.models import RANK_CHOICES
 from faculty.util import ReportingSemester
 from faculty.event_types.fields import SemesterField
@@ -361,7 +362,6 @@ class PositionPersonForm(forms.Form):
         return super(PositionPersonForm, self).is_valid(*args, **kwargs)
 
 
-
 class FuturePersonForm(forms.ModelForm):
     first_name = forms.CharField(max_length=32)
     last_name = forms.CharField(max_length=32)
@@ -383,4 +383,14 @@ class FuturePersonForm(forms.ModelForm):
         exclude = ['config']
         widgets = {
             'sin': forms.TextInput(attrs={'size': '9'})
+        }
+
+
+class StudyLeaveApplicationForm(forms.ModelForm):
+    class Meta:
+        model = StudyLeaveApplication
+        exclude = []
+        widgets = {
+            'defer_salary': forms.RadioSelect,
+            'grad_students': forms.RadioSelect
         }

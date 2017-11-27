@@ -7,6 +7,8 @@ import StringIO
 from collections import defaultdict
 from decimal import Decimal, InvalidOperation, ROUND_DOWN
 
+from flower import command
+
 from courselib.auth import requires_role
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.db import transaction
@@ -20,6 +22,7 @@ from django.http import HttpResponseBadRequest
 from django.core.exceptions import PermissionDenied
 
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.template.base import Template
@@ -31,14 +34,15 @@ from grad.models import Supervisor
 from ra.models import RAAppointment
 
 from faculty.models import CareerEvent, MemoTemplate, Memo, EventConfig, FacultyMemberInfo
-from faculty.models import Grant, TempGrant, GrantOwner, Position, DocumentAttachment
+from faculty.models import Grant, TempGrant, GrantOwner, Position, DocumentAttachment, StudyLeaveApplication
 from faculty.models import EVENT_TYPES, EVENT_TYPE_CHOICES, EVENT_TAGS, ADD_TAGS, FACULTY_ROLE_EXPIRY
 from faculty.forms import MemoTemplateForm, MemoForm, MemoFormWithUnit, AttachmentForm, TextAttachmentForm, \
     ApprovalForm, GetSalaryForm, TeachingSummaryForm, DateRangeForm
 from faculty.forms import SearchForm, EventFilterForm, GrantForm, GrantImportForm, UnitFilterForm, \
     NewRoleForm, PositionForm, PositionPickerForm, PositionPersonForm, FuturePersonForm, PositionCredentialsForm
 from faculty.forms import AvailableCapacityForm, CourseAccreditationForm
-from faculty.forms import FacultyMemberInfoForm, TeachingCreditOverrideForm, PositionAttachmentForm
+from faculty.forms import FacultyMemberInfoForm, TeachingCreditOverrideForm, PositionAttachmentForm, \
+    StudyLeaveApplicationForm
 from faculty.processing import FacultySummary
 from templatetags.event_display import fraction_display
 from faculty.util import ReportingSemester, make_csv_writer_response
@@ -2486,3 +2490,24 @@ def view_grant(request, unit_slug, grant_slug):
         'owners_display': grant.get_owners_display(units)
     }
     return render(request, "faculty/view_grant.html", context)
+
+
+@login_required
+@transaction.atomic
+def new_study_leave_application(request):
+    person = get_object_or_404(Person, userid=request.user.username)
+    if request.method == 'POST':
+        form = StudyLeaveApplicationForm(request.POST)
+        if form.is_valid():
+            appl = form.save(commit=False)
+            appl.person = person
+            appl.save()
+            l = LogEntry(userid=request.user.username,
+                         description="%s added new study leave application %s" % (person, appl),
+                         related_object=appl)
+            l.save()
+            messages.add_message(request, messages.SUCCESS, "Study Leave Application added.")
+            return HttpResponseRedirect("dashboard:index")
+    else:
+        form = StudyLeaveApplicationForm()
+    return render(request, "faculty/new_study_leave_application.html", {'form': form})
