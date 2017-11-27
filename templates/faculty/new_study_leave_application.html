@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% load staticfiles %}
+
+
+{% block title %}New Study Leave Application{% endblock %}
+{% block h1 %}New Study Leave Application{% endblock %}
+
+{% block subbreadcrumbs %}
+<li>New Study Leave Application</li>
+{% endblock %}
+
+{% block content %}
+<form action="{% url "faculty:new_study_leave_application" %}" method="post">
+    {% csrf_token %}
+    {{ form|as_dl }}
+    <p>
+        <input type="submit" class="submit" value="Submit">
+    </p>
+</form>
+{% endblock %}

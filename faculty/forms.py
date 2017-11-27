@@ -5,6 +5,7 @@ from django.utils.translation import ugettext as _
 
 from coredata.models import Semester, Unit, Person, Role, FuturePerson
 from coredata.forms import PersonField
+from coredata.widgets import CalendarWidget
 
 from faculty.event_types.fields import SemesterCodeField, TeachingCreditField, DollarInput, FractionField, AddSalaryField, AddPayField, AnnualTeachingCreditField
 from faculty.models import CareerEvent
@@ -391,6 +392,26 @@ class StudyLeaveApplicationForm(forms.ModelForm):
         model = StudyLeaveApplication
         exclude = []
         widgets = {
+            'start_date': CalendarWidget,
+            'end_date': CalendarWidget,
+            'leave_1_start_date': CalendarWidget,
+            'leave_1_end_date': CalendarWidget,
+            'leave_2_start_date': CalendarWidget,
+            'leave_2_end_date': CalendarWidget,
+            'leave_3_start_date': CalendarWidget,
+            'leave_3_end_date': CalendarWidget,
+            'leave_4_start_date': CalendarWidget,
+            'leave_4_end_date': CalendarWidget,
+            'leave_5_start_date': CalendarWidget,
+            'leave_5_end_date': CalendarWidget,
+            'leave_6_start_date': CalendarWidget,
+            'leave_6_end_date': CalendarWidget,
             'defer_salary': forms.RadioSelect,
-            'grad_students': forms.RadioSelect
+            'grad_students': forms.RadioSelect,
+            'first_study_leave': forms.RadioSelect,
+            'appointed_tenure': forms.RadioSelect,
+            'first_study_leave_after_6_years': forms.RadioSelect,
+            'service_credits': forms.Textarea,
+            'phd_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
+            'masters_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
         }

@@ -1007,14 +1007,14 @@ class StudyLeaveApplication(models.Model):
     start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
     end_date = models.DateField(null=True, blank=True, help_text='End date requested')
     leave_option = models.CharField(max_length=1, choices=STUDY_LEAVE_OPTION, blank=True, null=True)
-    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT)
+    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT, default=None)
     first_study_leave = models.CharField("Is this your first study leave after being granted tenure", max_length=3,
-                                         choices=FIRST_STUDY_LEAVE_OPTIONS)
+                                         choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
     appointed_tenure = models.CharField("Were you appointed with tenure", max_length=3,
-                                        choices=FIRST_STUDY_LEAVE_OPTIONS)
+                                        choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
     first_study_leave_after_6_years = models.CharField("Continuing Teaching Faculty, Continuing Librarians/Archivist, "
                                                        "is this your first study leave after six years service",
-                                                       max_length=3, choices=FIRST_STUDY_LEAVE_OPTIONS)
+                                                       max_length=3, choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
     service_credits = models.CharField("List all academic service credits from other similar institutions (for first "
                                        "study leave only)", max_length=400, blank=True, null=True)
     leave_1_start_date = models.DateField("1st leave start date", null=True, blank=True,
@@ -1032,7 +1032,7 @@ class StudyLeaveApplication(models.Model):
     leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
     leave_6_end_date = models.DateField("6th leave end date", null=False, blank=True)
 
-    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES)
+    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, default=None)
     masters_students = models.PositiveIntegerField("Number of Masters Students", null=True, blank=True)
     phd_students = models.PositiveIntegerField("Number of PhD/EdD Students", null=True, blank=True)
     manage_students_during_leave = models.CharField("If you plan to manage Graduate Students during the study leave "

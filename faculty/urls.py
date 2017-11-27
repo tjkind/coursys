@@ -127,5 +127,8 @@ faculty_patterns = [ # prefix: /faculty/
     url(r'^(?P<futureperson_id>\d+)/edit_futureperson/(?P<from_admin>\d)/$', faculty_views.edit_futureperson, name='edit_futureperson'),
     url(r'^(?P<futureperson_id>\d+)/view_futureperson/$', faculty_views.view_futureperson, name='view_futureperson'),
     url(r'^(?P<futureperson_id>\d+)/view_futureperson/(?P<from_admin>\d)/$', faculty_views.view_futureperson, name='view_futureperson'),
-    url(r'^(?P<futureperson_id>\d+)/delete_futureperson/$', faculty_views.delete_futureperson, name='delete_futureperson')
+    url(r'^(?P<futureperson_id>\d+)/delete_futureperson/$', faculty_views.delete_futureperson, name='delete_futureperson'),
+
+    # Study Leave Management
+    url(r'^studyleave/new_application$', faculty_views.new_study_leave_application, name='new_study_leave_application'),
 ]

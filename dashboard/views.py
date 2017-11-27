@@ -47,7 +47,6 @@ def index(request):
     has_grads = Supervisor.objects.filter(supervisor__userid=userid, supervisor_type='SEN', removed=False).exists()
     form_groups = FormGroup.objects.filter(members__userid=request.user.username).exists()
     has_ras = RAAppointment.objects.filter(hiring_faculty__userid=request.user.username, deleted=False).exists()
-
     #messages.add_message(request, messages.SUCCESS, 'Success message.')
     #messages.add_message(request, messages.WARNING, 'Warning message.')
     #messages.add_message(request, messages.INFO, 'Info message.')
