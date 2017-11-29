@@ -17,6 +17,7 @@ from faculty.models import Memo
 from faculty.models import MemoTemplate
 from faculty.models import Position
 from faculty.models import StudyLeaveApplication
+from faculty.models import StudyLeaveSemesterActivity
 from faculty.models import RANK_CHOICES
 from faculty.util import ReportingSemester
 from faculty.event_types.fields import SemesterField
@@ -415,3 +416,9 @@ class StudyLeaveApplicationForm(forms.ModelForm):
             'phd_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
             'masters_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
         }
+
+
+class StudyLeaveSemesterActivityForm(forms.ModelForm):
+    class Meta:
+        model = StudyLeaveSemesterActivity
+        exclude = []

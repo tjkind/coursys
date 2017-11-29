@@ -1007,7 +1007,8 @@ class StudyLeaveApplication(models.Model):
     start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
     end_date = models.DateField(null=True, blank=True, help_text='End date requested')
     leave_option = models.CharField(max_length=1, choices=STUDY_LEAVE_OPTION, blank=True, null=True)
-    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT, default=None)
+    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT, default=False,
+                                       null=False, blank=False)
     first_study_leave = models.CharField("Is this your first study leave after being granted tenure", max_length=3,
                                          choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
     appointed_tenure = models.CharField("Were you appointed with tenure", max_length=3,
@@ -1020,19 +1021,20 @@ class StudyLeaveApplication(models.Model):
     leave_1_start_date = models.DateField("1st leave start date", null=True, blank=True,
                                           help_text="List all previous study leaves since first continuing "
                                                     "appointment.")
-    leave_1_end_date = models.DateField("1st leave end date", null=False, blank=True)
+    leave_1_end_date = models.DateField("1st leave end date", null=True, blank=True)
     leave_2_start_date = models.DateField("2nd leave start date", null=True, blank=True)
-    leave_2_end_date = models.DateField("2nd leave end date", null=False, blank=True)
+    leave_2_end_date = models.DateField("2nd leave end date", null=True, blank=True)
     leave_3_start_date = models.DateField("3rd leave start date", null=True, blank=True)
-    leave_3_end_date = models.DateField("3rd leave end date", null=False, blank=True)
+    leave_3_end_date = models.DateField("3rd leave end date", null=True, blank=True)
     leave_4_start_date = models.DateField("4th leave start date", null=True, blank=True)
-    leave_4_end_date = models.DateField("4th leave end date", null=False, blank=True)
+    leave_4_end_date = models.DateField("4th leave end date", null=True, blank=True)
     leave_5_start_date = models.DateField("5th leave start date", null=True, blank=True)
-    leave_5_end_date = models.DateField("5th leave end date", null=False, blank=True)
+    leave_5_end_date = models.DateField("5th leave end date", null=True, blank=True)
     leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
-    leave_6_end_date = models.DateField("6th leave end date", null=False, blank=True)
+    leave_6_end_date = models.DateField("6th leave end date", null=True, blank=True)
 
-    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, default=None)
+    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, null=False,
+                                        blank=False, default=False)
     masters_students = models.PositiveIntegerField("Number of Masters Students", null=True, blank=True)
     phd_students = models.PositiveIntegerField("Number of PhD/EdD Students", null=True, blank=True)
     manage_students_during_leave = models.CharField("If you plan to manage Graduate Students during the study leave "
@@ -1041,6 +1043,14 @@ class StudyLeaveApplication(models.Model):
 
     hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
     config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+
+    def autoslug(self):
+        return make_slug(self.primary_department.slug + '-' + self.person.userid)
+
+    slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
+
+    def __unicode__(self):
+        return "%s - %s" % (self.primary_department.slug, self.person.userid)
 
     objects = StudyLeaveApplicationQuerySet.as_manager()
 
@@ -1062,10 +1072,18 @@ class StudyLeaveSemesterActivityQuerySet(models.QuerySet):
 
 
 class StudyLeaveSemesterActivity(models.Model):
-    application = models.ForeignKey(StudyLeaveApplication, related_name='activities')
+    application = models.ForeignKey(StudyLeaveApplication, editable=False, related_name='activities')
     semester = models.ForeignKey(Semester, null=False, blank=False)
     activity = models.CharField(max_length=4, choices=ACTIVITY_CHOICES, null=False, blank=False)
     hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
     config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+
+    def autoslug(self):
+        return make_slug(self.application.slug + '-' + self.semester.name)
+
+    slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
+
+    def __unicode__(self):
+        return "%s - %s" % (self.application.slug, self.semester.name)
 
     objects = StudyLeaveApplicationQuerySet.as_manager()

@@ -7,6 +7,8 @@ EVENT_TYPE = '(?P<event_type>' + SLUG_RE + ')'
 EVENT_SLUG = '(?P<event_slug>' + SLUG_RE + ')'
 GRANT_SLUG = '(?P<grant_slug>' + SLUG_RE + ')'
 ATTACH_SLUG = '(?P<attach_slug>' + SLUG_RE + ')'
+APPLICATION_SLUG = '(?P<application_slug>' + SLUG_RE + ')'
+
 
 event_patterns = [ # prefix: /faculty/USERID_OR_EMPLID/events/EVENT_SLUG/
     url(r'^$', faculty_views.view_event, name='view_event'),
@@ -131,4 +133,5 @@ faculty_patterns = [ # prefix: /faculty/
 
     # Study Leave Management
     url(r'^studyleave/new_application$', faculty_views.new_study_leave_application, name='new_study_leave_application'),
+    url(r'^studyleave/' + APPLICATION_SLUG + '/new_application_semester_activity$', faculty_views.new_study_leave_semester_activity, name='new_study_leave_application_semester_activity'),
 ]

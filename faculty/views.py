@@ -27,6 +27,7 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.template.base import Template
 from django.template.context import Context
+from django.forms import modelformset_factory
 from courselib.search import find_userid_or_emplid
 
 from coredata.models import Person, Unit, Role, Member, CourseOffering, Semester, FuturePerson
@@ -34,7 +35,8 @@ from grad.models import Supervisor
 from ra.models import RAAppointment
 
 from faculty.models import CareerEvent, MemoTemplate, Memo, EventConfig, FacultyMemberInfo
-from faculty.models import Grant, TempGrant, GrantOwner, Position, DocumentAttachment, StudyLeaveApplication
+from faculty.models import Grant, TempGrant, GrantOwner, Position, DocumentAttachment, StudyLeaveApplication, \
+    StudyLeaveSemesterActivity
 from faculty.models import EVENT_TYPES, EVENT_TYPE_CHOICES, EVENT_TAGS, ADD_TAGS, FACULTY_ROLE_EXPIRY
 from faculty.forms import MemoTemplateForm, MemoForm, MemoFormWithUnit, AttachmentForm, TextAttachmentForm, \
     ApprovalForm, GetSalaryForm, TeachingSummaryForm, DateRangeForm
@@ -42,7 +44,7 @@ from faculty.forms import SearchForm, EventFilterForm, GrantForm, GrantImportFor
     NewRoleForm, PositionForm, PositionPickerForm, PositionPersonForm, FuturePersonForm, PositionCredentialsForm
 from faculty.forms import AvailableCapacityForm, CourseAccreditationForm
 from faculty.forms import FacultyMemberInfoForm, TeachingCreditOverrideForm, PositionAttachmentForm, \
-    StudyLeaveApplicationForm
+    StudyLeaveApplicationForm, StudyLeaveSemesterActivityForm
 from faculty.processing import FacultySummary
 from templatetags.event_display import fraction_display
 from faculty.util import ReportingSemester, make_csv_writer_response
@@ -2507,7 +2509,34 @@ def new_study_leave_application(request):
                          related_object=appl)
             l.save()
             messages.add_message(request, messages.SUCCESS, "Study Leave Application added.")
-            return HttpResponseRedirect("dashboard:index")
+            return HttpResponseRedirect(reverse('faculty:new_study_leave_application_semester_activity',
+                                                kwargs={'application_slug': appl.slug}))
     else:
         form = StudyLeaveApplicationForm()
     return render(request, "faculty/new_study_leave_application.html", {'form': form})
+
+
+@login_required
+@transaction.atomic
+def new_study_leave_semester_activity(request, application_slug):
+    application = get_object_or_404(StudyLeaveApplication, slug=application_slug)
+    StudyLeaveSemesterActivityFormSet = modelformset_factory(StudyLeaveSemesterActivity, max_num=24, extra=23, exclude=())
+    if request.method == 'POST':
+        formset = StudyLeaveSemesterActivityFormSet(request.POST)
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            print "Valid..."
+            for instance in instances:
+                print "In instance ",
+                print instance
+                instance.application = application
+                instance.save()
+            l = LogEntry(userid=request.user.username,
+                         description="%s added new study leave application semester activity" % application.person,
+                         related_object=application)
+            l.save()
+            messages.add_message(request, messages.SUCCESS, "Study Leave Application Semester Activity added.")
+            return HttpResponseRedirect(reverse("dashboard:index"))
+    else:
+        formset = StudyLeaveSemesterActivityFormSet()
+    return render(request, 'faculty/new_study_leave_semester_activity.html', {'formset': formset, 'application': application})
