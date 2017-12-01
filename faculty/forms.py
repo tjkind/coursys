@@ -393,6 +393,7 @@ class StudyLeaveApplicationForm(forms.ModelForm):
         model = StudyLeaveApplication
         exclude = []
         widgets = {
+            'tenure': forms.RadioSelect,
             'start_date': CalendarWidget,
             'end_date': CalendarWidget,
             'leave_1_start_date': CalendarWidget,

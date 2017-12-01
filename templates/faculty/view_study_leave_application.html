@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% load staticfiles %}
+
+
+{% block title %}View Study Leave Application{% endblock %}
+{% block h1 %}View Study Leave Application{% endblock %}
+
+{% block headextra %}
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#semester_activity').dataTable( {
+    'bPaginate': false,
+    'bInfo': false,
+    'bLengthChange': false,
+    "bJQueryUI": true,
+    'aaSorting': [[0, 'asc']]
+  } );
+} );
+
+function confirmDelete() {
+  return confirm("Are you sure you want to delete this activity?");
+}
+</script>
+{% endblock %}
+
+
+{% block actions %}
+<div id="actions">
+    <h2>Actions</h2>
+    <ul>
+        <li><a href="{% url "faculty:new_study_leave_application_semester_activity" application_slug=application.slug %}">Add Semester Activity</a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block subbreadcrumbs %}
+    <li><a href="{% url "faculty:study_leave_index" %}">Study Leave</a></li>
+    <li>View Study Leave Application</li>
+{% endblock %}
+
+{% block content %}
+    <dt>Rank</dt><dd>{{ application.get_rank_display }}</dd>
+    <dt>Primary Department</dt><dd>{{ application.primary_department.name }}</dd>
+    {% if application.secondary_department %}<dt>Secondary Department</dt><dd>{{ application.secondary_department.name }}</dd>{% endif %}
+    <dt>TODO:  Add other fields here...</dt>
+
+    {% if application.activities.visible %}
+        <h2>Semester Activity</h2>
+        <table id="semester_activity">
+            <thead>
+                <tr>
+                    <td>Semester</td>
+                    <td>Activity</td>
+                    <td>Action</td>
+                </tr>
+            </thead>
+
+            {% for act in application.activities.visible %}
+                <tr>
+                    <td>{{ act.semester.label }}</td>
+                    <td>{{ act.get_activity_display }}</td>
+                    <td>
+                        <form class="lineform" method="POST"
+                          action="{% url "faculty:delete_study_leave_application_semester_activity" semester_activity_slug=act.slug %}"
+                          onsubmit="return confirmDelete()">
+                        {% csrf_token %}
+                        <button type='submit' class='btn' title="Delete Activity">
+                            <i class='fa fa-trash-o'></i>
+                        </button>
+                    </form>
+                    <form class="lineform" method="GET"
+                        action="{% url "faculty:edit_study_leave_application_semester_activity" semester_activity_slug=act.slug %}">
+                        <button type='submit' class='btn' title="Edit Activity">
+                            <i class='fa fa-edit'></i>
+                        </button>
+                    </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <h2>This application does not have any semester activities associated with it.  You should probably add some.</h2>
+    {% endif %}
+
+{% endblock %}
+
+

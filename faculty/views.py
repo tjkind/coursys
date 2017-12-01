@@ -2488,10 +2488,68 @@ def view_grant(request, unit_slug, grant_slug):
     grant = get_object_or_404(Grant, unit__slug=unit_slug, slug=grant_slug, unit__in=units)
 
     context = {
-        "grant": grant,
+        'grant': grant,
         'owners_display': grant.get_owners_display(units)
     }
-    return render(request, "faculty/view_grant.html", context)
+    return render(request, 'faculty/view_grant.html', context)
+
+
+# Study leave applications
+
+@login_required
+def study_leave_index(request):
+    # TODO: Either split this view in two, or add some role checking so admins can see all pending applications for
+    # their unit(s).
+    person = get_object_or_404(Person, userid=request.user.username)
+    applications = StudyLeaveApplication.objects.visible().filter(person=person)
+    return render(request, 'faculty/study_leave_index.html', {'applications': applications})
+
+
+@login_required
+def view_study_leave_application(request, application_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
+    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    return render(request, 'faculty/view_study_leave_application.html', {'application': application})
+
+
+@login_required
+@transaction.atomic
+def edit_study_leave_application(request, application_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
+    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    if request.method == 'POST':
+        form = StudyLeaveApplicationForm(request.POST, instance=application)
+        if form.is_valid():
+            appl = form.save(commit=False)
+            appl.person = person
+            appl.save(editor=person)
+            l = LogEntry(userid=request.user.username,
+                         description="%s edited study leave application %s" % (person, appl),
+                         related_object=appl)
+            l.save()
+            messages.add_message(request, messages.SUCCESS, "Study Leave Application Edited.")
+            return HttpResponseRedirect(reverse('faculty:view_study_leave_application',
+                                                kwargs={'application_slug': appl.slug}))
+    else:
+        form = StudyLeaveApplicationForm(instance=application)
+    return render(request, 'faculty/edit_study_leave_application.html', {'form': form, 'application': application})
+
+
+@login_required
+@transaction.atomic
+def delete_study_leave_application(request, application_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
+    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    if request.method == 'POST':
+        application.hidden = True
+        application.save(editor=person)
+        l = LogEntry(userid=request.user.username,
+                     description="%s deleted study leave application %s" % (person, application),
+                     related_object=application)
+        l.save()
+        messages.add_message(request, messages.SUCCESS, "Study Leave Application Deleted.")
+        return HttpResponseRedirect(reverse("faculty:study_leave_index"))
+
 
 
 @login_required
@@ -2503,7 +2561,7 @@ def new_study_leave_application(request):
         if form.is_valid():
             appl = form.save(commit=False)
             appl.person = person
-            appl.save()
+            appl.save(editor=person)
             l = LogEntry(userid=request.user.username,
                          description="%s added new study leave application %s" % (person, appl),
                          related_object=appl)
@@ -2513,30 +2571,73 @@ def new_study_leave_application(request):
                                                 kwargs={'application_slug': appl.slug}))
     else:
         form = StudyLeaveApplicationForm()
-    return render(request, "faculty/new_study_leave_application.html", {'form': form})
+    return render(request, 'faculty/new_study_leave_application.html', {'form': form})
 
 
 @login_required
 @transaction.atomic
 def new_study_leave_semester_activity(request, application_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
     application = get_object_or_404(StudyLeaveApplication, slug=application_slug)
-    StudyLeaveSemesterActivityFormSet = modelformset_factory(StudyLeaveSemesterActivity, max_num=24, extra=23, exclude=())
+    StudyLeaveSemesterActivityFormSet = modelformset_factory(StudyLeaveSemesterActivity, max_num=24, extra=23,
+                                                             exclude=())
     if request.method == 'POST':
         formset = StudyLeaveSemesterActivityFormSet(request.POST)
         if formset.is_valid():
             instances = formset.save(commit=False)
-            print "Valid..."
             for instance in instances:
-                print "In instance ",
-                print instance
                 instance.application = application
-                instance.save()
+                instance.save(editor=person)
             l = LogEntry(userid=request.user.username,
                          description="%s added new study leave application semester activity" % application.person,
                          related_object=application)
             l.save()
             messages.add_message(request, messages.SUCCESS, "Study Leave Application Semester Activity added.")
-            return HttpResponseRedirect(reverse("dashboard:index"))
+            return HttpResponseRedirect(reverse("faculty:study_leave_index"))
     else:
-        formset = StudyLeaveSemesterActivityFormSet()
+        formset = StudyLeaveSemesterActivityFormSet(queryset=StudyLeaveSemesterActivity.objects.visible()
+                                                    .filter(application=application))
     return render(request, 'faculty/new_study_leave_semester_activity.html', {'formset': formset, 'application': application})
+
+
+@login_required
+@transaction.atomic
+def delete_study_leave_application_semester_activity(request, semester_activity_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
+    activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                    application__person=person, hidden=False)
+    if request.method == 'POST':
+        activity.hidden = True
+        activity.save(editor=person)
+        l = LogEntry(userid=request.user.username,
+                     description="%s deleted study leave application activity %s" % (person, activity),
+                     related_object=activity)
+        l.save()
+        messages.add_message(request, messages.SUCCESS, "Activity Deleted.")
+        return HttpResponseRedirect(reverse("faculty:view_study_leave_application",
+                                    kwargs={'application_slug': activity.application.slug}))
+
+
+
+@login_required
+@transaction.atomic
+def edit_study_leave_application_semester_activity(request, semester_activity_slug):
+    person = get_object_or_404(Person, userid=request.user.username)
+    activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                 application__person=person, hidden=False)
+    if request.method == 'POST':
+        form = StudyLeaveSemesterActivityForm(request.POST, instance=activity)
+        if form.is_valid():
+            activity = form.save(commit=False)
+            activity.save(editor=person)
+            l = LogEntry(userid=request.user.username,
+                         description="%s edited study leave application activity %s" % (person, activity),
+                         related_object=activity)
+            l.save()
+            messages.add_message(request, messages.SUCCESS, "Activity Edited.")
+            return HttpResponseRedirect(reverse("faculty:view_study_leave_application",
+                                        kwargs={'application_slug': activity.application.slug}))
+    else:
+        form = StudyLeaveSemesterActivityForm(instance=activity)
+    return render(request, 'faculty/edit_study_leave_semester_activity.html',
+                  {'form': form, 'activity': activity})

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% load staticfiles %}
+
+
+{% block title %}Edit Activity{% endblock %}
+{% block h1 %}Edit Activity{% endblock %}
+
+{% block subbreadcrumbs %}
+    <li><a href="{% url "faculty:study_leave_index" %}">Study Leave</a></li>
+    <li><a href="{% url "faculty:view_study_leave_application" application_slug=activity.application.slug %}">View Application</a></li>
+    <li>Edit Activity</li>
+{% endblock %}
+
+{% block content %}
+<form action="{% url "faculty:edit_study_leave_application_semester_activity" semester_activity_slug=activity.slug %}" method="post">
+    {% csrf_token %}
+         {{ form|as_dl}}
+    <p>
+        <input type="submit" class="submit" value="Submit">
+    </p>
+</form>
+{% endblock %}

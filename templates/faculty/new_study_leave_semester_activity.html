@@ -14,11 +14,9 @@
 <form action="{% url "faculty:new_study_leave_application_semester_activity" application_slug=application.slug %}" method="post">
     {% csrf_token %}
     {{ formset.management_form }}
-    <table>
-        {% for form in formset %}
-            {{ form|as_dl}}
-        {% endfor %}
-    </table>
+    {% for form in formset %}
+        {{ form|as_dl}}
+    {% endfor %}
     <p>
         <input type="submit" class="submit" value="Submit">
     </p>

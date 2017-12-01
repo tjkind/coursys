@@ -8,6 +8,7 @@ EVENT_SLUG = '(?P<event_slug>' + SLUG_RE + ')'
 GRANT_SLUG = '(?P<grant_slug>' + SLUG_RE + ')'
 ATTACH_SLUG = '(?P<attach_slug>' + SLUG_RE + ')'
 APPLICATION_SLUG = '(?P<application_slug>' + SLUG_RE + ')'
+SEMESTER_ACTIVITY_SLUG = '(?P<semester_activity_slug>' + SLUG_RE + ')'
 
 
 event_patterns = [ # prefix: /faculty/USERID_OR_EMPLID/events/EVENT_SLUG/
@@ -59,6 +60,25 @@ faculty_member_patterns = [ # prefix: /faculty/USERID_OR_EMPLID/
     # Event Specific Actions
     url(r'^events/' + EVENT_SLUG + '/', include(event_patterns)),
 ]
+
+studyleave_patterns = [ # prefix: /faculty/studyleave/
+    url(r'^$', faculty_views.study_leave_index, name='study_leave_index'),
+    url(r'^new_application$', faculty_views.new_study_leave_application, name='new_study_leave_application'),
+    url(r'^' + APPLICATION_SLUG + '/new_application_semester_activity$',
+        faculty_views.new_study_leave_semester_activity, name='new_study_leave_application_semester_activity'),
+    url(r'^' + APPLICATION_SLUG + '/view$', faculty_views.view_study_leave_application,
+        name='view_study_leave_application'),
+    url(r'^' + APPLICATION_SLUG + '/edit', faculty_views.edit_study_leave_application,
+        name='edit_study_leave_application'),
+    url(r'^' + APPLICATION_SLUG + '/delete', faculty_views.delete_study_leave_application,
+        name='delete_study_leave_application'),
+    url(r'^' + SEMESTER_ACTIVITY_SLUG + '/activity_edit', faculty_views.edit_study_leave_application_semester_activity,
+        name='edit_study_leave_application_semester_activity'),
+    url(r'^' + SEMESTER_ACTIVITY_SLUG + '/activity_delete', faculty_views.delete_study_leave_application_semester_activity,
+        name='delete_study_leave_application_semester_activity'),
+
+]
+
 
 faculty_patterns = [ # prefix: /faculty/
     # Top Level Stuff
@@ -131,7 +151,6 @@ faculty_patterns = [ # prefix: /faculty/
     url(r'^(?P<futureperson_id>\d+)/view_futureperson/(?P<from_admin>\d)/$', faculty_views.view_futureperson, name='view_futureperson'),
     url(r'^(?P<futureperson_id>\d+)/delete_futureperson/$', faculty_views.delete_futureperson, name='delete_futureperson'),
 
-    # Study Leave Management
-    url(r'^studyleave/new_application$', faculty_views.new_study_leave_application, name='new_study_leave_application'),
-    url(r'^studyleave/' + APPLICATION_SLUG + '/new_application_semester_activity$', faculty_views.new_study_leave_semester_activity, name='new_study_leave_application_semester_activity'),
+    # Study Leave
+    url(r'^studyleave/', include(studyleave_patterns)),
 ]

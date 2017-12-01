@@ -3,16 +3,16 @@
 {% load staticfiles %}
 
 
-{% block title %}New Study Leave Application{% endblock %}
-{% block h1 %}New Study Leave Application{% endblock %}
+{% block title %}Edit Study Leave Application{% endblock %}
+{% block h1 %}Edit Study Leave Application{% endblock %}
 
 {% block subbreadcrumbs %}
     <li><a href="{% url "faculty:study_leave_index" %}">Study Leave</a></li>
-    <li>New Study Leave Application</li>
+    <li>Edit Study Leave Application</li>
 {% endblock %}
 
 {% block content %}
-<form action="{% url "faculty:new_study_leave_application" %}" method="post">
+<form action="{% url "faculty:edit_study_leave_application" application_slug=application.slug %}" method="post">
     {% csrf_token %}
     {{ form|as_dl }}
     <p>

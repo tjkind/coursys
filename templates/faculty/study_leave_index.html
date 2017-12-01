@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Study Leave{% endblock %}
+{% block h1 %}Study Leave{% endblock %}
+
+{% block subbreadcrumbs %}<li>Study Leave</li>{% endblock %}
+
+{% block headextra %}
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#study_leave_applications').dataTable( {
+    'bPaginate': false,
+    'bInfo': false,
+    'bLengthChange': false,
+    "bJQueryUI": true,
+    'aaSorting': [[1, 'asc']]
+  } );
+});
+
+function confirmDelete() {
+  return confirm("Are you sure you want to delete this application?");
+}
+</script>
+{% endblock %}
+
+
+{% block actions %}
+<div id="actions">
+    <h2>Actions</h2>
+    <ul>
+        <li><a href="{% url "faculty:new_study_leave_application" %}">New Study Leave Application</a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+    {% if applications %}
+        <table id="study_leave_applications" class="display">
+            <thead>
+                <tr>
+                <td>Primary Department</td>
+                <td>Start Date</td>
+                <td>Actions</td>
+                </tr>
+            </thead>
+            {% for a in applications %}
+                <tr>
+                    <td>{{ a.primary_department.name }}</td>
+                    <td>{{ a.start_date }}</td>
+                    <td>
+                        <form class="lineform" method="POST"
+                              action="{% url "faculty:delete_study_leave_application" application_slug=a.slug %}"
+                              onsubmit="return confirmDelete()">
+                            {% csrf_token %}
+                            <button type='submit' class='btn' title="Delete Application">
+                                <i class='fa fa-trash-o'></i>
+                            </button>
+                        </form>
+                        <form class="lineform" method="GET"
+                            action="{% url "faculty:edit_study_leave_application" application_slug=a.slug %}">
+                            <button type='submit' class='btn' title="Edit Application">
+                                <i class='fa fa-edit'></i>
+                            </button>
+                        </form>
+                        <form class="lineform" method="GET"
+                            action="{% url "faculty:view_study_leave_application" application_slug=a.slug %}">
+                            <button type='submit' class='btn' title="View Application">
+                                <i class='fa fa-eye'></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+    <div>You currently do not have any applications.</div>
+    {% endif %}
+
+{% endblock %}

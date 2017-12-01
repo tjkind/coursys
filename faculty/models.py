@@ -1002,7 +1002,7 @@ class StudyLeaveApplication(models.Model):
     rank = models.CharField(max_length=4, choices=RANK_CHOICES, blank=True, null=True)
     primary_department = models.ForeignKey(Unit, null=False, blank=False, related_name='studyleaveapplications')
     secondary_department = models.ForeignKey(Unit, null=True, blank=True, related_name='+')
-    tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=True, null=True)
+    tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=False, null=False, default='NO')
     tenure_date = models.DateField("if yes, date awarded", null=True, blank=True)
     start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
     end_date = models.DateField(null=True, blank=True, help_text='End date requested')
@@ -1043,6 +1043,8 @@ class StudyLeaveApplication(models.Model):
 
     hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
     config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+    last_modified = models.DateTimeField(null=True, blank=True, editable=False)
+    last_modified_by = models.ForeignKey(Person, null=True, blank=True, editable=False, related_name='+')
 
     def autoslug(self):
         return make_slug(self.primary_department.slug + '-' + self.person.userid)
@@ -1053,6 +1055,11 @@ class StudyLeaveApplication(models.Model):
         return "%s - %s" % (self.primary_department.slug, self.person.userid)
 
     objects = StudyLeaveApplicationQuerySet.as_manager()
+
+    def save(self, editor=None, *args, **kwargs):
+        self.last_modified = datetime.datetime.now()
+        self.last_modified_by = editor
+        return super(StudyLeaveApplication, self).save(*args, **kwargs)
 
 
 ACTIVITY_CHOICES = (
@@ -1077,6 +1084,8 @@ class StudyLeaveSemesterActivity(models.Model):
     activity = models.CharField(max_length=4, choices=ACTIVITY_CHOICES, null=False, blank=False)
     hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
     config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
+    last_modified = models.DateTimeField(null=True, blank=True, editable=False)
+    last_modified_by = models.ForeignKey(Person, null=True, blank=True, editable=False, related_name='+')
 
     def autoslug(self):
         return make_slug(self.application.slug + '-' + self.semester.name)
@@ -1087,3 +1096,9 @@ class StudyLeaveSemesterActivity(models.Model):
         return "%s - %s" % (self.application.slug, self.semester.name)
 
     objects = StudyLeaveApplicationQuerySet.as_manager()
+
+    def save(self, editor=None, *args, **kwargs):
+        self.last_modified = datetime.datetime.now()
+        self.last_modified_by = editor
+        return super(StudyLeaveSemesterActivity, self).save(*args, **kwargs)
+
