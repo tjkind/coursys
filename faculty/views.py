@@ -2514,7 +2514,7 @@ def view_study_leave_application(request, application_slug):
 
 @login_required
 @transaction.atomic
-def edit_study_leave_application(request, application_slug):
+def edit_study_leave_application(request, application_slug, from_index=0):
     person = get_object_or_404(Person, userid=request.user.username)
     application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
     if request.method == 'POST':
@@ -2528,11 +2528,15 @@ def edit_study_leave_application(request, application_slug):
                          related_object=appl)
             l.save()
             messages.add_message(request, messages.SUCCESS, "Study Leave Application Edited.")
-            return HttpResponseRedirect(reverse('faculty:view_study_leave_application',
-                                                kwargs={'application_slug': appl.slug}))
+            if from_index == '1':
+                return HttpResponseRedirect(reverse('faculty:study_leave_index'))
+            else:
+                return HttpResponseRedirect(reverse('faculty:view_study_leave_application',
+                                                    kwargs={'application_slug': appl.slug}))
     else:
         form = StudyLeaveApplicationForm(instance=application)
-    return render(request, 'faculty/edit_study_leave_application.html', {'form': form, 'application': application})
+    return render(request, 'faculty/edit_study_leave_application.html', {'form': form, 'application': application,
+                                                                         'from_index': from_index})
 
 
 @login_required

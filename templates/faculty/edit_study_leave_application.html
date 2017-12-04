@@ -8,11 +8,14 @@
 
 {% block subbreadcrumbs %}
     <li><a href="{% url "faculty:study_leave_index" %}">Study Leave</a></li>
+    {% ifnotequal from_index '1' %}
+        <li><a href="{% url "faculty:view_study_leave_application" application_slug=application.slug %}">View Application</a></li>
+    {% endifnotequal %}
     <li>Edit Study Leave Application</li>
 {% endblock %}
 
 {% block content %}
-<form action="{% url "faculty:edit_study_leave_application" application_slug=application.slug %}" method="post">
+<form action="{% url "faculty:edit_study_leave_application" application_slug=application.slug from_index=from_index %}" method="post">
     {% csrf_token %}
     {{ form|as_dl }}
     <p>

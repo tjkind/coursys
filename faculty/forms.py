@@ -394,6 +394,7 @@ class StudyLeaveApplicationForm(forms.ModelForm):
         exclude = []
         widgets = {
             'tenure': forms.RadioSelect,
+            'tenure_date': CalendarWidget,
             'start_date': CalendarWidget,
             'end_date': CalendarWidget,
             'leave_1_start_date': CalendarWidget,
@@ -416,6 +417,7 @@ class StudyLeaveApplicationForm(forms.ModelForm):
             'service_credits': forms.Textarea,
             'phd_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
             'masters_students': forms.NumberInput(attrs={'class': 'smallnumberinput'}),
+            'manage_students_during_leave': forms.Textarea,
         }
 
 

@@ -1,6 +1,6 @@
 
 from django.conf.urls import url, include
-from courselib.urlparts import USERID_OR_EMPLID, SLUG_RE, UNIT_SLUG, COURSE_SLUG
+from courselib.urlparts import USERID_OR_EMPLID, SLUG_RE, UNIT_SLUG, COURSE_SLUG, ID_RE
 import faculty.views as faculty_views
 
 EVENT_TYPE = '(?P<event_type>' + SLUG_RE + ')'
@@ -9,6 +9,7 @@ GRANT_SLUG = '(?P<grant_slug>' + SLUG_RE + ')'
 ATTACH_SLUG = '(?P<attach_slug>' + SLUG_RE + ')'
 APPLICATION_SLUG = '(?P<application_slug>' + SLUG_RE + ')'
 SEMESTER_ACTIVITY_SLUG = '(?P<semester_activity_slug>' + SLUG_RE + ')'
+FROM_INDEX = '(?P<from_index>' + ID_RE + ')'
 
 
 event_patterns = [ # prefix: /faculty/USERID_OR_EMPLID/events/EVENT_SLUG/
@@ -68,7 +69,9 @@ studyleave_patterns = [ # prefix: /faculty/studyleave/
         faculty_views.new_study_leave_semester_activity, name='new_study_leave_application_semester_activity'),
     url(r'^' + APPLICATION_SLUG + '/view$', faculty_views.view_study_leave_application,
         name='view_study_leave_application'),
-    url(r'^' + APPLICATION_SLUG + '/edit', faculty_views.edit_study_leave_application,
+    url(r'^' + APPLICATION_SLUG + '/edit$', faculty_views.edit_study_leave_application,
+        name='edit_study_leave_application'),
+    url(r'^' + APPLICATION_SLUG + '/edit/' + FROM_INDEX + '/$', faculty_views.edit_study_leave_application,
         name='edit_study_leave_application'),
     url(r'^' + APPLICATION_SLUG + '/delete', faculty_views.delete_study_leave_application,
         name='delete_study_leave_application'),
