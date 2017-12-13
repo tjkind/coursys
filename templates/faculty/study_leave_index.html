@@ -28,17 +28,18 @@ function confirmDelete() {
 <div id="actions">
     <h2>Actions</h2>
     <ul>
-        <li><a href="{% url "faculty:new_study_leave_application" %}">New Study Leave Application</a></li>
+        <li><a href="{% url "faculty:new_study_leave_application" %}">Apply for Study Leave</a></li>
     </ul>
 </div>
 {% endblock %}
 
 {% block content %}
     {% if applications %}
-        <h2>Your Study Leave Application(s</h2>
+        <h2>Study Leave Application(s)</h2>
         <table id="study_leave_applications" class="display">
             <thead>
                 <tr>
+                <td>Person</td>
                 <td>Primary Department</td>
                 <td>Start Date</td>
                 <td>Actions</td>
@@ -46,6 +47,7 @@ function confirmDelete() {
             </thead>
             {% for a in applications %}
                 <tr>
+                    <td>{{ a.person.name }}</td>
                     <td>{{ a.primary_department.name }}</td>
                     <td>{{ a.start_date }}</td>
                     <td>

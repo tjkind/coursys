@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation, ROUND_DOWN
 
 from flower import command
 
-from courselib.auth import requires_role
+from courselib.auth import requires_role, has_role
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.db import transaction
 
@@ -29,7 +29,7 @@ from django.template.base import Template
 from django.template.context import Context
 from django.forms import modelformset_factory
 from courselib.search import find_userid_or_emplid
-
+from cache_utils.decorators import cached
 from coredata.models import Person, Unit, Role, Member, CourseOffering, Semester, FuturePerson
 from grad.models import Supervisor
 from ra.models import RAAppointment
@@ -2496,19 +2496,25 @@ def view_grant(request, unit_slug, grant_slug):
 
 # Study leave applications
 
+STUDY_LEAVE_ROLES = ['ADMN', 'FACA']
+
 @login_required
 def study_leave_index(request):
-    # TODO: Either split this view in two, or add some role checking so admins can see all pending applications for
-    # their unit(s).
     person = get_object_or_404(Person, userid=request.user.username)
-    applications = StudyLeaveApplication.objects.visible().filter(person=person)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        applications = StudyLeaveApplication.objects.visible().filter(primary_department__in=Unit.sub_units(request.units))
+    else:
+        applications = StudyLeaveApplication.objects.visible().filter(person=person)
     return render(request, 'faculty/study_leave_index.html', {'applications': applications})
 
 
 @login_required
 def view_study_leave_application(request, application_slug):
     person = get_object_or_404(Person, userid=request.user.username)
-    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
     return render(request, 'faculty/view_study_leave_application.html', {'application': application})
 
 
@@ -2516,7 +2522,10 @@ def view_study_leave_application(request, application_slug):
 @transaction.atomic
 def edit_study_leave_application(request, application_slug, from_index=0):
     person = get_object_or_404(Person, userid=request.user.username)
-    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
     if request.method == 'POST':
         form = StudyLeaveApplicationForm(request.POST, instance=application)
         if form.is_valid():
@@ -2543,7 +2552,10 @@ def edit_study_leave_application(request, application_slug, from_index=0):
 @transaction.atomic
 def delete_study_leave_application(request, application_slug):
     person = get_object_or_404(Person, userid=request.user.username)
-    application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person, hidden=False)
     if request.method == 'POST':
         application.hidden = True
         application.save(editor=person)
@@ -2582,7 +2594,10 @@ def new_study_leave_application(request):
 @transaction.atomic
 def new_study_leave_semester_activity(request, application_slug):
     person = get_object_or_404(Person, userid=request.user.username)
-    application = get_object_or_404(StudyLeaveApplication, slug=application_slug)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        application = get_object_or_404(StudyLeaveApplication, slug=application_slug, person=person)
     StudyLeaveSemesterActivityFormSet = modelformset_factory(StudyLeaveSemesterActivity, max_num=24, extra=23,
                                                              exclude=())
     if request.method == 'POST':
@@ -2608,8 +2623,12 @@ def new_study_leave_semester_activity(request, application_slug):
 @transaction.atomic
 def delete_study_leave_application_semester_activity(request, semester_activity_slug):
     person = get_object_or_404(Person, userid=request.user.username)
-    activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
-                                    application__person=person, hidden=False)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                     application__primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                     application__person=person, hidden=False)
     if request.method == 'POST':
         activity.hidden = True
         activity.save(editor=person)
@@ -2622,13 +2641,16 @@ def delete_study_leave_application_semester_activity(request, semester_activity_
                                     kwargs={'application_slug': activity.application.slug}))
 
 
-
 @login_required
 @transaction.atomic
 def edit_study_leave_application_semester_activity(request, semester_activity_slug):
     person = get_object_or_404(Person, userid=request.user.username)
-    activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
-                                 application__person=person, hidden=False)
+    if has_role(STUDY_LEAVE_ROLES, request):
+        activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                     application__primary_department__in=Unit.sub_units(request.units), hidden=False)
+    else:
+        activity = get_object_or_404(StudyLeaveSemesterActivity, slug=semester_activity_slug,
+                                     application__person=person, hidden=False)
     if request.method == 'POST':
         form = StudyLeaveSemesterActivityForm(request.POST, instance=activity)
         if form.is_valid():
