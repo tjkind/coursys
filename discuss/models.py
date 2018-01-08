@@ -9,7 +9,7 @@ from django.conf import settings
 from courselib.json_fields import JSONField
 from courselib.json_fields import getter_setter
 from courselib.branding import product_name
-from pages.models import ParserFor, brushes_used
+from courselib.markup import ParserFor, ensure_sanitary_markup, markup_to_html
 from autoslug import AutoSlugField
 from courselib.slugs import make_slug
 import datetime
@@ -50,7 +50,7 @@ class DiscussionTopic(models.Model):
     """
     offering = models.ForeignKey(CourseOffering, null=False)
     title = models.CharField(max_length=140, help_text="A brief description of the topic")
-    content = models.TextField(help_text='The inital message for the topic, <a href="http://www.wikicreole.org/wiki/Creole1.0">WikiCreole-formatted</a>')
+    content = models.TextField(help_text='The inital message for the topic.')
     created_at = models.DateTimeField(auto_now_add=True)
     last_activity_at = models.DateTimeField(auto_now_add=True)
     message_count = models.IntegerField(default=0)
@@ -61,22 +61,19 @@ class DiscussionTopic(models.Model):
         return make_slug(self.title)
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with=['offering'])
     config = JSONField(null=False, blank=False, default={})
+        # p.config['markup']:  markup language used: see courselib/markup.py
         # p.config['math']: content uses MathJax? (boolean)
-        # p.config['brushes']: used SyntaxHighlighter brushes (list of strings)
+        # p.config['brushes']: used SyntaxHighlighter brushes (list of strings) -- no longer used with highlight.js
     
-    defaults = {'math': False, 'brushes': []}
+    defaults = {'markup': 'creole', 'math': False,}
+    markup, set_markup = getter_setter('markup')
     math, set_math = getter_setter('math')
-    brushes, set_brushes = getter_setter('brushes')
-    
+
     def save(self, *args, **kwargs):
         if self.status not in [status[0] for status in TOPIC_STATUSES]:
             raise ValueError('Invalid topic status')
 
-        # update the metainfo about creole display        
-        self.get_creole()
-        brushes = brushes_used(self.Creole.parser.parse(self.content))
-        self.set_brushes(list(brushes))
-        # TODO: nobody sets config.math to True, but it is honoured if it is set magically. UI for that?
+        self.content = ensure_sanitary_markup(self.content, self.markup(), restricted=True)
 
         new_topic = self.id is None
         super(DiscussionTopic, self).save(*args, **kwargs)
@@ -103,22 +100,11 @@ class DiscussionTopic(models.Model):
         
     def __unicode___(self):
         return self.title
-    
-    def __init__(self, *args, **kwargs):
-        super(DiscussionTopic, self).__init__(*args, **kwargs)
-        self.Creole = None
-    
-    def get_creole(self):
-        "Only build the creole parser on-demand."
-        if not self.Creole:
-            self.Creole = ParserFor(self.offering)
-        return self.Creole
 
     def html_content(self):
         "Convert self.content to HTML"
-        creole = self.get_creole()
-        html = creole.text2html(self.content)
-        return mark_safe(html)
+        return markup_to_html(self.content, self.markup(), offering=self.offering, html_already_safe=True,
+                              restricted=True)
     
     def still_editable(self):
         td = datetime.datetime.now() - self.created_at
@@ -154,7 +140,7 @@ class DiscussionMessage(models.Model):
     A message (post) associated with a Discussion Topic
     """
     topic = models.ForeignKey(DiscussionTopic)
-    content = models.TextField(blank=False, help_text=mark_safe('Reply to topic, <a href="http://www.wikicreole.org/wiki/Creole1.0">WikiCreole-formatted</a>'))
+    content = models.TextField(blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=3, choices=MESSAGE_STATUSES, default='VIS')
@@ -163,12 +149,14 @@ class DiscussionMessage(models.Model):
         return make_slug(self.author.person.userid)
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with=['topic'])
     config = JSONField(null=False, blank=False, default={})
+        # p.config['markup']:  markup language used: see courselib/markup.py
         # p.config['math']: content uses MathJax? (boolean)
-        # p.config['brushes']: used SyntaxHighlighter brushes (list of strings)
+        # p.config['brushes']: used SyntaxHighlighter brushes (list of strings) -- no longer used with highlight.js
     
-    defaults = {'math': False, 'brushes': []}
+    defaults = {'math': False, 'markup': 'creole'}
     math, set_math = getter_setter('math')
-    brushes, set_brushes = getter_setter('brushes')
+    markup, set_markup = getter_setter('markup')
+    #brushes, set_brushes = getter_setter('brushes')
 
     def save(self, *args, **kwargs):
         if self.status not in [status[0] for status in MESSAGE_STATUSES]:
@@ -176,13 +164,9 @@ class DiscussionMessage(models.Model):
         if not self.pk:
             self.topic.new_message_update()
 
-        # update the metainfo about creole display        
-        self.topic.get_creole()
-        brushes = brushes_used(self.topic.Creole.parser.parse(self.content))
-        self.set_brushes(list(brushes))
-        
+        self.content = ensure_sanitary_markup(self.content, self.markup(), restricted=True)
+
         new_message = self.id is None
-        
         super(DiscussionMessage, self).save(*args, **kwargs)
 
         # handle subscriptions
@@ -196,9 +180,8 @@ class DiscussionMessage(models.Model):
 
     def html_content(self):
         "Convert self.content to HTML"
-        creole = self.topic.get_creole()
-        html = creole.text2html(self.content)
-        return mark_safe(html)
+        return markup_to_html(self.content, self.markup(), offering=self.topic.offering, html_already_safe=True,
+                              restricted=True)
     
     def get_absolute_url(self):
         return self.topic.get_absolute_url() + '#reply-' + str(self.id)

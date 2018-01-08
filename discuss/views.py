@@ -73,8 +73,7 @@ def create_topic(request, course_slug):
         # course is an HttpResponse in this case
         return course
     if request.method == 'POST':
-        creole = DiscussionTopic(offering=course).get_creole()
-        form = discussion_topic_form_factory(view, data=request.POST, creole=creole)
+        form = discussion_topic_form_factory(view, data=request.POST)
         if form.is_valid():
             topic = form.save(commit=False)
             topic.offering = course
@@ -83,7 +82,7 @@ def create_topic(request, course_slug):
             messages.add_message(request, messages.SUCCESS, 'Discussion topic created successfully.')
             return HttpResponseRedirect(reverse('offering:discussion:view_topic', kwargs={'course_slug': course_slug, 'topic_slug': topic.slug}))
     else:
-        form = discussion_topic_form_factory(view, creole=None)
+        form = discussion_topic_form_factory(view)
     return render(request, 'discuss/create_topic.html', {'course': course, 'form': form})
 
 @uses_feature('discuss')
@@ -103,14 +102,13 @@ def edit_topic(request, course_slug, topic_slug):
         raise Http404
     
     if request.method == 'POST':
-        creole = topic.get_creole()
-        form = discussion_topic_form_factory(view, data=request.POST, creole=creole, instance=topic)
+        form = discussion_topic_form_factory(view, data=request.POST, instance=topic)
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.SUCCESS, 'Discussion topic edited successfully.')
             return HttpResponseRedirect(reverse('offering:discussion:view_topic', kwargs={'course_slug': course_slug, 'topic_slug': topic.slug}))
     else:
-        form = discussion_topic_form_factory(view, creole=None, instance=topic)
+        form = discussion_topic_form_factory(view, instance=topic)
     
     return render(request, 'discuss/edit_topic.html', {'course': course, 'topic': topic, 'form': form})
 
@@ -128,21 +126,11 @@ def view_topic(request, course_slug, topic_slug):
     if view == 'student' and topic.status == 'HID':
         raise Http404
     replies = DiscussionMessage.objects.filter(topic=topic).order_by('created_at')
-
-    # syntaxhighlighter brushes needed
-    brushes = set(itertools.chain(topic.brushes(), *(r.brushes() for r in replies)))
-    # who needs mathjax activated?
-    need_mathjax = ['reply-content-%i' % (r.id) for r in replies if r.math()]
-    if topic.math():
-        need_mathjax.append('topic-content')
-    any_math = bool(need_mathjax)
-    need_mathjax = json.dumps(need_mathjax)
     
     if request.method == 'POST':
         if topic.status == 'CLO' and not view  == 'staff':
             raise Http404
-        creole = topic.get_creole()
-        form = DiscussionMessageForm(data=request.POST, creole=creole)
+        form = DiscussionMessageForm(data=request.POST)
         if form.is_valid():
             message = form.save(commit=False)
             message.topic = topic
@@ -151,9 +139,9 @@ def view_topic(request, course_slug, topic_slug):
             messages.add_message(request, messages.SUCCESS, 'Sucessfully replied')
             return HttpResponseRedirect(reverse('offering:discussion:view_topic', kwargs={'course_slug': course_slug, 'topic_slug': topic.slug}))
     else:
-        form = DiscussionMessageForm(creole=None)
+        form = DiscussionMessageForm()
     context = {'course': course, 'topic': topic, 'replies': replies, 'view': view, 'form': form,
-               'brushes': brushes, 'need_mathjax': need_mathjax, 'any_math': any_math, 'username': request.user.username}
+               'username': request.user.username}
     return render(request, 'discuss/topic.html', context)
 
 @uses_feature('discuss')
@@ -198,14 +186,13 @@ def edit_message(request, course_slug, topic_slug, message_slug):
         raise Http404
     
     if request.method == 'POST':
-        creole = topic.get_creole()
-        form = DiscussionMessageForm(data=request.POST, instance=message, creole=creole)
+        form = DiscussionMessageForm(data=request.POST, instance=message)
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.SUCCESS, 'Reply successfully edited.')
             return HttpResponseRedirect(reverse('offering:discussion:view_topic', kwargs={'course_slug': course_slug, 'topic_slug': topic.slug}))
     else:
-        form = DiscussionMessageForm(instance=message, creole=None)
+        form = DiscussionMessageForm(instance=message)
     return render(request, 'discuss/edit_reply.html', {'course':course, 'topic': topic, 'message': message, 'form': form})
 
 @uses_feature('discuss')

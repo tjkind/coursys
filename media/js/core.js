@@ -1,6 +1,8 @@
 // hard-coded URL
 var onlineJSON = "/media/sfu/js/online.json"; 
 
+var $ = jQuery;
+
 function confirmSubmit(action) {
   return confirm("Are you sure you wish to " + action + "?");
 }
@@ -269,6 +271,9 @@ $(document).ready(function(){
         $('ul.errorlist').effect('shake', {times:1, distance:3}, 75);
     })
   });
+
+  /* open help links in a new tab */
+  $('div.helptext a').attr('target', '_blank');
 
   // Prevent double-clicking of submissions in all our forms
   $('form[method=post]').preventDoubleSubmit()

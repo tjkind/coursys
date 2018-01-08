@@ -70,6 +70,14 @@ ul.bulleted li, .wikicontents ul>li, table.info ul li {
 .wikicontents pre {
   overflow-x: auto;
 }
+.wikicontents div.table table {
+    width: auto;
+}
+div.markup-content textarea {
+    font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", "Courier", monospace;
+    font-size: 90%;
+    max-width: 100%;
+}
 a img {
     border-style: none;
 }
@@ -638,9 +646,6 @@ dl.dlform div.field.radio label {
 dl.dlform div.field.radio ul {
     margin-top: 0;
 }
-dl.dlform dd .explanation_block {
-    margin-left: 9.5em;
-}
 .reqicon {
   font-size: 80%;
 }
@@ -893,7 +898,7 @@ td.miniaction input {
 
 
 /* pages module styles */
-div.syntaxhighlighter {
+pre.highlight {
   padding: 0.1em 0.1em 0.1em 2em;
   clear: right;
 }

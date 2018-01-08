@@ -142,6 +142,9 @@ class Location(models.Model):
         for a in self.get_bookings():
             a.conflict = False
             for b in self.get_bookings().exclude(id=a.id):
+                if a.end_time is None and b.end_time is None:
+                    a.conflict = True
+                    break
                 if a.end_time is None and a.start_time < b.end_time:
                     a.conflict = True
                     break
@@ -170,6 +173,7 @@ class BookingRecord(models.Model):
     form_submission_URL = models.CharField(null=True, blank=True, max_length=1000,
                                            help_text="If the user filled in a form to get this booking created, put "
                                                      "its URL here.")
+    notes = models.CharField(null=True, blank=True, max_length=1000)
     hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
     config = JSONField(null=False, blank=False, editable=False, default=dict)
     last_modified = models.DateTimeField(blank=False, null=False, editable=False)

@@ -10,11 +10,10 @@ from django.utils.html import conditional_escape
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from pages.models import Page, PageVersion, PagePermission, MEMBER_ROLES, ACL_ROLES, MACRO_LABEL
-from pages.forms import EditPageForm, EditFileForm, PageImportForm, SiteImportForm
+from pages.forms import EditPageForm, EditFileForm
 from coredata.models import Member, CourseOffering
 from log.models import LogEntry
 from courselib.auth import NotFoundResponse, ForbiddenResponse, HttpError
-from importer import HTMLWiki
 from urlparse import urljoin
 import json, datetime
 
@@ -426,101 +425,6 @@ def _delete_pagefile(request, course_slug, page_label, kind):
         return HttpResponseRedirect(urljoin(page.get_absolute_url(), redirect))
 
 
-def convert_content(request, course_slug, page_label=None):
-    """
-    Convert between wikicreole and HTML (AJAX called in editor when switching editing modes)
-    """
-    if request.method != 'POST':
-        return ForbiddenResponse(request, 'POST only')
-    if 'to' not in request.POST:
-        return ForbiddenResponse(request, 'must send "to" language')
-    if 'data' not in request.POST:
-        return ForbiddenResponse(request, 'must sent source "data"')
-
-    offering = get_object_or_404(CourseOffering, slug=course_slug)
-    
-    to = request.POST['to']
-    data = request.POST['data']
-    if to == 'html':
-        # convert wikitext to HTML
-        # temporarily change the current version to get the result (but don't save)
-        if page_label:
-            page = get_object_or_404(Page, offering=offering, label=page_label)
-            pv = page.current_version()
-        else:
-            # create temporary Page for conversion during creation
-            pv = PageVersion()
-        
-        pv.wikitext = data
-        pv.diff_from = None
-        result = {'data': pv.html_contents(offering=offering)}
-        return HttpResponse(json.dumps(result), content_type="application/json")
-    else:
-        # convert HTML to wikitext
-        converter = HTMLWiki([])
-        try:
-            wiki = converter.from_html(data)
-        except converter.ParseError:
-            wiki = ''
-        result = {'data': wiki}
-        return HttpResponse(json.dumps(result), content_type="application/json")
-
-
-@login_required
-def import_page(request, course_slug, page_label):
-    with django.db.transaction.atomic():
-        offering = get_object_or_404(CourseOffering, slug=course_slug)
-        page = get_object_or_404(Page, offering=offering, label=page_label)
-        version = page.current_version()
-        member = _check_allowed(request, offering, page.can_write)
-        if not member:
-            return ForbiddenResponse(request, 'Not allowed to edit/create this page.')
-        
-        if request.method == 'POST':
-            form = PageImportForm(data=request.POST, files=request.FILES)
-            if form.is_valid():
-                wiki = form.cleaned_data['file'] or form.cleaned_data['url']
-
-                # create Page editing form for preview-before-save
-                pageform = EditPageForm(instance=page, offering=offering)
-                pageform.initial['wikitext'] = wiki
-                
-                # URL for submitting that form
-                url = reverse('offering:pages:edit_page', kwargs={'course_slug': offering.slug, 'page_label': page.label})
-                messages.warning(request, "Page has not yet been saved, but your HTML has been imported below.")
-                context = {'offering': offering, 'page': page, 'form': pageform, 'kind': 'Page', 'import': True, 'url': url}
-                return render(request, 'pages/edit_page.html', context)
-        else:
-            form = PageImportForm()
-        
-        context = {'offering': offering, 'page': page, 'version': version, 'form': form}
-        return render(request, 'pages/import_page.html', context)
-
-
-@login_required
-def import_site(request, course_slug):
-    with django.db.transaction.atomic():
-        offering = get_object_or_404(CourseOffering, slug=course_slug)
-        member = _check_allowed(request, offering, 'STAF') # only staff can import
-        if not member:
-            return ForbiddenResponse(request, 'Not allowed to edit/create pages.')
-        
-        if request.method == 'POST':
-            form = SiteImportForm(offering=offering, editor=member, data=request.POST, files=request.FILES)
-            if form.is_valid():
-                pages, errors = form.cleaned_data['url']
-                for label in pages:
-                    page, pv = pages[label]
-                    page.save()
-                    pv.page_id = page.id
-                    pv.save()
-        else:
-            form = SiteImportForm(offering=offering, editor=member)
-        
-        context = {'offering': offering, 'form': form}
-        return render(request, 'pages/import_site.html', context)
-
-
 from django.forms import ValidationError
 from coredata.models import Person
 from pages.models import ACL_DESC, WRITE_ACL_DESC
@@ -550,7 +454,7 @@ def _pages_from_json(request, offering, data):
         try:
             user = Person.objects.get(userid=data['userid'])
             member = Member.objects.exclude(role='DROP').get(person=user, offering=offering)
-        except Person.DoesNotExist, Member.DoesNotExist:
+        except (Person.DoesNotExist, Member.DoesNotExist):
             raise ValidationError(u'Person with that userid does not exist.')
         
         if 'pages-token' not in user.config or user.config['pages-token'] != data['token']:
@@ -642,8 +546,14 @@ def _pages_from_json(request, offering, data):
             if 'use_math' in pdata:
                 if type(pdata['use_math']) != bool:
                     raise ValidationError(u'Page #%i "comment" value must be a boolean.' % (i))
-                
+
                 ver.set_math(pdata['use_math'])
+
+            if 'markup' in pdata:
+                if isinstance(pdata['markup'], basestring):
+                    raise ValidationError(u'Page #%i "markup" value must be a string.' % (i))
+
+                ver.set_markup(pdata['markup'])
 
             if 'wikitext-base64' in pdata:
                 if type(pdata['wikitext-base64']) != unicode:

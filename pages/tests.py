@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
 from django.core.urlresolvers import reverse
-from pages.models import Page, PageVersion, brushes_used, MACRO_LABEL, ParserFor, PagePermission
+from pages.models import Page, PageVersion, MACRO_LABEL, PagePermission
 from coredata.models import CourseOffering, Member, Person
 from grades.models import Activity
 from courselib.testing import TEST_COURSE_SLUG, Client, test_views
+from courselib.markup import ParserFor, markup_to_html
 import re
 
 wikitext = """Some Python code:
@@ -83,8 +84,7 @@ class PagesTest(TestCase):
         p = Page(offering=crs, label="Foo")
         p.save()
         pv = PageVersion(page=p)
-        pv.get_creole()
-        return pv.Creole
+        return ParserFor(crs, pv)
     
     def test_wiki_formatting(self):
         Creole = self._get_creole()
@@ -103,11 +103,11 @@ class PagesTest(TestCase):
         
     def test_codeblock(self):
         Creole = self._get_creole()
-        brushes = brushes_used(Creole.parser.parse(wikitext))
-        self.assertEqual(brushes, set(['shBrushJScript.js', 'shBrushPython.js']))
+        #brushes = brushes_used(Creole.parser.parse(wikitext))
+        #self.assertEqual(brushes, set(['shBrushJScript.js', 'shBrushPython.js']))
         
         html = Creole.text2html(wikitext)
-        self.assertIn('class="brush: python">for i', html)
+        self.assertIn('class="highlight lang-python">for i', html)
         self.assertIn('print i</pre>', html)
         self.assertIn('i=1; i&lt;4; i++', html)
 
@@ -235,10 +235,10 @@ class PagesTest(TestCase):
         c.login_user('ggbaker')
         
         # test the basic rendering of the core pages
-        test_views(self, c, 'offering:pages:', ['index_page', 'all_pages', 'new_page', 'new_file', 'import_site'],
+        test_views(self, c, 'offering:pages:', ['index_page', 'all_pages', 'new_page', 'new_file'],
                 {'course_slug': crs.slug})
 
-        test_views(self, c, 'offering:pages:', ['view_page', 'page_history', 'edit_page', 'import_page'],
+        test_views(self, c, 'offering:pages:', ['view_page', 'page_history', 'edit_page'],
                 {'course_slug': crs.slug, 'page_label': 'OtherPage'})
 
     def test_permissions(self):
@@ -312,6 +312,46 @@ class PagesTest(TestCase):
         response = c.get(url)
         self.assertEqual(response.status_code, 403)
 
+    def test_form_submission(self):
+        """
+        Check that submitting the page editing form results in the objects we expect.
+        """
+        crs = self._sample_setup()
+        c = Client()
+        c.login_user('ggbaker')
+
+        pg = Page.objects.get(offering=crs, label="Index")
+
+        url = reverse('offering:pages:edit_page', kwargs={'course_slug': crs.slug, 'page_label': pg.label})
+        form_data = {
+            'offering': crs.id,
+            'label': 'NewIndex',
+            'can_read': 'ALL',
+            'can_write': 'INST',
+            'releasedate': '',
+            'title': 'New Index',
+            'markup_content_0': 'Unsafe <script>HTML</script>',
+            'markup_content_1': 'html',
+            'markup_content_2': 'on',
+            'comment': 'the comment',
+        }
+
+        # bad submission: redisplay form
+        resp = c.post(url, {})
+        self.assertEqual(resp.status_code, 200)
+
+        # good submission: save and redirect
+        resp = c.post(url, form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        pg = Page.objects.get(offering=crs, label="NewIndex")
+        vr = pg.current_version()
+
+        self.assertEqual(pg.can_write, 'INST')
+        self.assertEqual(vr.title, 'New Index')
+        self.assertEqual(vr.wikitext, 'Unsafe HTML') # should be cleaned on the way in
+        self.assertEqual(vr.config['markup'], 'html')
+        self.assertEqual(vr.config['math'], True)
 
     def test_macros(self):
         """
@@ -409,7 +449,6 @@ class PagesTest(TestCase):
         resp = c.get(url)
         self.assertEqual(resp.status_code, 200)
 
-
     def test_entity(self):
         """
         Test creole extension for HTML entities
@@ -444,3 +483,54 @@ class PagesTest(TestCase):
         html = p.text2html(u'one <<activitylink A1>> two')
         link = u'<a href="%s">%s' % (a1.get_absolute_url(), a1.name)
         self.assertIn(link.encode('utf-8'), html)
+
+    def test_markup_choice(self):
+        """
+        Check the distinction between Creole and Markdown pages
+        """
+        offering = CourseOffering.objects.get(slug=TEST_COURSE_SLUG)
+        memb = Member.objects.get(offering=offering, person__userid="ggbaker")
+
+        p = Page(offering=offering, label="Test")
+        p.save()
+        v1 = PageVersion(page=p, title="T1", wikitext='A //test//.', editor=memb, comment="original page")
+        v1.save()
+        self.assertEqual(v1.html_contents(), '<p>A <em>test</em>.</p>')
+
+        v2 = PageVersion(page=p, title="T1", wikitext='A *test*.', editor=memb, comment="original page")
+        v2.set_markup('markdown')
+        v2.save()
+        self.assertEqual(v2.html_contents(), '<p>A <em>test</em>.</p>')
+
+    def test_github_markdown(self):
+        """
+        Check that we're getting the Github markdown flavour.
+        """
+        highlighted_code = markup_to_html('```python\ni=1\n```', 'markdown')
+        self.assertEqual(highlighted_code, '<pre lang="python"><code>i=1\n</code></pre>')
+
+    def test_html_safety(self):
+        """
+        Check that we're handling HTML in a safe way
+        """
+        html = markup_to_html('<p>Foo</em>', 'html')
+        self.assertEqual(html, '<p>Foo</p>')
+
+        html = markup_to_html('Foo<script>alert()</script>', 'html')
+        self.assertEqual(html, 'Fooalert()')
+
+        # unsafe if we ask for it
+        html = markup_to_html('Foo<script>alert()</script>', 'html', html_already_safe=True)
+        self.assertEqual(html, 'Foo<script>alert()</script>')
+
+        # PageVersions should be saved only with safe HTML
+        offering = CourseOffering.objects.get(slug=TEST_COURSE_SLUG)
+        memb = Member.objects.get(offering=offering, person__userid="ggbaker")
+
+        p = Page(offering=offering, label="Test")
+        p.save()
+        v1 = PageVersion(page=p, title="T1", wikitext='<em>Some</em> <script>HTML</script>', editor=memb)
+        v1.set_markup('html')
+        v1.save()
+
+        self.assertEqual(v1.wikitext, '<em>Some</em> HTML')
