@@ -5,7 +5,7 @@ from grad.forms import SupervisorForm, possible_supervisors
 from django.contrib import messages
 from log.models import LogEntry
 from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 @requires_role("GRAD")
 def manage_supervisors(request, grad_slug):
@@ -24,7 +24,7 @@ def manage_supervisors(request, grad_slug):
             
             messages.success(request, "Added committee member for %s." % (grad))
             l = LogEntry(userid=request.user.username,
-                  description=u"Added committee member %s for %s." % (s, grad.person.userid),
+                  description="Added committee member %s for %s." % (s, grad.person.userid),
                   related_object=s)
             l.save()              
             return HttpResponseRedirect(reverse('grad:manage_supervisors', kwargs={'grad_slug':grad_slug}))

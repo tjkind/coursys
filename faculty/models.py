@@ -8,7 +8,7 @@ import uuid
 
 from django.db import models
 from django.db.models import Q
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.apps.registry import apps
 from django.utils import timezone
 
@@ -23,7 +23,7 @@ from courselib.text import normalize_newlines, many_newlines
 from courselib.storage import UploadedFileStorage, upload_path
 from cache_utils.decorators import cached
 
-from courselib.urlparts import SEMESTER
+from faculty.event_types.constants import EVENT_FLAGS
 from faculty.event_types.awards import FellowshipEventHandler
 from faculty.event_types.awards import GrantApplicationEventHandler
 from faculty.event_types.awards import AwardEventHandler
@@ -38,8 +38,6 @@ from faculty.event_types.career import AccreditationFlagEventHandler
 from faculty.event_types.career import PromotionApplicationEventHandler
 from faculty.event_types.career import SalaryReviewEventHandler
 from faculty.event_types.career import ContractReviewEventHandler
-from faculty.event_types.career import RANK_CHOICES
-from faculty.event_types.constants import EVENT_FLAGS
 from faculty.event_types.info import CommitteeMemberHandler
 from faculty.event_types.info import ExternalAffiliationHandler
 from faculty.event_types.info import ExternalServiceHandler
@@ -133,8 +131,7 @@ ADD_TAGS = {
 FACULTY_ROLE_EXPIRY = datetime.date.today() + datetime.timedelta(days = 100*365)
 
 
-# adapted from https://djangosnippets.org/snippets/562/
-class CareerQuerySet(models.query.QuerySet):
+class CareerQuerySet(models.QuerySet):
     def not_deleted(self):
         """
         All Career Events that have not been deleted.
@@ -208,19 +205,6 @@ class CareerQuerySet(models.query.QuerySet):
         return self.filter(unit__id__in=subunit_ids)
 
 
-# adapted from https://djangosnippets.org/snippets/562/
-class CareerEventManager(models.Manager):
-    def get_queryset(self):
-        model = apps.get_model('faculty', 'CareerEvent')
-        return CareerQuerySet(model)
-
-    def __getattr__(self, attr, *args):
-        try:
-            return getattr(self.__class__, attr, *args)
-        except AttributeError:
-            return getattr(self.get_queryset(), attr, *args)
-
-
 class CareerEvent(models.Model):
     STATUS_CHOICES = (
         ('NA', 'Needs Approval'),
@@ -228,8 +212,8 @@ class CareerEvent(models.Model):
         ('D', 'Deleted'),
     )
 
-    person = models.ForeignKey(Person, related_name="career_events")
-    unit = models.ForeignKey(Unit)
+    person = models.ForeignKey(Person, related_name="career_events", on_delete=models.PROTECT)
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
 
     slug = AutoSlugField(populate_from='slug_string', unique_with=('person',),
                          slugify=make_slug, null=False, editable=False)
@@ -238,7 +222,7 @@ class CareerEvent(models.Model):
     comments = models.TextField(blank=True)
 
     event_type = models.CharField(max_length=10, choices=EVENT_TYPE_CHOICES)
-    config = JSONField(default={})
+    config = JSONField(default=dict)
 
     flags = BitField(flags=EVENT_FLAGS, default=0)
 
@@ -246,7 +230,7 @@ class CareerEvent(models.Model):
     import_key = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    objects = CareerEventManager()
+    objects = CareerQuerySet.as_manager()
 
     class Meta:
         ordering = (
@@ -256,8 +240,8 @@ class CareerEvent(models.Model):
         )
         unique_together = (("person", "slug"),)
 
-    def __unicode__(self):
-        return u"%s from %s to %s" % (self.get_event_type_display(), self.start_date, self.end_date)
+    def __str__(self):
+        return "%s from %s to %s" % (self.get_event_type_display(), self.start_date, self.end_date)
 
     def save(self, editor, call_from_handler=False, *args, **kwargs):
         # we're doing to so we can add an audit trail later.
@@ -276,7 +260,7 @@ class CareerEvent(models.Model):
 
     @property
     def slug_string(self):
-        return u'{} {}'.format(self.start_date.year, self.get_event_type_display())
+        return '{} {}'.format(self.start_date.year, self.get_event_type_display())
 
     def handler_type_name(self):
         return self.get_handler().NAME
@@ -351,7 +335,7 @@ class CareerEvent(models.Model):
             return 'unknown'
 
 
-    def get_event_type_display(self):
+    def get_event_type_display_(self):
         "Override to display nicely"
         return EVENT_TYPES[self.event_type].NAME
 
@@ -417,7 +401,7 @@ class CareerEvent(models.Model):
         config_data = copy.deepcopy(self.config)
         for key in config_data:
             try:
-                config_data[key] = unicode(handler.get_display(key))
+                config_data[key] = str(handler.get_display(key))
             except AttributeError:
                 pass
 
@@ -442,7 +426,7 @@ class CareerEvent(models.Model):
                 'current_base_salary': CareerEvent.current_base_salary(self.person),
                 'current_market_diff': CareerEvent.current_market_diff(self.person),
               }
-        ls = dict(ls.items() + config_data.items())
+        ls = dict(list(ls.items()) + list(config_data.items()))
         return ls
 
     def has_memos(self):
@@ -450,6 +434,10 @@ class CareerEvent(models.Model):
 
     def has_attachments(self):
         return DocumentAttachment.objects.filter(career_event=self, hidden=False).count() > 0
+
+
+# https://stackoverflow.com/a/47817197/6871666
+CareerEvent.get_event_type_display = CareerEvent.get_event_type_display_
 
 
 def attachment_upload_to(instance, filename):
@@ -470,18 +458,18 @@ class DocumentAttachment(models.Model):
     """
     Document attached to a CareerEvent.
     """
-    career_event = models.ForeignKey(CareerEvent, null=False, blank=False, related_name="attachments")
+    career_event = models.ForeignKey(CareerEvent, null=False, blank=False, related_name="attachments", on_delete=models.PROTECT)
     title = models.CharField(max_length=250, null=False)
     slug = AutoSlugField(populate_from='title', null=False, editable=False, unique_with=('career_event',))
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(Person, help_text='Document attachment created by.')
+    created_by = models.ForeignKey(Person, help_text='Document attachment created by.', on_delete=models.PROTECT)
     contents = models.FileField(storage=UploadedFileStorage, upload_to=attachment_upload_to, max_length=500)
     mediatype = models.CharField(max_length=200, null=True, blank=True, editable=False)
     hidden = models.BooleanField(default=False, editable=False)
 
     objects = DocumentAttachmentManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.contents.name
 
     class Meta:
@@ -500,7 +488,7 @@ class MemoTemplate(models.Model):
     """
     A template for memos.
     """
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     label = models.CharField(max_length=150, null=False, verbose_name='Template Name',
                              help_text='The name for this template (that you select it by when using it)')
     event_type = models.CharField(max_length=10, null=False, choices=EVENT_TYPE_CHOICES,
@@ -515,15 +503,15 @@ class MemoTemplate(models.Model):
                                                "each memo. (i.e. 'Congratulations {{first_name}} on ... ')")
 
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(Person, help_text='Memo template created by.', related_name='+')
+    created_by = models.ForeignKey(Person, help_text='Memo template created by.', related_name='+', on_delete=models.PROTECT)
     hidden = models.BooleanField(default=False)
 
     def autoslug(self):
         return make_slug(self.unit.label + "-" + self.label)
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
 
-    def __unicode__(self):
-        return u"%s in %s" % (self.label, self.unit)
+    def __str__(self):
+        return "%s in %s" % (self.label, self.unit)
 
     class Meta:
         unique_together = ('unit', 'label')
@@ -532,39 +520,43 @@ class MemoTemplate(models.Model):
         self.template_text = normalize_newlines(self.template_text.rstrip())
         super(MemoTemplate, self).save(*args, **kwargs)
 
-    def get_event_type_display(self):
+    def get_event_type_display_(self):
         "Override to display nicely"
         return EVENT_TYPES[self.event_type].NAME
+
+
+# https://stackoverflow.com/a/47817197/6871666
+MemoTemplate.get_event_type_display = MemoTemplate.get_event_type_display_
 
 
 class Memo(models.Model):
     """
     A memo created by the system, and attached to a CareerEvent.
     """
-    career_event = models.ForeignKey(CareerEvent, null=False, blank=False)
-    unit = models.ForeignKey(Unit, null=False, blank=False, help_text="The unit producing the memo: will determine the "
+    career_event = models.ForeignKey(CareerEvent, null=False, blank=False, on_delete=models.PROTECT)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT, help_text="The unit producing the memo: will determine the "
                                                                       "letterhead used for the memo.")
 
     sent_date = models.DateField(default=datetime.date.today, help_text="The sending date of the letter")
     to_lines = models.TextField(verbose_name='Attention', help_text='Recipient of the memo', null=True, blank=True)
     cc_lines = models.TextField(verbose_name='CC lines', help_text='Additional recipients of the memo', null=True,
                                 blank=True)
-    from_person = models.ForeignKey(Person, null=True, related_name='+')
+    from_person = models.ForeignKey(Person, null=True, related_name='+', on_delete=models.PROTECT)
     from_lines = models.TextField(verbose_name='From', help_text='Name (and title) of the sender, e.g. "John Smith, '
                                                                  'Applied Sciences, Dean"')
     subject = models.TextField(help_text='The subject of the memo (lines will be formatted separately in the memo '
                                          'header). This will be ignored for letters')
 
-    template = models.ForeignKey(MemoTemplate, null=True)
+    template = models.ForeignKey(MemoTemplate, null=True, on_delete=models.PROTECT)
     is_letter = models.BooleanField(verbose_name="Make it a letter", help_text="Make it a letter with correct "
                                                                                "letterhead instead of a memo.",
                                     default=False)
     memo_text = models.TextField(help_text="I.e. 'Congratulations on ... '")
 
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(Person, help_text='Letter generation requested by.', related_name='+')
+    created_by = models.ForeignKey(Person, help_text='Letter generation requested by.', related_name='+', on_delete=models.PROTECT)
     hidden = models.BooleanField(default=False)
-    config = JSONField(default={})  # addition configuration for the memo
+    config = JSONField(default=dict)  # addition configuration for the memo
     # 'use_sig': use the from_person's signature if it exists?
     #            (Users set False when a real legal signature is required.)
     # 'pdf_generated': set to True if a PDF has ever been created for this memo (used to decide if it's editable)
@@ -578,8 +570,8 @@ class Memo(models.Model):
             return make_slug(self.career_event.slug + "-memo")
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with=('career_event',))
 
-    def __unicode__(self):
-        return u"%s memo for %s" % (self.subject, self.career_event)
+    def __str__(self):
+        return "%s memo for %s" % (self.subject, self.career_event)
 
     def hide(self):
         self.hidden = True
@@ -637,9 +629,9 @@ class EventConfig(models.Model):
     """
     A unit's configuration for a particular event type
     """
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     event_type = models.CharField(max_length=10, null=False, choices=EVENT_TYPE_CHOICES)
-    config = JSONField(default={})
+    config = JSONField(default=dict)
 
     class Meta:
         unique_together = ('unit', 'event_type')
@@ -652,21 +644,21 @@ class TempGrantManager(models.Manager):
         created = []
         for row in reader:
             try:
-                fund = unicode(row[0].strip(), errors='ignore')
+                fund = str(row[0].strip(), errors='ignore')
             except IndexError:
                 continue
             if re.match('[0-9]{2} ?-? ?[0-9]{6}$', fund):
                 try:
-                    label = unicode(row[1].strip(), errors='ignore')
+                    label = str(row[1].strip(), errors='ignore')
                 except IndexError:
                     failed.append(row)
                     continue
                 try:
                     # Grab things from the CSV
-                    balance = Decimal(unicode(row[4].strip(), errors='ignore'))
-                    cur_month = Decimal(unicode(row[5].strip(), errors='ignore'))
-                    ytd_actual = Decimal(unicode(row[6].strip(), errors='ignore'))
-                    cur_balance = Decimal(unicode(row[8].strip(), errors='ignore'))
+                    balance = Decimal(str(row[4].strip(), errors='ignore'))
+                    cur_month = Decimal(str(row[5].strip(), errors='ignore'))
+                    ytd_actual = Decimal(str(row[6].strip(), errors='ignore'))
+                    cur_balance = Decimal(str(row[8].strip(), errors='ignore'))
                 except (IndexError, InvalidOperation):
                     failed.append(row)
                     continue
@@ -700,9 +692,9 @@ class TempGrant(models.Model):
     initial = models.DecimalField(verbose_name="initial balance", max_digits=12, decimal_places=2)
     project_code = models.CharField(max_length=32, help_text="The fund and project code, like '13-123456'")
     import_key = models.CharField(null=True, blank=True, max_length=255, help_text="e.g. 'nserc-43517b4fd422423382baab1e916e7f63'")
-    creator = models.ForeignKey(Person, blank=True, null=True)
+    creator = models.ForeignKey(Person, blank=True, null=True, on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
-    config = JSONField(default={}) # addition configuration for within the temp grant
+    config = JSONField(default=dict) # addition configuration for within the temp grant
 
     objects = TempGrantManager()
 
@@ -749,8 +741,8 @@ class Grant(models.Model):
     initial = models.DecimalField(verbose_name="Initial balance", max_digits=12, decimal_places=2)
     overhead = models.DecimalField(verbose_name="Annual overhead", max_digits=12, decimal_places=2, help_text="Annual overhead returned to Faculty budget")
     import_key = models.CharField(null=True, blank=True, max_length=255, help_text="e.g. 'nserc-43517b4fd422423382baab1e916e7f63'")
-    unit = models.ForeignKey(Unit, null=False, blank=False, help_text="Unit who owns the grant")
-    config = JSONField(blank=True, null=True, default={})  # addition configuration for within the grant
+    unit = models.ForeignKey(Unit, null=False, blank=False, help_text="Unit who owns the grant", on_delete=models.PROTECT)
+    config = JSONField(blank=True, null=True, default=dict)  # addition configuration for within the grant
 
     objects = GrantManager()
 
@@ -758,8 +750,8 @@ class Grant(models.Model):
         unique_together = (('label', 'unit'),)
         ordering = ['title']
 
-    def __unicode__(self):
-        return u"%s" % self.title
+    def __str__(self):
+        return "%s" % self.title
 
     def get_absolute_url(self):
         return reverse("faculty:view_grant", kwargs={'unit_slug': self.unit.slug, 'grant_slug': self.slug})
@@ -795,39 +787,38 @@ class Grant(models.Model):
 
 
 class GrantOwner(models.Model):
-    grant = models.ForeignKey(Grant)
-    person = models.ForeignKey(Person)
-    config = JSONField(blank=True, null=True, default={})  # addition configuration
+    grant = models.ForeignKey(Grant, on_delete=models.PROTECT)
+    person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    config = JSONField(blank=True, null=True, default=dict)  # addition configuration
 
 class GrantBalance(models.Model):
     date = models.DateField(default=datetime.date.today)
-    grant = models.ForeignKey(Grant, null=False, blank=False)
+    grant = models.ForeignKey(Grant, null=False, blank=False, on_delete=models.PROTECT)
     balance = models.DecimalField(verbose_name="grant balance", max_digits=12, decimal_places=2)
     actual = models.DecimalField(verbose_name="YTD actual", max_digits=12, decimal_places=2)
     month = models.DecimalField(verbose_name="current month", max_digits=12, decimal_places=2)
-    config = JSONField(blank=True, null=True, default={})  # addition configuration within the memo
+    config = JSONField(blank=True, null=True, default=dict)  # addition configuration within the memo
 
-    def __unicode__(self):
-        return u"%s balance as of %s" % (self.grant, self.date)
+    def __str__(self):
+        return "%s balance as of %s" % (self.grant, self.date)
 
     class Meta:
         ordering = ['date']
 
 
 class FacultyMemberInfo(models.Model):
-    #person = models.ForeignKey(Person, unique=True, related_name='+')
-    person = models.OneToOneField(Person, related_name='+')
+    person = models.OneToOneField(Person, related_name='+', on_delete=models.PROTECT)
     title = models.CharField(max_length=50)
     birthday = models.DateField(verbose_name="Birthdate", null=True, blank=True)
     office_number = models.CharField('Office', max_length=20, null=True, blank=True)
     phone_number = models.CharField('Local Phone Number', max_length=20, null=True, blank=True)
     emergency_contact = models.TextField('Emergency Contact Information', blank=True)
-    config = JSONField(blank=True, null=True, default={})  # addition configuration
+    config = JSONField(blank=True, null=True, default=dict)  # addition configuration
 
     last_updated = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
-        return u'<FacultyMemberInfo({})>'.format(self.person)
+    def __str__(self):
+        return '<FacultyMemberInfo({})>'.format(self.person)
 
     def get_absolute_url(self):
         return reverse('faculty:faculty_member_info',
@@ -856,7 +847,7 @@ class PositionManager(models.Manager):
 class Position(models.Model):
     title = models.CharField(max_length=100)
     projected_start_date = models.DateField('Projected Start Date', default=timezone_today)
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     position_number = models.CharField(max_length=8)
     rank = models.CharField(choices=RANK_CHOICES, max_length=50, null=True, blank=True)
     step = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
@@ -884,7 +875,7 @@ class Position(models.Model):
 
     objects = PositionManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s - %s" % (self.position_number, self.title)
 
     def hide(self):
@@ -899,7 +890,7 @@ class Position(models.Model):
         like when we populate the onboarding wizard with this value.
         """
         if 'teaching_load' in self.config and not self.config['teaching_load'] == 'None':
-            return unicode(Fraction(self.config['teaching_load']))
+            return str(Fraction(self.config['teaching_load']))
 
         else:
             return 0
@@ -909,8 +900,7 @@ class Position(models.Model):
         Called if you're purely going to display the value, as when displaying the contents of the position.
         """
         if 'teaching_load' in self.config and not self.config['teaching_load'] == 'None':
-            print self.config['teaching_load']
-            return unicode(Fraction(self.config['teaching_load'])*3)
+            return str(Fraction(self.config['teaching_load'])*3)
 
         else:
             return 0
@@ -926,18 +916,18 @@ class PositionDocumentAttachment(models.Model):
     """
     Document attached to a CareerEvent.
     """
-    position = models.ForeignKey(Position, null=False, blank=False, related_name="attachments")
+    position = models.ForeignKey(Position, null=False, blank=False, related_name="attachments", on_delete=models.PROTECT)
     title = models.CharField(max_length=250, null=False)
     slug = AutoSlugField(populate_from='title', null=False, editable=False, unique_with=('position',))
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(Person, help_text='Document attachment created by.')
+    created_by = models.ForeignKey(Person, help_text='Document attachment created by.', on_delete=models.PROTECT)
     contents = models.FileField(storage=UploadedFileStorage, upload_to=position_attachment_upload_to, max_length=500)
     mediatype = models.CharField(max_length=200, null=True, blank=True, editable=False)
     hidden = models.BooleanField(default=False, editable=False)
 
     objects = PositionDocumentAttachmentManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.contents.name
 
     class Meta:
@@ -950,155 +940,3 @@ class PositionDocumentAttachment(models.Model):
     def hide(self):
         self.hidden = True
         self.save()
-
-
-#  Choices and other goodies for the Study Leave Application
-
-TENURE_CHOICES = (
-    ('YES', 'Yes'),
-    ('INPR', 'Tenure Application In Process'),
-    ('NO', 'No'),
-)
-
-STUDY_LEAVE_OPTION = (
-    ('A', 'A - 3 consecutive semesters at 80% after 6 years of service'),
-    ('B', 'B - 2 consecutive semesters at 90% after 6 years of service'),
-    ('C', 'C - 1 consecutive semester at 100% after 6 years of service'),
-    ('D', 'D - 2 consecutive semesters at 80% after 4 years of service'),
-    ('E', 'E - 1 consecutive semester at 90% after 3 years of service'),
-)
-
-# An easy way to represent a boolean field with yes/no radio buttons, see
-# https://stackoverflow.com/questions/854683/django-booleanfield-as-radio-buttons
-BOOL_CHOICES = ((True, 'Yes'), (False, 'No'))
-
-DEFER_HELP_TEXT = "The faculty member may choose to defer part of salary prior to the study leave in order to spread " \
-                  "the impact of the salary reduction. When the faculty member chooses this feature, the salary will " \
-                  "be reduced following the approval of the study leave by the Vice President, Academic. The salary " \
-                  "deferral arrangements must be completed by the end of the study leave. Salary deferral may be " \
-                  "exercised only for a leave which exceeds six months. " \
-                  "/n" \
-                  "Example: A study leave Option A - 80% for 12 months, is approved in December 2017 with the study " \
-                  "leave schedule to start on September 1, 2019. This would result in a salary at the level of 88% " \
-                  "over the 20 month period from January 1, 2018 to August 31, 2019."
-
-FIRST_STUDY_LEAVE_OPTIONS = (
-    ('YES', 'Yes'),
-    ('NO', 'No'),
-    ('NA', 'N/A'),
-)
-
-
-class StudyLeaveApplicationQuerySet(models.QuerySet):
-    def visible(self):
-        return self.filter(hidden=False)
-
-
-class StudyLeaveApplication(models.Model):
-    """
-    This is an application to be filled by faculty members.
-    """
-    person = models.ForeignKey(Person, null=False, blank=False, editable=False)
-    rank = models.CharField(max_length=4, choices=RANK_CHOICES, blank=True, null=True)
-    primary_department = models.ForeignKey(Unit, null=False, blank=False, related_name='studyleaveapplications')
-    secondary_department = models.ForeignKey(Unit, null=True, blank=True, related_name='+')
-    tenure = models.CharField(max_length=4, choices=TENURE_CHOICES, blank=False, null=False, default='NO')
-    tenure_date = models.DateField("if yes, date awarded", null=True, blank=True)
-    start_date = models.DateField(null=True, blank=True, help_text='Start date requested')
-    end_date = models.DateField(null=True, blank=True, help_text='End date requested')
-    leave_option = models.CharField(max_length=1, choices=STUDY_LEAVE_OPTION, blank=True, null=True)
-    defer_salary = models.BooleanField(choices=BOOL_CHOICES, help_text=DEFER_HELP_TEXT, default=False,
-                                       null=False, blank=False)
-    first_study_leave = models.CharField("Is this your first study leave after being granted tenure", max_length=3,
-                                         choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
-    appointed_tenure = models.CharField("Were you appointed with tenure", max_length=3,
-                                        choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
-    first_study_leave_after_6_years = models.CharField("Continuing Teaching Faculty, Continuing Librarians/Archivist, "
-                                                       "is this your first study leave after six years service",
-                                                       max_length=3, choices=FIRST_STUDY_LEAVE_OPTIONS, default=None)
-    service_credits = models.CharField("List all academic service credits from other similar institutions (for first "
-                                       "study leave only)", max_length=400, blank=True, null=True)
-    leave_1_start_date = models.DateField("1st leave start date", null=True, blank=True,
-                                          help_text="List all previous study leaves since first continuing "
-                                                    "appointment.")
-    leave_1_end_date = models.DateField("1st leave end date", null=True, blank=True)
-    leave_2_start_date = models.DateField("2nd leave start date", null=True, blank=True)
-    leave_2_end_date = models.DateField("2nd leave end date", null=True, blank=True)
-    leave_3_start_date = models.DateField("3rd leave start date", null=True, blank=True)
-    leave_3_end_date = models.DateField("3rd leave end date", null=True, blank=True)
-    leave_4_start_date = models.DateField("4th leave start date", null=True, blank=True)
-    leave_4_end_date = models.DateField("4th leave end date", null=True, blank=True)
-    leave_5_start_date = models.DateField("5th leave start date", null=True, blank=True)
-    leave_5_end_date = models.DateField("5th leave end date", null=True, blank=True)
-    leave_6_start_date = models.DateField("6th leave start date", null=True, blank=True)
-    leave_6_end_date = models.DateField("6th leave end date", null=True, blank=True)
-
-    grad_students = models.BooleanField("Do you supervise Graduate Students", choices=BOOL_CHOICES, null=False,
-                                        blank=False, default=False)
-    masters_students = models.PositiveIntegerField("Number of Masters Students", null=True, blank=True)
-    phd_students = models.PositiveIntegerField("Number of PhD/EdD Students", null=True, blank=True)
-    manage_students_during_leave = models.CharField("If you plan to manage Graduate Students during the study leave "
-                                                    "period, please provide details", max_length=400, null=True,
-                                                    blank=True)
-
-    hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
-    config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
-    last_modified = models.DateTimeField(null=True, blank=True, editable=False)
-    last_modified_by = models.ForeignKey(Person, null=True, blank=True, editable=False, related_name='+')
-
-    def autoslug(self):
-        return make_slug(self.primary_department.slug + '-' + self.person.userid)
-
-    slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
-
-    def __unicode__(self):
-        return "%s - %s" % (self.primary_department.slug, self.person.userid)
-
-    objects = StudyLeaveApplicationQuerySet.as_manager()
-
-    def save(self, editor=None, *args, **kwargs):
-        self.last_modified = datetime.datetime.now()
-        self.last_modified_by = editor
-        return super(StudyLeaveApplication, self).save(*args, **kwargs)
-
-
-ACTIVITY_CHOICES = (
-    ('ADMN', 'Admin Leave'),
-    ('MEDC', 'Medical Leave'),
-    ('OTHR', 'Other'),
-    ('PARN', 'Parent Leave'),
-    ('RESC', 'Research'),
-    ('STUD', 'Study Leave'),
-    ('TEAC', 'Teaching'),
-)
-
-
-class StudyLeaveSemesterActivityQuerySet(models.QuerySet):
-    def visible(self):
-        return self.filter(hidden=False)
-
-
-class StudyLeaveSemesterActivity(models.Model):
-    application = models.ForeignKey(StudyLeaveApplication, editable=False, related_name='activities')
-    semester = models.ForeignKey(Semester, null=False, blank=False)
-    activity = models.CharField(max_length=4, choices=ACTIVITY_CHOICES, null=False, blank=False)
-    hidden = models.BooleanField(default=False, null=False, blank=False, editable=False)
-    config = JSONField(blank=True, null=True, editable=False, default={})  # additional configuration
-    last_modified = models.DateTimeField(null=True, blank=True, editable=False)
-    last_modified_by = models.ForeignKey(Person, null=True, blank=True, editable=False, related_name='+')
-
-    def autoslug(self):
-        return make_slug(self.application.slug + '-' + self.semester.name)
-
-    slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
-
-    def __unicode__(self):
-        return "%s - %s" % (self.application.slug, self.semester.name)
-
-    objects = StudyLeaveApplicationQuerySet.as_manager()
-
-    def save(self, editor=None, *args, **kwargs):
-        self.last_modified = datetime.datetime.now()
-        self.last_modified_by = editor
-        return super(StudyLeaveSemesterActivity, self).save(*args, **kwargs)
-

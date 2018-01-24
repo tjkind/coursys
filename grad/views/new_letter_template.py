@@ -5,7 +5,7 @@ from django.contrib import messages
 from log.models import LogEntry
 from django.http import HttpResponseRedirect
 from grad.forms import LetterTemplateForm
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 
 @requires_role(["GRAD", "GRPD"])
@@ -30,7 +30,7 @@ def new_letter_template(request):
 
     page_title = 'New Letter Template'  
     crumb = 'New'
-    lt = sorted(LETTER_TAGS.iteritems()) 
+    lt = sorted(LETTER_TAGS.items()) 
     context = {
                'form': form,
                'page_title' : page_title,

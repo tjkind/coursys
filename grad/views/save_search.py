@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect
 from grad.forms import SaveSearchForm
 from django.contrib import messages
 from coredata.models import Person
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 @requires_role("GRAD", get_only=["GRPD"])
 def save_search(request):
@@ -26,6 +26,6 @@ def save_search(request):
     else:
         messages.add_message(request, messages.ERROR, saveform.errors.as_text())
         if True or 'query' in saveform.data:
-            return HttpResponseRedirect(reverse('grad:search') + u'?' + saveform.data['query'])
+            return HttpResponseRedirect(reverse('grad:search') + '?' + saveform.data['query'])
         else:
             return HttpResponseRedirect(reverse('grad:search'))

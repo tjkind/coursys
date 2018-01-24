@@ -47,11 +47,9 @@ class AnnualOrBiweeklySalary(forms.widgets.MultiWidget):
             return [value, None]
         return [None, None]
 
-    def format_output(self, rendered_widgets):
-        # Add our help text right in the rendering so we don't have to add it to every field or do some other magic.
-        return mark_safe('$ ' + u' '.join(rendered_widgets) + '<br/>' +
-                         "<span class=helptext>Enter annual salary on the left <strong>or</strong> biweekly salary "
-                         "on the right.</span>")
+    def render(self, name, value, attrs=None, renderer=None):
+        markup = super().render(name, value, attrs=attrs, renderer=renderer)
+        return '$ ' + markup
 
     def value_from_datadict(self, data, files, name):
         salarylist = [w.value_from_datadict(data, files, "%s_%s" % (name, i)) for i, w, in enumerate(self.widgets)]
@@ -88,9 +86,6 @@ class SemesterDateInput(forms.widgets.MultiWidget):
         if value:
             return [value, None]
         return [None, None]
-
-    def format_output(self, rendered_widgets):
-        return u' '.join(rendered_widgets)
 
     def get_semester(self, code):
         try:
@@ -192,11 +187,11 @@ class SemesterToDateField(forms.CharField):
         return self.start and semester.start_date or semester.end_date
 
     def run_validators(self, value):
-        # XXX: Validation is already done inside `to_python`.
+        # Validation is already done inside `to_python`.
         pass
 
     def prepare_value(self, value):
-        if isinstance(value, (unicode, str)):
+        if isinstance(value, str):
             return value
         elif value is None:
             return ''
@@ -229,17 +224,6 @@ class SemesterCodeField(forms.CharField):
         return value
 
 
-class DollarInput(forms.widgets.NumberInput):
-    "A NumberInput, but with a prefix '$'"
-    def __init__(self, **kwargs):
-        defaults = {'attrs': {'size': 8}}
-        defaults.update(**kwargs)
-        super(DollarInput, self).__init__(**defaults)
-
-    def render(self, *args, **kwargs):
-        return mark_safe('$ ' + conditional_escape(super(DollarInput, self).render(*args, **kwargs)))
-
-
 PAY_FIELD_DEFAULTS = {
     'max_digits': 8,
     'decimal_places': 2,
@@ -265,9 +249,9 @@ class AddPayField(forms.DecimalField):
 class FractionField(forms.Field):
     # adapted from forms.fields.DecimalField
     default_error_messages = {
-        'invalid': _(u'Enter a number.'),
-        'max_value': _(u'Ensure this value is less than or equal to %(limit_value)s.'),
-        'min_value': _(u'Ensure this value is greater than or equal to %(limit_value)s.'),
+        'invalid': _('Enter a number.'),
+        'max_value': _('Ensure this value is less than or equal to %(limit_value)s.'),
+        'min_value': _('Ensure this value is greater than or equal to %(limit_value)s.'),
     }
 
     def __init__(self, max_value=None, min_value=None, choices=None, *args, **kwargs):
@@ -336,13 +320,13 @@ class TeachingReductionField(FractionField):
 # Adapted from https://djangosnippets.org/snippets/1914/
 
 class AnnualTeachingInput(forms.widgets.TextInput):
-    def _format_value(self, value):
+    def format_value(self, value):
         if value is None:
             return ''
         try:
             f = Fraction(value).limit_denominator(50)
         except ValueError:
-            return unicode(value)
+            return str(value)
 
         return str(f*3)
 

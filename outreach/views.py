@@ -1,12 +1,12 @@
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, HttpResponse
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib import messages
 from .models import OutreachEvent, OutreachEventRegistration
 from .forms import OutreachEventForm, OutreachEventRegistrationForm
 from courselib.auth import requires_role
 from log.models import LogEntry
 from coredata.models import Unit
-import unicodecsv as csv
+import csv
 from datetime import datetime
 
 
@@ -27,7 +27,7 @@ def new_event(request):
             event = form.save()
             messages.add_message(request,
                                  messages.SUCCESS,
-                                 u'Event was created')
+                                 'Event was created')
             l = LogEntry(userid=request.user.username,
                          description="Added event %s" % event,
                          related_object=event)
@@ -54,7 +54,7 @@ def edit_event(request, event_slug):
             event = form.save()
             messages.add_message(request,
                                  messages.SUCCESS,
-                                 u'Event was saved')
+                                 'Event was saved')
             l = LogEntry(userid=request.user.username,
                          description="Edited event %s" % event,
                          related_object=event)
@@ -92,12 +92,13 @@ def register(request, event_slug):
             if 'extra_questions' in registration.event.config and len(registration.event.config['extra_questions']) > 0:
                 temp = {}
                 for question in registration.event.config['extra_questions']:
-                    temp[question] = form.cleaned_data[question.encode('ascii', 'ignore')]
+                    temp[question] = form.cleaned_data[question]
                 registration.config['extra_questions'] = temp
             registration.save()
+            registration.email_memo()
             messages.add_message(request,
                                  messages.SUCCESS,
-                                 u'Successfully registered')
+                                 'Successfully registered')
             l = LogEntry(userid='',
                          description="Registered %s for event %s" % (registration.fullname(), registration.event.title),
                          related_object=registration
@@ -150,7 +151,7 @@ def edit_registration(request, registration_id, event_slug=None):
             registration.save()
             messages.add_message(request,
                                  messages.SUCCESS,
-                                 u'Registration was edited')
+                                 'Registration was edited')
             l = LogEntry(userid=request.user.username,
                          description="Edited registration for %s" % registration,
                          related_object=registration)
@@ -263,7 +264,7 @@ def download_registrations(request, event_slug=None, past=None):
                                       (datetime.now().strftime('%Y%m%d'), filestring)
     writer = csv.writer(response)
     if registrations:
-        header_row = header_row_initial + ['Last Name', 'First Name', 'Middle Name', 'Age', 'Parent Name',
+        header_row = header_row_initial + ['Last Name', 'First Name', 'Middle Name', 'Birthdate', 'Parent Name',
                                            'Parent Phone', 'Email', 'Photo Waiver', 'Previously Attended', 'School',
                                            'Grade', 'Notes', 'Attended(ing)', 'Registered at', 'Last Modified'] + \
                      header_row_extras
@@ -282,7 +283,7 @@ def download_registrations(request, event_slug=None, past=None):
             else:
                 initial_registration_row = [r.event.title]
                 extra_questions_row = []
-            registration_row = initial_registration_row + [r.last_name, r.first_name, r.middle_name, r.age,
+            registration_row = initial_registration_row + [r.last_name, r.first_name, r.middle_name, r.birthdate,
                                                           r.parent_name, r.parent_phone, r.email, r.photo_waiver,
                                                           r.previously_attended, r.school, r.grade, r.notes, r.attended,
                                                           r.created_at, r.last_modified] + extra_questions_row

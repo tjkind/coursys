@@ -101,20 +101,20 @@ class HiringSemester(models.Model):
     This is subject to change on a contract-by-contract basis, 
     so these are only defaults. 
     """
-    semester = models.ForeignKey(Semester)
-    unit = models.ForeignKey(Unit)
+    semester = models.ForeignKey(Semester, on_delete=models.PROTECT)
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
     deadline_for_acceptance = models.DateField()
     pay_start = models.DateField()
     pay_end = models.DateField()
     payperiods = models.DecimalField(max_digits=4, decimal_places=2,
                                      verbose_name= "During the contract, how many bi-weekly pay periods?")
-    config = JSONField(null=False, blank=False, editable=False, default={})
+    config = JSONField(null=False, blank=False, editable=False, default=dict)
     
     class Meta:
         unique_together = (('semester', 'unit'),)
     
-    def __unicode__(self):
-        return unicode(self.semester.name)
+    def __str__(self):
+        return str(self.semester.name)
 
     def copy_categories_from_previous_semester(self, unit):
         prev_semester = self.semester.previous_semester()
@@ -169,9 +169,9 @@ class TACategory(models.Model):
     It's only valid for a single semester, but we offer the ability 
     to copy all of the TACategories from the last semester to the next semester.
     """
-    account = models.ForeignKey(Account)
+    account = models.ForeignKey(Account, on_delete=models.PROTECT)
     # the account already FKs to a Unit, so we don't need one. 
-    hiring_semester = models.ForeignKey(HiringSemester, editable=False)
+    hiring_semester = models.ForeignKey(HiringSemester, editable=False, on_delete=models.PROTECT)
     code = models.CharField(max_length=5, 
                         help_text="Category Choice Code - for example 'GTA2'")
     title = models.CharField(max_length=50,
@@ -201,7 +201,7 @@ class TACategory(models.Model):
 
     # ensc-gta2
     def autoslug(self):
-        return make_slug(self.account.unit.label + '-' + unicode(self.code))
+        return make_slug(self.account.unit.label + '-' + str(self.code))
     slug = AutoSlugField(populate_from='autoslug',
                          null=False, 
                          editable=False, 
@@ -213,9 +213,9 @@ class TACategory(models.Model):
 
     objects = TACategoryManager()
     
-    def __unicode__(self):
-        return "%s %s %s - %s" % (self.account.unit.label, unicode(self.code), 
-                                  unicode(self.title), unicode(self.account))
+    def __str__(self):
+        return "%s %s %s - %s" % (self.account.unit.label, str(self.code), 
+                                  str(self.title), str(self.account))
 
     @property
     def frozen(self):
@@ -258,8 +258,8 @@ class TAContract(models.Model):
     """    
     TA Contract, filled in by TA Administrator
     """
-    person = models.ForeignKey(Person)
-    category = models.ForeignKey(TACategory, 
+    person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    category = models.ForeignKey(TACategory, on_delete=models.PROTECT,
                                  related_name="contract")
     status = models.CharField(max_length=4,
                               choices=CONTRACT_STATUS_CHOICES,
@@ -295,7 +295,7 @@ class TAContract(models.Model):
     # curtis-lassam-2014-09-01 
     def autoslug(self):
         return make_slug(self.person.first_name + '-' + self.person.last_name \
-                            + "-" + unicode(self.pay_start))
+                            + "-" + str(self.pay_start))
     slug = AutoSlugField(populate_from='autoslug',
                          null=False, 
                          editable=False, 
@@ -307,8 +307,8 @@ class TAContract(models.Model):
     
     objects = TAContractManager()
    
-    def __unicode__(self):
-        return u"%s" % (self.person,)
+    def __str__(self):
+        return "%s" % (self.person,)
 
     @property
     def frozen(self):
@@ -533,7 +533,7 @@ class TAContract(models.Model):
 
     def course_list_string(self):
         # Build a string of all course offerings tied to this contract for CSV downloads and grad student views.
-        course_list_string = ', '.join([unicode.encode(ta_course.course.name()) for ta_course in self.course.all()])
+        course_list_string = ', '.join(ta_course.course.name() for ta_course in self.course.all())
         return course_list_string
 
 
@@ -541,21 +541,26 @@ class CourseDescription(models.Model):
     """
     Description of the work for a TA contract
     """
-    unit = models.ForeignKey(Unit, related_name='description_unit')
+    unit = models.ForeignKey(Unit, related_name='description_unit', on_delete=models.PROTECT)
     description = models.CharField(max_length=60, blank=False, null=False,
                                    help_text="Description of the work for a course, as it will appear on the contract. (e.g. 'Office/marking')")
     hidden = models.BooleanField(default=False)
-    config = JSONField(null=False, blank=False, default={})
+    config = JSONField(null=False, blank=False, default=dict)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.description
 
+    def delete(self):
+        """Like most of our objects, we don't want to ever really delete it."""
+        self.hidden = True
+        self.save()
+
 class TACourse(models.Model):
-    course = models.ForeignKey(CourseOffering,
+    course = models.ForeignKey(CourseOffering, on_delete=models.PROTECT,
                                blank=False, 
                                null=False,
                                related_name="+")
-    contract = models.ForeignKey(TAContract, 
+    contract = models.ForeignKey(TAContract, on_delete=models.PROTECT,
                                  blank=False, 
                                  null=False, 
                                  editable=False,
@@ -567,8 +572,8 @@ class TACourse(models.Model):
     labtut = models.BooleanField(default=False, 
                                  verbose_name="Lab/Tutorial?", 
                                  help_text="Does this course have a lab or tutorial?")
-    description = models.ForeignKey(CourseDescription, null=True, blank=True)
-    member = models.ForeignKey(Member, null=True, editable=False, related_name="tacourse")
+    description = models.ForeignKey(CourseDescription, null=True, blank=True, on_delete=models.PROTECT)
+    member = models.ForeignKey(Member, null=True, editable=False, related_name="tacourse", on_delete=models.PROTECT)
 
     def autoslug(self):
         """
@@ -584,7 +589,7 @@ class TACourse(models.Model):
     class Meta:
         unique_together = (('contract', 'course'),)
     
-    def __unicode__(self):
+    def __str__(self):
         return "Course: %s  TA: %s" % (self.course, self.contract)
 
     @property
@@ -669,12 +674,12 @@ class EmailReceipt(models.Model):
     This object serves as a record that this has occurred, which we can consult
     later. 
     """
-    contract = models.ForeignKey(TAContract, 
+    contract = models.ForeignKey(TAContract, on_delete=models.PROTECT,
                                  blank=False, 
                                  null=False, 
                                  editable=False,
                                  related_name="email_receipt")
-    content = models.ForeignKey(NewsItem,
+    content = models.ForeignKey(NewsItem, on_delete=models.PROTECT,
                                  blank=False,
                                  null=False,
                                  editable=False)

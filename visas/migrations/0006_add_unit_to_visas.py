@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 
 from django.db import migrations, models
 
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='visa',
             name='unit',
-            field=models.ForeignKey(default=34, to='coredata.Unit'),
+            field=models.ForeignKey(default=34, to='coredata.Unit', on_delete=models.CASCADE),
             preserve_default=False,
         ),
     ]

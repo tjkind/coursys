@@ -6,7 +6,7 @@ from log.models import LogEntry
 from django.http import HttpResponseRedirect
 from grad.forms import LetterForm
 import datetime
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from coredata.models import Role
 
 @requires_role("GRAD")
@@ -18,7 +18,7 @@ def copy_letter(request, grad_slug, letter_slug):
                     from_lines=old_letter.from_lines)
     letter.set_use_sig(old_letter.use_sig())
 
-    from_choices = [('', u'\u2014')] \
+    from_choices = [('', '\u2014')] \
                     + [(r.person.id, "%s. %s, %s" %
                             (r.person.get_title(), r.person.letter_name(), r.get_role_display()))
                         for r in Role.objects_fresh.filter(unit=grad.program.unit)]

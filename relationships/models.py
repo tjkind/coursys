@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 import datetime
 import os
 import uuid
@@ -37,7 +37,7 @@ EVENT_HANDLERS = [
 ]
 
 EVENT_TYPES = {handler.event_type: handler for handler in EVENT_HANDLERS}
-EVENT_CHOICES = [(cls.event_type, cls) for cls in sorted(EVENT_HANDLERS)]
+EVENT_CHOICES = [(cls.event_type, cls) for cls in sorted(EVENT_HANDLERS, key=lambda h: h.name)]
 
 
 class IgnoreDeleted(models.Manager):
@@ -46,7 +46,7 @@ class IgnoreDeleted(models.Manager):
 
 
 class Contact(models.Model):
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     slug = AutoSlugField(populate_from='slug_string', unique_with=('unit',),
                          slugify=make_slug, null=False, editable=False)
     title = models.CharField(max_length=4, null=True, blank=True)
@@ -65,16 +65,16 @@ class Contact(models.Model):
 
     @property
     def slug_string(self):
-        return u'%s %s %s' % (self.first_name, self.last_name, self.unit.label)
+        return '%s %s %s' % (self.first_name, self.last_name, self.unit.label)
 
     def full_name(self):
-        return u'%s, %s' % (self.last_name, self.first_name)
+        return '%s, %s' % (self.last_name, self.first_name)
 
     def name(self):
-        return u"%s %s" % (self.first_name, self.last_name)
+        return "%s %s" % (self.first_name, self.last_name)
 
-    def __unicode__(self):
-        return u'%s, %s' % (self.unit.label.upper(), self.full_name())
+    def __str__(self):
+        return '%s, %s' % (self.unit.label.upper(), self.full_name())
 
     def delete(self):
         self.deleted = True
@@ -89,11 +89,11 @@ class IgnoreEventDeleted(models.Manager):
         return super(IgnoreEventDeleted, self).get_queryset().filter(deleted=False, contact__deleted=False)
 
 class Event(models.Model):
-    contact = models.ForeignKey(Contact, null=False, blank=False)
+    contact = models.ForeignKey(Contact, null=False, blank=False, on_delete=models.PROTECT)
     event_type = models.CharField(max_length=25, choices=EVENT_CHOICES)
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
     last_modified = models.DateTimeField(null=True, blank=True, editable=False)
-    last_modified_by = models.ForeignKey(Person, null=True, blank=True)
+    last_modified_by = models.ForeignKey(Person, null=True, blank=True, on_delete=models.PROTECT)
     deleted = models.BooleanField(default=False)
     config = JSONField(default=dict)
     slug = AutoSlugField(populate_from='slug_string', unique_with=('contact',),
@@ -103,7 +103,7 @@ class Event(models.Model):
 
     @property
     def slug_string(self):
-        return u'%s-%s' % (self.timestamp.year, self.event_type)
+        return '%s-%s' % (self.timestamp.year, self.event_type)
 
     def save(self, call_from_handler=False, editor=None, *args, **kwargs):
         assert call_from_handler, "A contact event must be saved through the handler."
@@ -144,7 +144,7 @@ class EventAttachment(models.Model):
     Document attached to an Event. Let's assume that each event has exactly one attachment at most.
     These attachments will be created by our views if we add an event from the FileEventBase handler or its subclasses.
     """
-    event = models.OneToOneField(Event, null=False, blank=False)
+    event = models.OneToOneField(Event, null=False, blank=False, on_delete=models.PROTECT)
     slug = AutoSlugField(populate_from='mediatype', null=False, editable=False, unique_with=('event',))
     created_at = models.DateTimeField(auto_now_add=True)
     contents = models.FileField(storage=UploadedFileStorage, upload_to=attachment_upload_to, max_length=500)
@@ -153,7 +153,7 @@ class EventAttachment(models.Model):
 
     objects = EventAttachmentManagerQuerySet.as_manager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.contents.name
 
     class Meta:

@@ -7,7 +7,7 @@ from datetime import datetime
 from autoslug import AutoSlugField
 from django.db.models import Max
 from dashboard.models import NewsItem
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 import os.path
 from django.conf import settings
 from django.utils.safestring import mark_safe
@@ -26,7 +26,7 @@ class SubmissionComponent(models.Model):
     """
     A component of the activity that will be submitted by students
     """
-    activity = models.ForeignKey(Activity)
+    activity = models.ForeignKey(Activity, on_delete=models.PROTECT)
     title = models.CharField(max_length=100, help_text='Name for this component (e.g. "Part 1" or "Programming Section")')
     description = models.CharField(max_length=1000, help_text="Short explanation for this component.", null=True,blank=True)
     position = models.PositiveSmallIntegerField(help_text="The order of display for listing components.", null=True,blank=True)
@@ -38,18 +38,18 @@ class SubmissionComponent(models.Model):
 
     error_messages = {}
 
-    def __cmp__(self, other):
-        return cmp(self.position, other.position)
+    def __lt__(self, other):
+        return self.position < other.position
     class Meta:
         ordering = ['position']
         app_label = 'submission'
-    def __unicode__(self):
+    def __str__(self):
         return "%s %s"%(self.title, self.description)
     def visible_type(self):
         "Should this componet type be visible to allow creation of new components (or soft-deleted)?"
         return True
     def delete(self, *args, **kwargs):
-        raise NotImplementedError, "This object cannot be deleted because it is used as a foreign key."
+        raise NotImplementedError("This object cannot be deleted because it is used as a foreign key.")
         
     def save(self, **kwargs):
         if self.position is None:
@@ -69,17 +69,17 @@ class Submission(models.Model):
     """
     A student's or group's submission for an activity
     """
-    activity = models.ForeignKey(Activity)
+    activity = models.ForeignKey(Activity, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
-    owner = models.ForeignKey(Member, null=True, help_text = "TA or instructor that will mark this submission")
+    owner = models.ForeignKey(Member, null=True, help_text = "TA or instructor that will mark this submission", on_delete=models.PROTECT)
     status = models.CharField(max_length=3, null=False,choices=STATUS_CHOICES, default = "NEW")
-    def __cmp__(self, other):
-        return cmp(other.created_at, self.created_at)
+    def __lt__(self, other):
+        return other.created_at < self.created_at
     class Meta:
         ordering = ['-created_at']
         app_label = 'submission'
     def delete(self, *args, **kwargs):
-        raise NotImplementedError, "This object cannot be deleted because it is used as a foreign key."
+        raise NotImplementedError("This object cannot be deleted because it is used as a foreign key.")
 
     "Set ownership, and make state = in progree "
     def set_owner(self, course, userid):
@@ -90,12 +90,12 @@ class Submission(models.Model):
             self.save()
 
 class StudentSubmission(Submission):
-    member = models.ForeignKey(Member, null=False)
+    member = models.ForeignKey(Member, null=False, on_delete=models.PROTECT)
     class Meta:
         app_label = 'submission'
     def get_userid(self):
         return self.member.person.userid
-    def __unicode__(self):
+    def __str__(self):
         return "%s->%s@%s" % (self.member.person.userid, self.activity, self.created_at)
     def short_str(self):
         return "%s submission by %s at %s" % (self.activity.short_str(), self.member.person.userid, self.created_at.strftime("%Y-%m-%d %H:%M"))
@@ -105,14 +105,14 @@ class StudentSubmission(Submission):
         return self.member.person.userid_or_emplid()
 
 class GroupSubmission(Submission):
-    group = models.ForeignKey(Group, null=False)
-    creator = models.ForeignKey(Member, null = False)
+    group = models.ForeignKey(Group, null=False, on_delete=models.PROTECT)
+    creator = models.ForeignKey(Member, null=False, on_delete=models.PROTECT)
 
     class Meta:
         app_label = 'submission'
     def get_userid(self):
         return self.group.manager.person.userid
-    def __unicode__(self):
+    def __str__(self):
         return "%s->%s@%s" % (self.group.manager.person.userid, self.activity, self.created_at)
     def short_str(self):
         return "%s submission by %s for group %s at %s" % (self.activity.short_str(), self.creator.person.userid, self.group.name, self.created_at.strftime("%Y-%m-%d %H:%M"))
@@ -144,7 +144,7 @@ class SubmittedComponent(models.Model):
     """
     Part of a student's/group's submission
     """
-    submission = models.ForeignKey(Submission)
+    submission = models.ForeignKey(Submission, on_delete=models.PROTECT)
     submit_time = models.DateTimeField(auto_now_add = True)
     def get_time(self):
         "return the submit time of the component"
@@ -157,9 +157,9 @@ class SubmittedComponent(models.Model):
         else:
             return time
     def delete(self, *args, **kwargs):
-        raise NotImplementedError, "This object cannot be deleted because it is used as a foreign key."
-    def __cmp__(self, other):
-        return cmp(other.submit_time, self.submit_time)
+        raise NotImplementedError("This object cannot be deleted because it is used as a foreign key.")
+    def __lt__(self, other):
+        return other.submit_time < self.submit_time
     class Meta:
         ordering = ['submit_time']
         app_label = 'submission'
@@ -172,7 +172,7 @@ class SubmittedComponent(models.Model):
             student = StudentSubmission.objects.filter(id=self.submission.id)
             return student.member.person
         return group[0].creator.person
-    def __unicode__(self):
+    def __str__(self):
         return "%s@%s" % (self.submission.activity, self.submission.created_at)
 
     def sendfile(self, upfile, response):
@@ -182,13 +182,13 @@ class SubmittedComponent(models.Model):
         path, filename = os.path.split(upfile.name)
         response['Content-Disposition'] = 'inline; filename="' + filename + '"'
         try:
-            fh = open(upfile.path, "r")
+            upfile.open('rb')
         except IOError:
             response['Content-type'] = "text/plain"
             response.write("File missing. It has likely been archived.")
             return
 
-        for data in fh:
+        for data in upfile:
             response.write(data)
 
     def file_filename(self, upfile, prefix=None):

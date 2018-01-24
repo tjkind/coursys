@@ -3,7 +3,7 @@ from courselib.testing import basic_page_tests, Client, test_views, TEST_COURSE_
 from ta.models import CourseDescription, TAPosting, TAApplication, TAContract, CampusPreference, CoursePreference, TUG
 from coredata.models import Person, Semester, Unit, CourseOffering, Course, Role, Member
 from ra.models import Account
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from datetime import date
 
 class ApplicationTest(TestCase):
@@ -107,7 +107,7 @@ class ApplicationTest(TestCase):
 
         # create TUG to view/edit
         tug = TUG(member=ta, base_units=5)
-        for f in tug.config_meta.keys():
+        for f in list(tug.config_meta.keys()):
             tug.config[f] = {'weekly': 1, 'total': 13, 'note': 'somenote'}
         tug.save()
         test_views(self, c, 'offering:', ['view_tug', 'edit_tug'], {'course_slug': offering.slug, 'userid': ta.person.userid})

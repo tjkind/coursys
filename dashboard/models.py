@@ -4,7 +4,7 @@ from django.utils.safestring import mark_safe
 from pytz import timezone
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from autoslug.settings import slugify
 from courselib.json_fields import JSONField, config_property
 from courselib.branding import product_name
@@ -32,9 +32,9 @@ class NewsItem(models.Model):
     """
     Class representing a news item for a particular user.
     """
-    user = models.ForeignKey(Person, null=False, related_name="user")
-    author = models.ForeignKey(Person, null=True, related_name="author")
-    course = models.ForeignKey(CourseOffering, null=True)
+    user = models.ForeignKey(Person, null=False, related_name="user", on_delete=models.PROTECT)
+    author = models.ForeignKey(Person, null=True, related_name="author", on_delete=models.PROTECT)
+    course = models.ForeignKey(CourseOffering, null=True, on_delete=models.PROTECT)
     source_app = models.CharField(max_length=20, null=False, help_text="Application that created the story")
 
     title = models.CharField(max_length=100, null=False, help_text="Story title (plain text)")
@@ -51,7 +51,7 @@ class NewsItem(models.Model):
     markup = config_property('markup', 'creole')
     math = config_property('math', False)
 
-    def __unicode__(self):
+    def __str__(self):
         return '"%s" for %s' % (self.title, self.user.userid)
     
     def save(self, *args, **kwargs):
@@ -104,7 +104,7 @@ class NewsItem(models.Model):
                 }
 
         if self.course:
-            subject = u"%s: %s" % (self.course.name(), self.title)
+            subject = "%s: %s" % (self.course.name(), self.title)
             headers['X-course'] = self.course.slug
         else:
             subject = self.title
@@ -120,16 +120,16 @@ class NewsItem(models.Model):
         else:
             url = settings.BASE_ABS_URL + reverse('news:news_list')
         
-        text_content = u"For more information, see " + url + "\n"
-        text_content += u"\n--\nYou received this email from %s. If you do not wish to receive\nthese notifications by email, you can edit your email settings here:\n  " % (product_name(hint='course'))
+        text_content = "For more information, see " + url + "\n"
+        text_content += "\n--\nYou received this email from %s. If you do not wish to receive\nthese notifications by email, you can edit your email settings here:\n  " % (product_name(hint='course'))
         text_content += settings.BASE_ABS_URL + reverse('config:news_config')
         
         if self.course:
-            html_content = u'<h3>%s: <a href="%s">%s</a></h3>\n' % (self.course.name(), url, self.title)
+            html_content = '<h3>%s: <a href="%s">%s</a></h3>\n' % (self.course.name(), url, self.title)
         else:
-            html_content = u'<h3><a href="%s">%s</a></h3>\n' % (url, self.title)
+            html_content = '<h3><a href="%s">%s</a></h3>\n' % (url, self.title)
         html_content += self.content_xhtml()
-        html_content += u'\n<p style="font-size: smaller; border-top: 1px solid black;">You received this email from %s. If you do not wish to receive\nthese notifications by email, you can <a href="%s">change your email settings</a>.</p>' \
+        html_content += '\n<p style="font-size: smaller; border-top: 1px solid black;">You received this email from %s. If you do not wish to receive\nthese notifications by email, you can <a href="%s">change your email settings</a>.</p>' \
                         % (product_name(hint='course'), settings.BASE_ABS_URL + reverse('config:news_config'))
         
         msg = EmailMultiAlternatives(subject, text_content, from_email, [to_email], headers=headers)
@@ -192,13 +192,13 @@ class UserConfig(models.Model):
     """
     Simple class to hold user preferences.
     """
-    user = models.ForeignKey(Person, null=False)
+    user = models.ForeignKey(Person, null=False, on_delete=models.PROTECT)
     key = models.CharField(max_length=20, db_index=True, null=False)
-    value = JSONField(null=False, blank=False, default={})
+    value = JSONField(null=False, blank=False, default=dict)
     class Meta:
         unique_together = (("user", "key"),)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s='%s'" % (self.user.userid, self.key, self.value)
 
 
@@ -213,9 +213,9 @@ class Signature(models.Model):
     """
     User's signature (for letters)
     """
-    user = models.ForeignKey(Person, null=False)
+    user = models.ForeignKey(Person, null=False, on_delete=models.PROTECT)
     sig = models.FileField(upload_to=_sig_upload_to, storage=UploadedFileStorage, max_length=500)
     resolution = 200 # expect 200 dpi images
     
-    def __unicode__(self):
+    def __str__(self):
         return "Signature of %s" % (self.user.name())

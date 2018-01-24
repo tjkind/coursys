@@ -7,7 +7,7 @@
 # TODO: the markup choice dropdown is going to be confusing for some people: simplify or something?
 
 from django.db import models
-from django.utils.safestring import mark_safe, SafeString
+from django.utils.safestring import mark_safe, SafeText
 from django.conf import settings
 from cache_utils.decorators import cached
 
@@ -59,8 +59,8 @@ def ensure_sanitary_markup(markup, markuplang, restricted=False):
     :param restricted: use the restricted HTML subset?
     :return: sanitary markup
     """
-    if markuplang == 'html' and not isinstance(markup, SafeString):
-        # HTML input, but not a SafeString (which comes from sanitize_html)
+    if markuplang == 'html' and not isinstance(markup, SafeText):
+        # HTML input, but not a SafeText (which comes from sanitize_html)
         return sanitize_html(markup, restricted=restricted)
 
     # otherwise, we trust the markup language processor to safe output.
@@ -70,11 +70,11 @@ def ensure_sanitary_markup(markup, markuplang, restricted=False):
 def markdown_to_html(markup):
     sub = subprocess.Popen([os.path.join(settings.BASE_DIR, 'courselib', 'markdown2html.rb')], stdin=subprocess.PIPE,
                            stdout=subprocess.PIPE)
-    stdoutdata, stderrdata = sub.communicate(input=markup)
+    stdoutdata, stderrdata = sub.communicate(input=markup.encode('utf8'))
     ret = sub.wait()
     if ret != 0:
         raise RuntimeError('markdown2html.rb did not return successfully')
-    return stdoutdata
+    return stdoutdata.decode('utf8')
 
 
 @cached(36000)
@@ -90,6 +90,7 @@ def markup_to_html(markup, markuplang, offering=None, pageversion=None, html_alr
     :param restricted: use the restricted HTML subset for discussion (preventing format bombs)
     :return: HTML markup
     """
+    assert isinstance(markup, str)
     if markuplang == 'creole':
         if offering:
             Creole = ParserFor(offering, pageversion)
@@ -97,7 +98,8 @@ def markup_to_html(markup, markuplang, offering=None, pageversion=None, html_alr
             Creole = ParserFor(pageversion.page.offering, pageversion)
         else:
             Creole = ParserFor(offering, pageversion)
-        html = Creole.text2html(markup)
+        # Creole.text2html returns utf-8 bytes: standardize all output to unicode
+        html = Creole.text2html(markup).decode('utf8')
         if restricted:
             html = sanitize_html(html, restricted=True)
 
@@ -123,6 +125,7 @@ def markup_to_html(markup, markuplang, offering=None, pageversion=None, html_alr
     else:
         raise NotImplementedError()
 
+    assert isinstance(html, str)
     return mark_safe(html.strip())
 
 
@@ -134,6 +137,7 @@ from django import forms
 
 
 class MarkupContentWidget(forms.MultiWidget):
+    template_name = 'markup-content-widget.html'
     def __init__(self):
         widgets = (
             forms.Textarea(attrs={'cols': 70, 'rows': 20}),
@@ -142,11 +146,10 @@ class MarkupContentWidget(forms.MultiWidget):
         )
         super(MarkupContentWidget, self).__init__(widgets)
 
-    def format_output(self, rendered_widgets):
-        if self.allow_math:
-            return '<div class="markup-content">%s<br/>Markup language: %s Use MathJax? %s</div>' % tuple(rendered_widgets)
-        else:
-            return '<div class="markup-content">%s<br/>Markup language: %s</div>' % tuple(rendered_widgets[0:2])
+    def get_context(self, *args, **kwargs):
+        context = super().get_context(*args, **kwargs)
+        context['allow_math'] = self.allow_math
+        return context
 
     def decompress(self, value):
         if value is None:
@@ -167,9 +170,10 @@ class MarkupContentField(forms.MultiValueField):
         ]
 
         help_url = '/docs/markup' # hard-coded URL because lazy-evaluating them is hard
-        default_help = '<a href="' + help_url + '">Markup language</a> used in the content, and should ' \
-            '<a href="http://www.mathjax.org/">MathJax</a> be used for displaying TeX formulas? ' \
-            '<span id="markup-help"></span>'
+        default_help = '<a href="' + help_url + '">Markup language</a> used in the content'
+        if allow_math:
+            default_help += ', and should <a href="http://www.mathjax.org/">MathJax</a> be used for displaying TeX formulas?'
+        default_help += ' <span id="markup-help"></span>'
         help_text = kwargs.pop('help_text', mark_safe(default_help))
 
         super(MarkupContentField, self).__init__(fields, required=False,
@@ -328,9 +332,9 @@ def _find_activity(offering, arg_string):
     acts = Activity.objects.filter(offering=offering, deleted=False).filter(
         models.Q(name=act_name) | models.Q(short_name=act_name))
     if len(acts) == 0:
-        return u'[No activity "%s"]' % (act_name)
+        return '[No activity "%s"]' % (act_name)
     elif len(acts) > 1:
-        return u'[There is both a name and short name "%s"]' % (act_name)
+        return '[There is both a name and short name "%s"]' % (act_name)
     else:
         return acts[0]
         due = act.due_date
@@ -355,7 +359,7 @@ def _duedate(offering, dateformat, macro, environ, *act_name):
             text = act.due_date.strftime(dateformat)
             attrs['title'] = iso8601
         else:
-            text = u'["%s" has no due date specified]' % (act.name)
+            text = '["%s" has no due date specified]' % (act.name)
             attrs['class'] = 'empty'
     else:
         # error

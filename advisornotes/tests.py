@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from coredata.models import Person, Unit
 from advisornotes.models import NonStudent, AdvisorNote
 from courselib.testing import basic_page_tests, Client
@@ -129,5 +129,5 @@ class AdvisorNotestest(TestCase):
                 response = basic_page_tests(self, client, url)
                 self.assertEqual(response.status_code, 200)
             except:
-                print "with view==" + repr(view)
+                print("with view==" + repr(view))
                 raise

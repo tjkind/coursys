@@ -2,14 +2,16 @@ import itertools
 
 from django import forms
 from django.template import Context, Template
+from django.utils.functional import SimpleLazyObject
 from cache_utils.decorators import cached
 from coredata.models import Unit
+from coredata.widgets import DollarInput
 
 from faculty.event_types.base import CareerEventHandlerBase
 from faculty.event_types.base import BaseEntryForm
 from faculty.event_types.base import SalaryAdjust, TeachingAdjust
 from faculty.event_types.choices import Choices
-from faculty.event_types.fields import DollarInput, AddSalaryField, \
+from faculty.event_types.fields import AddSalaryField, \
                                        AddPayField, TeachingCreditField, \
                                        SemesterField
 from faculty.event_types.mixins import TeachingCareerEvent, SalaryCareerEvent
@@ -56,9 +58,9 @@ class FellowshipEventHandler(CareerEventHandlerBase, SalaryCareerEvent, Teaching
                                          event_type=FellowshipEventHandler.EVENT_TYPE)
         choices = itertools.chain(*[ec.config.get('fellowships', []) for ec in ecs])
         if only_active:
-            choices = ((short,long) for short,long,status in choices if status == 'ACTIVE')
+            choices = ((short,int) for short,int,status in choices if status == 'ACTIVE')
         else:
-            choices = ((short,long) for short,long,status in choices)
+            choices = ((short,int) for short,int,status in choices)
         return choices
 
     class EntryForm(BaseEntryForm):
@@ -79,7 +81,7 @@ class FellowshipEventHandler(CareerEventHandlerBase, SalaryCareerEvent, Teaching
 
             choices = FellowshipEventHandler.get_fellowship_choices([data['unit']], only_active=True)
 
-            found = [short for short,long in choices if short == data['position']]
+            found = [short for short,int in choices if short == data['position']]
             if not found:
                 raise forms.ValidationError("That fellowship is not owned by the selected unit.")
 
@@ -105,7 +107,7 @@ class FellowshipEventHandler(CareerEventHandlerBase, SalaryCareerEvent, Teaching
             ec.config['fellowships'] = fellows
             ec.save()
 
-    DISPLAY_TEMPLATE = Template("""
+    DISPLAY_TEMPLATE = SimpleLazyObject(lambda: Template("""
         <h2 id="config">Configured Fellowships</h2>
         <table class="display" id="config_table">
         <thead><tr><th scope="col">Fellowship Name</th><th scope="col">Unit</th><!--<th scope="col">Action</th>--></tr></thead>
@@ -120,7 +122,7 @@ class FellowshipEventHandler(CareerEventHandlerBase, SalaryCareerEvent, Teaching
             {% endif %}
             {% endfor %}
         </tbody>
-        </table>""")
+        </table>"""))
 
     @classmethod
     def config_display(cls, units):
@@ -143,7 +145,7 @@ class FellowshipEventHandler(CareerEventHandlerBase, SalaryCareerEvent, Teaching
         def get_long_position_name(key, unit):
             "A cacheable version: seems like a lot of work for a frequently-used string"
             choices = FellowshipEventHandler.get_fellowship_choices([unit], only_active=False)
-            found = [long for short,long in choices if short == key]
+            found = [int for short,int in choices if short == key]
             if found:
                 return found[0]
             else:
@@ -273,7 +275,7 @@ class AwardEventHandler(CareerEventHandlerBase):
 
     def short_summary(self):
         award = self.get_display('award')
-        return u'Received award \u201c{0}\u201d'.format(award)
+        return 'Received award \u201c{0}\u201d'.format(award)
 
 
 class GrantApplicationEventHandler(CareerEventHandlerBase):

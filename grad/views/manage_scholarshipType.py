@@ -3,8 +3,8 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from grad.forms import new_scholarshipTypeForm
-from django.core.urlresolvers import reverse
-from index import index
+from django.urls import reverse
+from .index import index
 
 @requires_role("GRAD")
 def manage_scholarshipType(request):

@@ -6,7 +6,7 @@ from log.models import LogEntry
 from django.http import HttpResponseRedirect
 from grad.forms import LetterForm
 import datetime
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from coredata.models import Role
 
 @requires_role("GRAD")
@@ -15,7 +15,7 @@ def new_letter(request, grad_slug, letter_template_slug):
 
     template = get_object_or_404(LetterTemplate, slug=letter_template_slug, unit__in=request.units)
 
-    from_choices = [('', u'\u2014')] \
+    from_choices = [('', '\u2014')] \
                     + [(r.person.id, "%s. %s, %s" %
                             (r.person.get_title(), r.person.letter_name(), r.get_role_display()))
                         for r in Role.objects_fresh.filter(unit=grad.program.unit, role__in=['GRPD','GRAD','TAAD','TADM','FUND','ADMN'])]

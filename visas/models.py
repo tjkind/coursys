@@ -40,8 +40,8 @@ class VisaQuerySet(models.QuerySet):
 
 
 class Visa (models.Model):
-    person = models.ForeignKey(Person, null=False, blank=False)
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    person = models.ForeignKey(Person, null=False, blank=False, on_delete=models.PROTECT)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     status = models.CharField(max_length=50, choices=VISA_STATUSES, default='')
     start_date = models.DateField('Start Date', default=timezone_today, help_text='First day of visa validity')
     end_date = models.DateField('End Date', blank=True, null=True, help_text='Expiry of the visa (if known)')
@@ -76,8 +76,8 @@ class Visa (models.Model):
             return EXPIRY_STATUSES[2]
         return "Unknown"  # We'll hit this if the end_date is null.
 
-    def __unicode__(self):
-        return u"%s, %s, %s" % (self.person, self.status, self.start_date)
+    def __str__(self):
+        return "%s, %s, %s" % (self.person, self.status, self.start_date)
 
     def hide(self):
         self.hidden = True
@@ -100,9 +100,9 @@ class Visa (models.Model):
             visatype = d[5]
             if country == 'CAN':
                 # Canadian citizen and be done with it.
-                print emplid, 'Citizen'
+                print(emplid, 'Citizen')
             elif visatype:
-                print emplid, visas.get(visatype, None)
+                print(emplid, visas.get(visatype, None))
 
     @staticmethod
     def get_visas(people):
@@ -130,18 +130,18 @@ class VisaDocumentAttachment(models.Model):
     """
     Document attached to a CareerEvent.
     """
-    visa = models.ForeignKey(Visa, null=False, blank=False, related_name="attachments")
+    visa = models.ForeignKey(Visa, null=False, blank=False, related_name="attachments", on_delete=models.PROTECT)
     title = models.CharField(max_length=250, null=False)
     slug = AutoSlugField(populate_from='title', null=False, editable=False, unique_with=('visa',))
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(Person, help_text='Document attachment created by.')
+    created_by = models.ForeignKey(Person, help_text='Document attachment created by.', on_delete=models.PROTECT)
     contents = models.FileField(storage=UploadedFileStorage, upload_to=visa_attachment_upload_to, max_length=500)
     mediatype = models.CharField(max_length=200, null=True, blank=True, editable=False)
     hidden = models.BooleanField(default=False, editable=False)
 
     objects = VisaDocumentAttachmentQueryset.as_manager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.contents.name
 
     class Meta:

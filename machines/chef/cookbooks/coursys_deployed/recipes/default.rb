@@ -85,17 +85,11 @@ package "screen"
 
 package "dos2unix"
 
-# pip install any listed requirements
-execute "install_pip_requirements" do
-    cwd "/home/ubuntu/"
-    command "pip install -r /home/ubuntu/courses/build_deps/deployed_deps.txt"
-end
-
 # collect static files
 execute "static files" do
     user "coursys"
     cwd "/home/coursys/courses"
-    command "echo 'yes' | ./manage.py collectstatic"
+    command "./manage.py collectstatic --noinput"
 end
 
 # database backup directory

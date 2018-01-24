@@ -23,15 +23,15 @@ class ConsumerInfo(models.Model):
     """
     Additional info about a Consumer, augmenting that model.
     """
-    consumer = models.ForeignKey(Consumer)
+    consumer = models.ForeignKey(Consumer, on_delete=models.CASCADE)
     timestamp = models.IntegerField(default=time) # ConsumerInfo may change over time: the most recent with Token.timestamp >= ConsumerInfo.timestamp is the one the user agreed to.
-    config = JSONField(null=False, blank=False, default={})
+    config = JSONField(null=False, blank=False, default=dict)
     deactivated = models.BooleanField(default=False) # kept to record user agreement, but this will allow effectively deactivating Consumers
 
     admin_contact = config_property('admin_contact', None) # who we can contact for this account
     permissions = config_property('permissions', []) # things this consumer can do: list of keys for PERMISSION_OPTIONS
 
-    def __unicode__(self):
+    def __str__(self):
         return "info for %s at %i" % (self.consumer.key, self.timestamp)
 
     def permission_descriptions(self):
@@ -74,6 +74,6 @@ def create_consumer(name, description, owner_userid, admin_contact, permissions)
     i.permissions = list(permissions)
     i.save()
 
-    print "Consumer key:", c.key
-    print "Consumer secret:", c.secret
+    print("Consumer key:", c.key)
+    print("Consumer secret:", c.secret)
 

@@ -3,7 +3,7 @@ from ra.models import RAAppointment, Account, Project, HIRING_CATEGORY_DISABLED,
 from coredata.models import Person, Semester, Unit
 from coredata.forms import PersonField
 from django.utils.safestring import mark_safe
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 
 
 class RAForm(forms.ModelForm):
@@ -72,20 +72,14 @@ class LetterSelectForm(forms.Form):
         self.fields["letter_choice"].choices = choices
 
 
-class StudentSelect(forms.Select):
-    input_type = 'text'
+class StudentSelect(forms.TextInput):
+    # widget to input an emplid; presumably with autocomplete in the frontend
+    pass
 
-    def render(self, name, value, attrs=None):
-        if value is None:
-            value = ''
-        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
-        if value != '':
-            final_attrs['value'] = force_unicode(value)
-        return mark_safe(u'<input%s />' % forms.widgets.flatatt(final_attrs))
 
 class StudentField(forms.ModelChoiceField):
     def __init__(self, *args, **kwargs):
-        super(StudentField, self).__init__(*args, queryset=Person.objects.none(), widget=StudentSelect(attrs={'size': 30}), help_text="Type to search for a student's appointments.", **kwargs)
+        super(StudentField, self).__init__(*args, queryset=Person.objects.none(), widget=StudentSelect(attrs={'size': 20}), help_text="Type to search for a student's appointments.", **kwargs)
 
     def to_python(self, value):
         try:

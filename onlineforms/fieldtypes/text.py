@@ -19,7 +19,7 @@ class SmallTextField(FieldBase):
                 min_r = int(self.data['min_length'])
                 max_r = int(self.data['max_length'])
                 if min_r > max_r:
-                    raise forms.ValidationError, "Minimum length cannot be more than the maximum."
+                    raise forms.ValidationError("Minimum length cannot be more than the maximum.")
             except (ValueError, KeyError):
                 pass # let somebody else worry about that
 
@@ -72,7 +72,7 @@ class MediumTextField(FieldBase):
                 min_r = int(self.data['min_length'])
                 max_r = int(self.data['max_length'])
                 if min_r > max_r:
-                    raise forms.ValidationError, "Minimum length cannot be more than the maximum."
+                    raise forms.ValidationError("Minimum length cannot be more than the maximum.")
             except (ValueError, KeyError):
                 pass # let somebody else worry about that
 
@@ -126,7 +126,7 @@ class LargeTextField(FieldBase):
                 min_r = int(self.data['min_length'])
                 max_r = int(self.data['max_length'])
                 if min_r > max_r:
-                    raise forms.ValidationError, "Minimum length cannot be more than the maximum."
+                    raise forms.ValidationError("Minimum length cannot be more than the maximum.")
             except (ValueError, KeyError):
                 pass # let somebody else worry about that
 
@@ -201,6 +201,11 @@ class _ExplanationFieldWidget(forms.Textarea):
     """
     A non-widget widget that generates explanation text and not a form input.
     """
+    def __init__(self, explanation, markup, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.explanation = explanation
+        self.markup = markup
+
     def render(self, name, value, attrs=None):
         return mark_safe('<div class="explanation_block">%s</div>' % (markup_to_html(self.explanation, self.markup)))
 
@@ -210,23 +215,28 @@ class ExplanationTextField(FieldBase):
     class ExplanationTextConfigForm(FieldConfigForm):
         text_explanation = MarkupContentField(with_wysiwyg=True, allow_math=False, help_text='Text to display to the user.')
 
-        def __init__(self, *args, **kwargs):
-            super(self.__class__, self).__init__(*args, **kwargs)
+        def __init__(self, config, *args, **kwargs):
+            super(self.__class__, self).__init__(config, *args, **kwargs)
             del self.fields['help_text']
+            # handle transition to markup-with-language-choice field
+            if config and 'text_explanation' in config and 'text_explanation_0' not in config:
+                config['text_explanation_0'] = config['text_explanation']
+                config['text_explanation_1'] = 'creole'
 
     def make_config_form(self):
         return self.ExplanationTextConfigForm(self.config)
 
     def make_entry_field(self, fieldsubmission=None):
-        w = _ExplanationFieldWidget(attrs={'class': 'disabled', 'readonly': 'readonly'})
+        # before MarkupContentField, text_explanation held the contents; now text_explanation_0.
+        explanation = self.config.get('text_explanation_0', self.config.get('text_explanation', ''))
+        markup = self.config.get('text_explanation_1', 'creole')
+
+        w = _ExplanationFieldWidget(explanation=explanation, markup=markup,
+                                    attrs={'class': 'disabled', 'readonly': 'readonly'})
         c = forms.CharField(required=False,
             label=self.config['label'],
             help_text='',
             widget=w)
-
-        # before MarkupContentField, text_explanation held the contents; now text_explanation_0.
-        w.explanation = self.config.get('text_explanation_0', self.config.get('text_explanation', ''))
-        w.markup = self.config.get('text_explanation_1', 'creole')
 
         return c
 

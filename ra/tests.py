@@ -1,7 +1,7 @@
 from django.test import TestCase
 from courselib.testing import Client, test_views
 from ra.models import RAAppointment, Account, Project
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 
 class RATest(TestCase):
@@ -26,7 +26,7 @@ class RATest(TestCase):
         # No offer text yet, we should get a redirect when trying to edit the letter text:
         url = reverse('ra:edit_letter', kwargs={'ra_slug': ra.slug})
         response = c.get(url)
-        self.assertEquals(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)
 
         # Let's add some offer text and try again.
         ra.offer_letter_text='Some test text here'

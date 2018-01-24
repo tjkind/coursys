@@ -2,7 +2,7 @@ from django import forms
 from django.db import transaction
 from pages.models import Page, PageVersion, READ_ACL_CHOICES, WRITE_ACL_CHOICES
 from courselib.markup import MarkupContentField, MarkupContentMixin
-import urllib2, urlparse
+import urllib.request, urllib.error, urllib.parse, urllib.parse
 
 
 class WikiField(forms.CharField):
@@ -61,6 +61,13 @@ class EditPageFileForm(forms.ModelForm):
         error = self.instance.label_okay(label)
         if error:
             raise forms.ValidationError(error)
+
+        otherpages = Page.objects.filter(label=label, offering=self.offering)
+        if self.instance:
+            otherpages = otherpages.exclude(id=self.instance.id)
+        if otherpages.exists():
+            raise forms.ValidationError('A page with that label already exists')
+
         return label
 
     class Meta:

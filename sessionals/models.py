@@ -35,21 +35,21 @@ class SessionalAccount(models.Model):
     two of these account/position numbers, one for SFUFA and one for TSSU.  They don't need
     to fill in two things for every contract, so we'll store them together and let them pick.
     """
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     title = models.CharField(max_length=60)
     account_number = models.CharField(max_length=40, null=False, blank=False)
     position_number = models.PositiveIntegerField(null=False, blank=False)
 
     def autoslug(self):
         """As usual, create a unique slug for each object"""
-        return make_slug(self.unit.label + '-' + unicode(self.account_number) + '-' + unicode(self.title))
+        return make_slug(self.unit.label + '-' + str(self.account_number) + '-' + str(self.title))
 
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
     hidden = models.BooleanField(null=False, default=False, editable=False)
     objects = SessionalAccountQuerySet.as_manager()
 
-    def __unicode__(self):
-        return u"%s - %s" % (self.unit, self.title)
+    def __str__(self):
+        return "%s - %s" % (self.unit, self.title)
 
     def delete(self):
         """Like most of our objects, we don't want to ever really delete it."""
@@ -73,9 +73,9 @@ class SessionalContract(models.Model):
     Similar to TA or RA contract, but we need to be able to use them with people who aren't in the
     system yet.
     """
-    sessional = models.ForeignKey(AnyPerson, null=False, blank=False)
-    account = models.ForeignKey(SessionalAccount, null=False, blank=False)
-    unit = models.ForeignKey(Unit, null=False, blank=False)
+    sessional = models.ForeignKey(AnyPerson, null=False, blank=False, on_delete=models.PROTECT)
+    account = models.ForeignKey(SessionalAccount, null=False, blank=False, on_delete=models.PROTECT)
+    unit = models.ForeignKey(Unit, null=False, blank=False, on_delete=models.PROTECT)
     sin = models.CharField(max_length=30,
                            verbose_name="SIN",
                            help_text="Social Insurance Number - 000000000 if unknown")
@@ -88,7 +88,7 @@ class SessionalContract(models.Model):
     pay_start = models.DateField(null=False, blank=False)
     pay_end = models.DateField(null=False, blank=False)
     # Was going to add a Semester, but since the offering itself has a semester, no need for it.
-    offering = models.ForeignKey(CourseOffering, null=False, blank=False)
+    offering = models.ForeignKey(CourseOffering, null=False, blank=False, on_delete=models.PROTECT)
     course_hours_breakdown = models.CharField(null=True, blank=True, max_length=100,
                                               help_text="e.g. 1x2HR Lecture, etc.  This will show up in the form in "
                                                         "the column after the course department and number.")
@@ -107,12 +107,12 @@ class SessionalContract(models.Model):
 
     def autoslug(self):
         """As usual, create a unique slug for each object"""
-        return make_slug(unicode(self.sessional) + "-" + unicode(self.offering))
+        return make_slug(str(self.sessional) + "-" + str(self.offering))
 
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
 
-    def __unicode__(self):
-        return u"%s - %s" % (unicode(self.sessional), unicode(self.offering))
+    def __str__(self):
+        return "%s - %s" % (str(self.sessional), str(self.offering))
 
     def delete(self):
         """Like most of our objects, we don't want to ever really delete it."""
@@ -130,7 +130,7 @@ class SessionalConfig(models.Model):
     and the new contracts will use these as defaults.  There should only be one of these per unit, to avoid
     overwriting someone else's.
     """
-    unit = models.OneToOneField(Unit, null=False, blank=False)
+    unit = models.OneToOneField(Unit, null=False, blank=False, on_delete=models.PROTECT)
     appointment_start = models.DateField()
     appointment_end = models.DateField()
     pay_start = models.DateField()
@@ -144,8 +144,8 @@ class SessionalConfig(models.Model):
 
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique=True)
 
-    def __unicode__(self):
-        return u"%s - %s" % (self.unit.label, "default configuration for sessional contracts")
+    def __str__(self):
+        return "%s - %s" % (self.unit.label, "default configuration for sessional contracts")
 
     def delete(self):
         raise NotImplementedError("This object cannot be deleted")

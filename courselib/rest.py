@@ -18,7 +18,7 @@ class APIConsumerPermissions(permissions.BasePermission):
     they authorized.
     """
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated:
             # must be authenticated one way or another
             return False
 
@@ -42,7 +42,7 @@ class APIConsumerPermissions(permissions.BasePermission):
             return set(required_permissions) <= set(allowed_perms)
 
         else:
-            raise ValueError, "Unknown authentication method."
+            raise ValueError("Unknown authentication method.")
 
 
 class IsOfferingMember(permissions.BasePermission):
@@ -58,7 +58,7 @@ class IsOfferingMember(permissions.BasePermission):
             view.offering = offering
 
         if not hasattr(view, 'member'):
-            assert request.user.is_authenticated()
+            assert request.user.is_authenticated
             member = Member.objects.exclude(role='DROP').filter(offering=offering, person__userid=request.user.username).first()
             view.member = member
 
@@ -77,14 +77,14 @@ class IsOfferingStaff(permissions.BasePermission):
             view.offering = offering
 
         if not hasattr(view, 'member'):
-            assert request.user.is_authenticated()
+            assert request.user.is_authenticated
             member = Member.objects.filter(role__in=['INST', 'TA', 'APPR']).filter(offering=offering, person__userid=request.user.username).first()
             view.member = member
 
         return bool(view.member)
 
 from django.core.cache import caches
-from django.utils.encoding import force_bytes, iri_to_uri
+from django.utils.encoding import force_text, iri_to_uri
 from django.utils.cache import patch_response_headers, patch_cache_control
 from rest_framework.response import Response
 import hashlib
@@ -119,13 +119,13 @@ class CacheMixin(object):
         method = request.method
 
         # Authenticated username
-        if not request.user.is_authenticated() or self.cache_ignore_auth:
+        if not request.user.is_authenticated or self.cache_ignore_auth:
             username = '*'
         else:
             username = request.user.username
 
         # URL path
-        url = force_bytes(iri_to_uri(request.get_full_path()))
+        url = force_text(iri_to_uri(request.get_full_path()))
 
         # build a cache key out of that
         key = '#'.join(('CacheMixin', self.key_prefix, username, method, url))
@@ -175,7 +175,7 @@ class CacheMixin(object):
             'data': response.data,
             'status': response.status_code,
             'template_name': response.template_name,
-            'headers': dict(response._headers.values()),
+            'headers': dict(list(response._headers.values())),
             'exception': response.exception,
             'content_type': response.content_type,
         }

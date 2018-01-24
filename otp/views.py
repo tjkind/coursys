@@ -33,7 +33,7 @@ def _setup_view(request, next_page):
     if not next_page:
         next_page = _redirect_url(request)
 
-    if not request.maybe_stale_user.is_authenticated():
+    if not request.maybe_stale_user.is_authenticated:
         # Not authenticated at all. Force standard-Django auth.
         return next_page, False, False
 
@@ -107,7 +107,7 @@ def add_topt(request, next_page=None):
     qr.save(qrdata)
     # This is the OTP secret (bits) encoded as base32, wrapped in an otpauth URL, encoded as a QR code, encoded as an
     # SVG, encoded as base64, wrapped in a data URL. I'm strangely proud.
-    dataurl = 'data:image/svg+xml;base64,' + base64.b64encode(qrdata.getvalue())
+    dataurl = b'data:image/svg+xml;base64,' + base64.b64encode(qrdata.getvalue())
 
     context = {
         'device': device,

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect, Http404
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.template import TemplateDoesNotExist
@@ -23,7 +23,7 @@ from onlineforms.models import FormGroup
 from pages.models import Page, ACL_ROLES
 from ra.models import RAAppointment
 from log.models import LogEntry
-import datetime, json, urlparse
+import datetime, json, urllib.parse
 from courselib.auth import requires_role
 from icalendar import Calendar, Event
 from featureflags.flags import uses_feature
@@ -33,7 +33,7 @@ from xml.etree.ElementTree import ParseError
 from ipware import ip
 import pytz
 import itertools
-from urllib import urlencode
+from urllib.parse import urlencode
 
 
 @login_required
@@ -139,7 +139,7 @@ def login(request, next_page=None, required=False):
         next_page = request.GET['next']
     if not next_page:
         next_page = _redirect_url(request)
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         #message = "You are logged in as %s." % request.user.username
         #messages.success(request, message)
         return HttpResponseRedirect(next_page)
@@ -154,7 +154,7 @@ def login(request, next_page=None, required=False):
             if e.errno in [104, 110, 'socket error']:
                 user = None
             else:
-                raise IOError, "The errno is %r: %s." % (e.errno, unicode(e))
+                raise IOError("The errno is %r: %s." % (e.errno, str(e)))
         except ParseError:
             user = None
 
@@ -201,8 +201,11 @@ def config(request):
     
     # news config
     configs = UserConfig.objects.filter(user=user, key="newsitems")
+    # By default, users get emails for news items unless they specifically opted-out.  The value here doesn't
+    # change any data, it just displays the same thing as if someone had a UserConfig where they specifically set
+    # email to True.
     if not configs:
-        newsconfig = {'email': False}
+        newsconfig = {'email': True}
     else:
         newsconfig = configs[0].value
     
@@ -376,7 +379,7 @@ def _offerings_calendar_data(offerings, labsecs, start, end, local_tz, dt_string
                 'location': mt.offering.get_campus_display() + " " + mt.room,
                 'allDay': False,
                 #'className': "ev-" + mt.meeting_type,
-                'url': urlparse.urljoin(settings.BASE_ABS_URL, _meeting_url(mt)),
+                'url': urllib.parse.urljoin(settings.BASE_ABS_URL, _meeting_url(mt)),
                 'category': mt.meeting_type,
                 }
             if colour:
@@ -423,7 +426,7 @@ def _calendar_event_data(user, start, end, local_tz, dt_string, colour=False,
                 'end': en,
                 'allDay': False,
                 #'className': 'ev-due',
-                'url': urlparse.urljoin(settings.BASE_ABS_URL, _activity_url(a)),
+                'url': urllib.parse.urljoin(settings.BASE_ABS_URL, _activity_url(a)),
                 'category': 'DUE',
                 }
             if colour:

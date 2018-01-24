@@ -147,8 +147,9 @@ FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
 
 # Disable migrations only when running tests.
 if 'test' in sys.argv[1:]:
-    from courselib.disable_migrations import DisableMigrations
-    MIGRATION_MODULES = DisableMigrations()
+    MIGRATION_MODULES = {}
+    for m in INSTALLED_APPS:
+        MIGRATION_MODULES[m] = None
 
 # security-related settings
 ALLOWED_HOSTS = getattr(localsettings, 'ALLOWED_HOSTS', ['courses.cs.sfu.ca', 'coursys.cs.sfu.ca', 'coursys.sfu.ca', 'fasit.sfu.ca'])
@@ -352,10 +353,9 @@ EMPLID_API_SECRET = getattr(secrets, 'EMPLID_API_SECRET', '')
 #PIWIK_FAIL_SILENTLY = True
 #PIWIK_FORCE_HOST = 'courses.cs.sfu.ca'
 
-BACKUP_SERVER = getattr(secrets, 'BACKUP_SERVER', None)
-BACKUP_USER = getattr(secrets, 'BACKUP_USER', None)
-BACKUP_PATH = getattr(secrets, 'BACKUP_PATH', None)
-BACKUP_PASSPHRASE = getattr(secrets, 'BACKUP_PASSPHRASE', None)
+BACKUP_REMOTE_URL = getattr(secrets, 'BACKUP_REMOTE_URL', None)
+BACKUP_KEY_ID = getattr(secrets, 'BACKUP_KEY_ID', None)
+BACKUP_KEY_PASSPHRASE = getattr(secrets, 'BACKUP_KEY_PASSPHRASE', None)
 
 DATE_FORMAT = "D N d Y"
 SHORT_DATE_FORMAT = "N d Y"

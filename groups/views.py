@@ -7,9 +7,10 @@ from grades.models import Activity, all_activities_filter
 from django.shortcuts import render, get_object_or_404
 from groups.forms import ActivityForm, GroupForSemesterForm, StudentForm, GroupNameForm
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib import messages
-from courselib.auth import is_course_staff_by_slug, is_course_student_by_slug, requires_course_by_slug, requires_course_staff_by_slug
+from courselib.auth import is_course_staff_by_slug, is_course_student_by_slug, requires_course_by_slug, \
+    requires_course_staff_by_slug, ForbiddenResponse
 from marking.models import GroupActivityMark, GroupActivityMark_LetterGrade
 from log.models import LogEntry
 from dashboard.models import NewsItem
@@ -22,7 +23,7 @@ def groupmanage(request, course_slug, activity_slug=None):
     elif is_course_student_by_slug(request, course_slug):
         return _groupmanage_student(request, course_slug)
     else:
-        return HttpResponseForbidden()
+        return ForbiddenResponse(request)
 
 def _groupmanage_student(request, course_slug):
     course = get_object_or_404(CourseOffering, slug=course_slug)
@@ -58,7 +59,7 @@ def _groupmanage_student(request, course_slug):
             act_count = defaultdict(int)
             for m in members:
                 act_count[m.activity] += 1
-            bad_act = [act.name for act,count in act_count.items() if count < group_min]
+            bad_act = [act.name for act,count in list(act_count.items()) if count < group_min]
             if bad_act:
                 size_message = 'Groups in this course must have at least %i members: this group doesn\'t for %s.' % (group_min, ', '.join(bad_act))
 
@@ -74,8 +75,8 @@ def _group_info(course, group, members):
     """
     Collect all info about a group we need for display
     """
-    group_min = course.group_min()
-    group_max = course.group_max()
+    group_min = course.group_min() or 1
+    group_max = course.group_max() or 50
 
     gmembers = members.filter(group=group)
     all_act = all_activities(gmembers)
@@ -101,12 +102,12 @@ def _group_info(course, group, members):
     elif group_max and headcount > group_max:
         # total size too large
         size_message = 'Has %i members.' % (headcount)
-    else:
+    elif group_min:
         # check size for each activity
         act_count = defaultdict(int)
         for m in group.groupmember_set.all().select_related('activity'):
             act_count[m.activity] += 1
-        bad_act = [act.name for act,count in act_count.items() if count < group_min]
+        bad_act = [act.name for act,count in list(act_count.items()) if count < group_min]
         if bad_act:
             size_message = 'Too small for %s.' % (', '.join(bad_act))
     return {'group': group, 'activities': all_act, 'unique_members': unique_members, 'memb': members,
@@ -565,7 +566,7 @@ def remove_student(request, course_slug, group_slug):
 
     if request.method == "POST":
         for m in members:
-            f = StudentForm(request.POST, prefix=unicode(m.student.person.userid_or_emplid()) + '_' + m.activity.slug)
+            f = StudentForm(request.POST, prefix=str(m.student.person.userid_or_emplid()) + '_' + m.activity.slug)
             if (is_staff or m.student_editable(request.user.username)=="") \
                 and f.is_valid() and f.cleaned_data['selected'] == True:
             
@@ -587,7 +588,7 @@ def remove_student(request, course_slug, group_slug):
         for m in members:
             editable = m.student_editable(request.user.username)
             if is_staff or editable == "":
-                f = StudentForm(prefix=unicode(m.student.person.userid_or_emplid()) + '_' + m.activity.slug)
+                f = StudentForm(prefix=str(m.student.person.userid_or_emplid()) + '_' + m.activity.slug)
                 data.append({'form': f, 'member': m})
             else:
                 data.append({'form': None, 'member': m, 'reason': editable})

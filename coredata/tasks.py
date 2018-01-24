@@ -28,7 +28,7 @@ def ping(): # used to check that celery is alive
 # (checked by ping_celery management command)
 @periodic_task(run_every=crontab(minute='*/5', hour='*'))
 def beat_test():
-    with file(BEAT_TEST_FILE, 'w') as fh:
+    with open(BEAT_TEST_FILE, 'w') as fh:
         fh.write('Celery beat did things on %s.\n' % (datetime.datetime.now()))
 
 
@@ -60,7 +60,7 @@ def check_sims_connection():
         raise SIMSProblem("Didn't get any data back from SIMS query.")
 
 
-@periodic_task(run_every=crontab(minute='30', hour='15', day_of_week='mon,thu'))
+@periodic_task(run_every=crontab(minute='30', hour='7', day_of_week='mon,thu'))
 def expiring_roles():
     if settings.DO_IMPORTING_HERE:
         Role.warn_expiring()
@@ -92,11 +92,11 @@ def _grouper(iterable, n):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
     args = [iter(iterable)] * n
-    groups = itertools.izip_longest(fillvalue=None, *args)
+    groups = itertools.zip_longest(fillvalue=None, *args)
     return ((v for v in grp if v is not None) for grp in groups)
 
 
-@periodic_task(run_every=crontab(minute='30', hour='16'))
+@periodic_task(run_every=crontab(minute='30', hour='8'))
 def daily_import():
     """
     Start the daily import work.

@@ -6,6 +6,8 @@ from django.utils.translation import ugettext as _
 from coredata.models import Semester, Unit, Person, Role, FuturePerson
 from coredata.forms import PersonField
 from coredata.widgets import CalendarWidget
+from coredata.widgets import DollarInput
+
 
 from faculty.event_types.fields import SemesterCodeField, TeachingCreditField, DollarInput, FractionField, AddSalaryField, AddPayField, AnnualTeachingCreditField
 from faculty.models import CareerEvent
@@ -132,7 +134,7 @@ class MemoTemplateForm(forms.ModelForm):
         try:
             Template(template_text)
         except TemplateSyntaxError as e:
-            raise forms.ValidationError('Syntax error in template: ' + unicode(e))
+            raise forms.ValidationError('Syntax error in template: ' + str(e))
         return template_text
 
 class MemoForm(forms.ModelForm):
@@ -154,7 +156,7 @@ class MemoForm(forms.ModelForm):
         # reorder the fields to the order of the printed memo
         assert isinstance(self.fields, OrderedDict)
         keys = ['to_lines', 'from_lines', 'subject', 'sent_date', 'memo_text', 'cc_lines']
-        keys.extend([k for k in self.fields.keys() if k not in keys])
+        keys.extend([k for k in list(self.fields.keys()) if k not in keys])
 
         field_data = [(k,self.fields[k]) for k in keys]
         self.fields.clear()
@@ -200,7 +202,7 @@ class UnitFilterForm(forms.Form):
     def __init__(self, units, *args, **kwargs):
         super(UnitFilterForm, self).__init__(*args, **kwargs)
         self.multiple_units = len(units) > 1
-        all_units = [(unicode(u.label), unicode(u.informal_name())) for u in units]
+        all_units = [(str(u.label), str(u.informal_name())) for u in units]
         self.fields['category'].choices = [('all', 'All Units')] + all_units
 
 
@@ -219,7 +221,7 @@ class GrantForm(forms.ModelForm):
         self.units = units
         super(GrantForm, self).__init__(*args, **kwargs)
         self.fields['unit'].queryset = Unit.objects.filter(id__in=(u.id for u in units))
-        self.fields['unit'].choices = [(unicode(u.id), unicode(u)) for u in units]
+        self.fields['unit'].choices = [(str(u.id), str(u)) for u in units]
         owners = Person.objects.filter(role__role__in=["ADMN", "FAC", "FUND"], role__unit__in=units).distinct()
         self.fields['owners'].queryset = owners
 
@@ -245,6 +247,7 @@ class AvailableCapacityForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(AvailableCapacityForm, self).__init__(*args, **kwargs)
+        self.data = dict(self.data)
         if 'start_semester' not in self.data:
             self.data['start_semester'] = ReportingSemester.current().prev().prev().code
         if 'end_semester' not in self.data:
@@ -268,7 +271,7 @@ class CourseAccreditationForm(forms.Form):
     def __init__(self, *args, **kwargs):
         flags = kwargs.pop('flags', [])
         super(CourseAccreditationForm, self).__init__(*args, **kwargs)
-
+        self.data = dict(self.data)
         if 'start_semester' not in self.data:
             self.data['start_semester'] = Semester.current().name
         if 'end_semester' not in self.data:
@@ -364,6 +367,7 @@ class PositionPersonForm(forms.Form):
         return super(PositionPersonForm, self).is_valid(*args, **kwargs)
 
 
+
 class FuturePersonForm(forms.ModelForm):
     first_name = forms.CharField(max_length=32)
     last_name = forms.CharField(max_length=32)
@@ -373,7 +377,7 @@ class FuturePersonForm(forms.ModelForm):
     email = forms.EmailField(required=False)
     sin = forms.CharField(required=False, max_length=9, label='SIN')
     birthdate = forms.DateField(required=False, label='Date of Birth')
-    gender = forms.ChoiceField((
+    gender = forms.ChoiceField(choices=(
             ('M', 'Male'),
             ('F', 'Female'),
             ('U', 'Unknown')),

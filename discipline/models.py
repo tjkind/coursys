@@ -4,7 +4,7 @@ from grades.models import Activity
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.mail import EmailMessage, EmailMultiAlternatives
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.template.loader import render_to_string
 from autoslug import AutoSlugField
 from django.utils.text import wrap
@@ -31,15 +31,15 @@ INSTR_PENALTY_CHOICES = (
         ('WARN', 'give the student a written warning'),
         ('REDO', 'require the student to redo the work, or to do supplementary work'),
         ('MARK', 'assign a low grade for the work'),
-        ('ZERO', u'assign a grade of \u201CF\u201D or zero for the work'),
+        ('ZERO', 'assign a grade of \u201CF\u201D or zero for the work'),
         )
 CHAIR_PENALTY_CHOICES = (
         ('WAIT', 'penalty not yet assigned'),
         ('NONE', 'no further penalty assigned'),
         ('REPR', 'formal reprimand to the student'),
         ('GRAD', 'grade penalty less severe than failure'),
-        ('F', u'grade of \u201CF\u201D in the course'),
-        ('FD', u'grade of \u201CFD\u201D in the course'),
+        ('F', 'grade of \u201CF\u201D in the course'),
+        ('FD', 'grade of \u201CFD\u201D in the course'),
         ('OTHE', 'other penalty: see rationale'),
         )
 LETTER_CHOICES = (
@@ -177,12 +177,12 @@ class DisciplineGroup(models.Model):
     """
     name = models.CharField(max_length=60, blank=False, null=False, verbose_name="Cluster Name",
             help_text='An arbitrary "name" for this cluster of cases')
-    offering = models.ForeignKey(CourseOffering, help_text="The course this cluster is associated with")
+    offering = models.ForeignKey(CourseOffering, help_text="The course this cluster is associated with", on_delete=models.PROTECT)
     def autoslug(self):
         return make_slug(self.name)
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with='offering')
     
-    def __unicode__(self):
+    def __str__(self):
         return "%s in %s" % (self.name, self.offering)
     def get_absolute_url(self):
         return reverse('offering:discipline:showgroup', kwargs={'course_slug': self.offering.slug, 'group_slug': self.slug})
@@ -206,18 +206,18 @@ class DisciplineCaseBase(models.Model):
 
         return self
     
-    owner = models.ForeignKey(Person, help_text="The person who created/owns this case.")
-    offering = models.ForeignKey(CourseOffering)
+    owner = models.ForeignKey(Person, help_text="The person who created/owns this case.", on_delete=models.PROTECT)
+    offering = models.ForeignKey(CourseOffering, on_delete=models.PROTECT)
     notes = models.TextField(blank=True, null=True, verbose_name="Private Notes", help_text='Notes about the case (private notes, '+TEXTILENOTE+').')
     notes_public = models.TextField(blank=True, null=True, verbose_name="Public Notes", help_text='Notes about the case (public notes, '+TEXTILENOTE+').')
     def autoslug(self):
         return self.student.userid
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with='offering')
-    group = models.ForeignKey(DisciplineGroup, null=True, blank=True, help_text="Cluster this case belongs to (if any).")
+    group = models.ForeignKey(DisciplineGroup, null=True, blank=True, help_text="Cluster this case belongs to (if any).", on_delete=models.PROTECT)
     
 
     contact_email_text = models.TextField(blank=True, null=True, verbose_name="Contact Email Text",
-            help_text=u'The initial email sent to the student regarding the case. Please also note the date of the email. ('+TEXTILEONLYNOTE+'.)')
+            help_text='The initial email sent to the student regarding the case. Please also note the date of the email. ('+TEXTILEONLYNOTE+'.)')
     contacted = models.CharField(max_length=4, choices=CONTACT_CHOICES, default="NONE", verbose_name="Student Contacted?",
             help_text='Has the student been informed of the case?')
     contact_date = models.DateField(blank=True, null=True, verbose_name="Initial Contact Date", help_text='Date of initial contact with student regarding the case.')
@@ -283,7 +283,7 @@ class DisciplineCaseBase(models.Model):
             help_text="Student Services' notes about the case (private notes, "+TEXTILENOTE+')')
     """
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
     def get_absolute_url(self):
@@ -517,7 +517,7 @@ class DisciplineCaseInstr(DisciplineCaseBase):
         email.send(fail_silently=False)
 
 class DisciplineCaseInstrStudent(DisciplineCaseInstr):
-    student = models.ForeignKey(Person, help_text="The student this case concerns.")
+    student = models.ForeignKey(Person, help_text="The student this case concerns.", on_delete=models.PROTECT)
     def is_in_course(self):
         return True
     
@@ -607,10 +607,10 @@ class DisciplineCaseChair(DisciplineCaseBase):
     """
     An chair's case
     """
-    instr_case = models.ForeignKey(DisciplineCaseInstr, help_text="The instructor's case that triggered this case")
+    instr_case = models.ForeignKey(DisciplineCaseInstr, help_text="The instructor's case that triggered this case", on_delete=models.PROTECT)
 
 class DisciplineCaseChairStudent(DisciplineCaseChair):
-    student = models.ForeignKey(Person, help_text="The student this case concerns.")
+    student = models.ForeignKey(Person, help_text="The student this case concerns.", on_delete=models.PROTECT)
     def is_in_course(self):
         return True
     def student_userid(self):
@@ -652,11 +652,11 @@ class RelatedObject(models.Model):
     """
     Another object within the system that is related to this case: private for instructor
     """
-    case = models.ForeignKey(DisciplineCaseBase)
+    case = models.ForeignKey(DisciplineCaseBase, on_delete=models.PROTECT)
     name = models.CharField(max_length=255, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     # front-end handles adding some types of content_object, but can handle
@@ -675,7 +675,7 @@ class CaseAttachment(models.Model):
     A piece of evidence to attach to a case
     """
 
-    case = models.ForeignKey(DisciplineCaseBase)
+    case = models.ForeignKey(DisciplineCaseBase, on_delete=models.PROTECT)
     name = models.CharField(max_length=150, blank=True, null=True, verbose_name="Name", help_text="Identifying name for the attachment")
     attachment = models.FileField(upload_to=_disc_upload_to, max_length=500, verbose_name="File", storage=UploadedFileStorage)
     mediatype = models.CharField(null=True, blank=True, max_length=200)
@@ -695,7 +695,7 @@ class DisciplineTemplate(models.Model):
     """
     A text template to help fill in a field in this app.
     """
-    field = models.CharField(max_length=30, null=False, choices=TEMPLATE_FIELDS.items(),
+    field = models.CharField(max_length=30, null=False, choices=list(TEMPLATE_FIELDS.items()),
             verbose_name="Field", help_text="The field this template applies to")
     label = models.CharField(max_length=50, null=False,
             verbose_name="Label", help_text="A short label for the menu of templates")
@@ -704,7 +704,7 @@ class DisciplineTemplate(models.Model):
     class Meta:
         unique_together = (("field", "label"),)
         ordering = ('field', 'label')
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s" % (self.field, self.label)
     def JSON_data(self):
         """

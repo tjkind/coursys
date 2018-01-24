@@ -5,7 +5,7 @@ from django import forms
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.forms.models import ModelForm
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 import datetime
 
@@ -53,20 +53,8 @@ class EditArtifactNoteForm(forms.ModelForm):
                 'text': forms.Textarea(attrs={'cols': TEXT_WIDTH, 'rows': 15})
                 }
 
-class StudentSelect(forms.Select):
-    input_type = 'text'
-
-    def render(self, name, value, attrs=None):
-        """
-        Render for jQueryUI autocomplete widget
-        """
-        if value is None:
-            value = ''
-        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
-        if value != '':
-            # Only add the 'value' attribute if a value is non-empty.
-            final_attrs['value'] = force_unicode(value)
-        return mark_safe(u'<input%s />' % forms.widgets.flatatt(final_attrs))
+class StudentSelect(forms.TextInput):
+    pass
 
 
 class StudentField(forms.ModelChoiceField):
