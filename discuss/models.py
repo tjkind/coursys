@@ -42,7 +42,8 @@ def _time_delta_to_string(time):
         return '%d days ago' % days
     else:
         return time.strftime('%b %d, %Y')
-    
+
+
 class DiscussionTopic(models.Model):
     """
     A topic (thread) associated with a CourseOffering

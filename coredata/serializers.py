@@ -39,6 +39,12 @@ class CourseOfferingSerializer(ShortCourseOfferingSerializer):
             'lookup_field': 'slug',
             'lookup_url_kwarg': 'course_slug',
         },
+        {
+            'label': 'discussion',
+            'view_name': 'api:DiscussionTopics',
+            'lookup_field': 'slug',
+            'lookup_url_kwarg': 'course_slug',
+        },
     ]
     url = serializers.ReadOnlyField(help_text='course homepage URL, if set by instructor')
     instructors = serializers.SerializerMethodField()

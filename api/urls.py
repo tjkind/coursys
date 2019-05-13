@@ -4,12 +4,16 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from oauth_provider.urls import urlpatterns as oauth_patterns
 
 from rest_framework_swagger.views import get_swagger_view
-from courselib.urlparts import COURSE_SLUG, ACTIVITY_SLUG
+from courselib.urlparts import COURSE_SLUG, ACTIVITY_SLUG, SLUG_RE
 from api.api_views import APIRoot
 from coredata.api_views import MyOfferings, OfferingInfo
 from grades.api_views import OfferingActivities, OfferingGrades, OfferingStats, OfferingStudents
 from submission.api_views import ActivitySubmissions
 from marking.api_views import MarkingDetails
+from discuss.api_views import DiscussionTopics, DiscussionMessages
+
+TOPIC_SLUG = '(?P<topic_slug>' + SLUG_RE + ')'
+
 
 endpoint_v1_patterns = [
     url(r'^offerings/$', MyOfferings.as_view(), name='MyOfferings'),
@@ -22,7 +26,10 @@ endpoint_v1_patterns = [
         name='ActivitySubmissions'),
     #url(r'^offerings/' + COURSE_SLUG + '/marking/' + ACTIVITY_SLUG, MarkingDetails.as_view(),
     #    name='api.MarkingDetails'),
-
+    url(r'^offerings/' + COURSE_SLUG + '/discussion$', DiscussionTopics.as_view(),
+        name='DiscussionTopics'),
+    url(r'^offerings/' + COURSE_SLUG + '/discussion/' + TOPIC_SLUG, DiscussionMessages.as_view(),
+        name='DiscussionMessages'),
 ]
 endpoint_v1_patterns = format_suffix_patterns(endpoint_v1_patterns)
 schema_view = get_swagger_view(title='CourSys API')
