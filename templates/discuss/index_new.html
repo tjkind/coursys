@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ offering.subject }} {{ offering.number }} Discussion{% endblock %}
+{% block h1 %}{{ offering.subject }} {{ offering.number }} Discussion{% endblock %}
+
+{% block headextra %}
+<script nonce="{{ CSP_NONCE }}">
+var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slug %}";
+</script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1/dist/vue-resource.js" referrerpolicy="no-referrer"></script>
+<script src="{% static "js/discussion.js" %}"></script>
+{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url 'offering:course_info' course_slug=offering.slug %}">{{ offering.name }}</a></li>
+<li>Discussion</li>
+{% endblock %}
+
+
+{% block content %}
+
+<div id="discussion-container">{% verbatim vue %}
+
+{% endverbatim vue %}</div>
+
+{% endblock %}

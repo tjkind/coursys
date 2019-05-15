@@ -240,3 +240,21 @@ def manage_discussion_subscription(request, course_slug):
 
     context = {'course':course, 'form': form}
     return render(request, 'discuss/manage_discussion_subscription.html', context)
+
+
+@uses_feature('discuss')
+@login_required
+def index(request, course_slug):
+    """
+    Index page to view all discussion topics
+    """
+    offering, view = _get_course_and_view(request, course_slug)
+    if view is None:
+        # offering is an HttpResponse in this case
+        return offering
+    #topics = DiscussionTopic.objects.filter(offering=offering).order_by('-pinned', '-last_activity_at')
+
+    context = {
+        'offering': offering,
+    }
+    return render(request, 'discuss/index_new.html', context)
