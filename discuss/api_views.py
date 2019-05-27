@@ -11,7 +11,7 @@ class DiscussionTopics(generics.ListAPIView):
 
     def get_queryset(self):
         # TODO: honour hidden status
-        topics = DiscussionTopic.objects.filter(offering=self.offering).order_by('-pinned', '-last_activity_at')
+        topics = DiscussionTopic.objects.filter(offering=self.offering).order_by('-pinned', '-last_activity_at').select_related('author__person')
         return topics
 
 

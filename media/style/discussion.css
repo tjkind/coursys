@@ -1,0 +1,21 @@
+#discussion-container {
+    display: grid;
+    grid-template-columns: [topics] 15em [body] auto;
+    grid-template-rows: 2;
+}
+#discussion-topics {
+    grid-column: topics;
+    grid-row: span 2;
+    background: #eee;
+    padding: 0.5em;
+    margin-right: 1em;
+}
+#main-topic {
+
+}
+#discussion-replies {
+
+}
+#discussion-replies>li {
+    border: #eee 1px solid;
+}

@@ -8,13 +8,17 @@ class DiscussionTopicSerializer(serializers.ModelSerializer):
     content_html = serializers.SerializerMethodField()
     math = serializers.SerializerMethodField()
     link = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = DiscussionTopic
-        fields = ('title', 'content_html', 'pinned', 'last_activity_at', 'author', 'created_at', 'math', 'link')
+        fields = ('title', 'content_html', 'pinned', 'last_activity_at', 'author', 'created_at', 'math', 'link', 'slug')
 
     def get_content_html(self, topic):
         return topic.html_content()
+
+    def get_author(self, topic):
+        return topic.author.person.name()
 
     def get_math(self, topic):
         return topic.math()
@@ -33,7 +37,7 @@ class DiscussionMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DiscussionMessage
-        fields = ('content_html', 'math')
+        fields = ('content_html', 'math', 'slug')
 
     def get_content_html(self, msg):
         return msg.html_content()

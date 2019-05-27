@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base-wide.html" %}
 {% load static %}
 
 {% block title %}{{ offering.subject }} {{ offering.number }} Discussion{% endblock %}
@@ -8,9 +8,10 @@
 <script nonce="{{ CSP_NONCE }}">
 var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slug %}";
 </script>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1/dist/vue-resource.js" referrerpolicy="no-referrer"></script>
-<script src="{% static "js/discussion.js" %}"></script>
+{% include 'pages/markup_view_head.html' %}
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js" integrity="sha384-9u9lzb/hr8e14GLHe5TEOrTiH3Qtw5DX2Zw9X/g7cqj81W2McEMx5CKOszxdb8jg" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1/dist/vue-resource.js" integrity="sha384-iY48mspuUJ7KyIglN9JjM9stxRtuoz9/UMA9Ffe2uluL8ej5FjNsCxj4XNYv866H" crossorigin="anonymous" referrerpolicy="no-referrer"></script><script src="{% static "js/discussion.js" %}"></script>
+<link rel="stylesheet" href="{% static 'style/discussion.css' %}" />
 {% endblock %}
 
 {% block subbreadcrumbs %}
@@ -22,7 +23,9 @@ var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slu
 {% block content %}
 
 <div id="discussion-container">{% verbatim vue %}
-
+    <discussion-topic-list v-bind:topics="topics"></discussion-topic-list>
+    <discussion-topic-main v-bind:topic="current_topic" v-if="current_topic !== null"></discussion-topic-main>
+    <discussion-topic-replies v-bind:replies="current_replies"></discussion-topic-replies>
 {% endverbatim vue %}</div>
 
 {% endblock %}
