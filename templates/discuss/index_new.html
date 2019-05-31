@@ -7,10 +7,13 @@
 {% block headextra %}
 <script nonce="{{ CSP_NONCE }}">
 var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slug %}";
+var discussion_base_url = "{% url 'offering:discussion:discussion_index' course_slug=offering.slug %}";
 </script>
 {% include 'pages/markup_view_head.html' %}
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js" integrity="sha384-9u9lzb/hr8e14GLHe5TEOrTiH3Qtw5DX2Zw9X/g7cqj81W2McEMx5CKOszxdb8jg" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1/dist/vue-resource.js" integrity="sha384-iY48mspuUJ7KyIglN9JjM9stxRtuoz9/UMA9Ffe2uluL8ej5FjNsCxj4XNYv866H" crossorigin="anonymous" referrerpolicy="no-referrer"></script><script src="{% static "js/discussion.js" %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js" integrity="sha256-chlNFSVx3TdcQ2Xlw7SvnbLAavAQLO0Y/LBiWX04viY=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/1.5.1/vue-resource.min.js" integrity="sha256-e9WxLR4DOP5XKMT4mflXVovZS4mVdiMkAFSDHF+6q80=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.0.6/vue-router.min.js" integrity="sha256-qWbGRKQmk3YxNsJymjkEIgwndQnomEoGwoe9wOy13r4=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{% static "js/discussion.js" %}"></script>
 <link rel="stylesheet" href="{% static 'style/discussion.css' %}" />
 {% endblock %}
 
@@ -18,7 +21,6 @@ var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slu
 <li><a href="{% url 'offering:course_info' course_slug=offering.slug %}">{{ offering.name }}</a></li>
 <li>Discussion</li>
 {% endblock %}
-
 
 {% block content %}
 

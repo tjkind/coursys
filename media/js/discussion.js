@@ -1,23 +1,7 @@
 var app;
 
-function set_current_topic(topic) {
-    app.current_topic = topic;
-    app.$http.get(topic.link, {}).then(response => {
-        app.current_replies = response.body;
-    }, response => {});
-}
-
-function update_topics() {
-    app.$http.get(discussion_api_url, {}).then(response => {
-        app.topics = response.body;
-        if ( response.body.length > 0 ) {
-            set_current_topic(response.body[0]); // TODO: actually display the current topic
-        }
-    }, response => {this.topics = [];});
-}
-
-function discussion_setup() {
-
+function create_components() {
+    // build the various Vue components that we'll need
     Vue.component('discussion-topic-list', {
         props: ['topics'],
         template: '<ul id="discussion-topics"><discussion-topic-listed v-for="topic in topics" v-bind:topic="topic" v-bind:key="topic.slug"></discussion-topic-listed></ul>'
@@ -25,24 +9,19 @@ function discussion_setup() {
 
     Vue.component('discussion-topic-listed', {
         props: ['topic'],
-        template: '<li>{{ topic.title }}, {{ topic.author }}</li>'
+        template: '<li><a v-on:click="set_current_topic(topic)" href="#">{{ topic.title }}</a>, {{ topic.author }}</li>'
+        // TODO: use vue-router and have useful URLs
     });
 
-    Vue.component('discussion-topic-main', {
+    const main_topic = Vue.component('discussion-topic-main', {
         props: ['topic'],
         template:
             '<section id="main-topic"><h2>{{ topic.title }}</h2>' +
             '<div id="discussion-topic-content" v-html="topic.content_html"' +
             '  v-bind:class="{ tex2jax_process: topic.math, tex2jax_ignore: !topic.math }"></div>' +
             '</section>',
-        mounted: function () {
-            this.$nextTick(function () {
-                if ( this.topic.math ) {
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, this.$el]);
-                }
-                highlight_in($(this.$el));
-            })
-        }
+        mounted: function () { update_display(this, this.topic.math); },
+        updated: function () { update_display(this, this.topic.math); }
     });
 
     Vue.component('discussion-topic-replies', {
@@ -58,25 +37,63 @@ function discussion_setup() {
         props: ['reply'],
         template: '<div class="discussion-reply-content" v-html="reply.content_html"' +
             '  v-bind:class="{ tex2jax_process: reply.math, tex2jax_ignore: !reply.math }"></div>',
-        mounted: function () {
-            this.$nextTick(function () {
-                if ( this.reply.math ) {
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, this.$el]);
-                }
-                highlight_in($(this.$el));
-            });
-        }
+        mounted: function () { update_display(this, this.reply.math); },
+        updated: function () { update_display(this, this.reply.math); }
     });
+
+    const blank = Vue.component('blank', {
+        props: [],
+        template: '<p>nil</p>'
+    });
+
+    const router = new VueRouter({
+        routes: [
+            { path: '/', component: blank },
+            { path: '/:topic', component: main_topic }
+            ]
+    });
+
+    return router;
+}
+
+function set_current_topic(topic) {
+    app.current_topic = topic;
+    app.$http.get(topic.link, {}).then(response => {
+        app.current_replies = response.body;
+    }, response => {});
+}
+
+function update_topics() {
+    app.$http.get(discussion_api_url, {}).then(response => {
+        app.topics = response.body;
+        //if ( response.body.length > 0 ) {
+        //    set_current_topic(response.body[0]); // TODO: actually display the current topic
+        //}
+    }, response => {this.topics = [];});
+}
+
+function update_display(component, math) {
+    component.$nextTick(function () {
+        if (math) {
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, component.$el]);
+        }
+        highlight_in($(component.$el));
+    });
+}
+
+function discussion_setup() {
+    const router = create_components();
 
     app = new Vue({
         el: '#discussion-container',
+        //router,
         data: {
             topics: [],
             current_topic: null,
             current_replies: [],
         }
     });
-
     update_topics();
+    //router.push('/');
 }
 $(document).ready(discussion_setup);
