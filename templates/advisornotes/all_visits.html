@@ -39,7 +39,7 @@ $(function() {
 {% block content %}
 
 {% if visits %}
-    <div id="messages"><ul><li class="warning">Only showing up to the last 1000 visits due to database limitations.</li></ul></div>
+    <div id="messages"><ul><li class="warning">Only showing up to the last 5000 visits due to database limitations.</li></ul></div>
 <table class="display visits">
     <thead>
         <tr>
@@ -56,8 +56,8 @@ $(function() {
     <tbody>
         {% for visit in visits %}
         <tr>
-            <td>{{ visit.created_at }}</td>
-            <td>{{ visit.end_time }}</td>
+            <td><span class="sort">{{ visit.created_at.isoformat }}</span>{{ visit.created_at }}</td>
+            <td><span class="sort">{{ visit.end_time.isoformat }}</span>{{ visit.end_time }}</td>
             <td>{{ visit.get_duration }}</td>
             <td>{{ visit.get_campus_display }}</td>
             <td>
@@ -81,26 +81,23 @@ $(function() {
                     </button>
                 </form>
                 {% endif %}
-                <form class="lineform" method="GET"
-                    action="{% url "advising:view_visit" visit_slug=visit.slug %}">
+                <a class="lineform" href="{% url "advising:view_visit" visit_slug=visit.slug %}">
                     <button type='submit' class='btn' title="View visit">
                         <i class='fa fa-eye'></i>
                     </button>
-                </form>
+                </a>
                 {% if mine %}
-                <form class="lineform" method="GET"
-                    action="{% url "advising:edit_visit_subsequent" visit_slug=visit.slug %}">
+                <a class="lineform" href="{% url "advising:edit_visit_subsequent" visit_slug=visit.slug %}">
                     <button type='submit' class='btn' title="Edit visit">
                         <i class='fa fa-edit'></i>
                     </button>
-                </form>
+                </a>
                 {% elif admin %}
-                <form class="lineform" method="GET"
-                    action="{% url "advising:edit_visit_admin" visit_slug=visit.slug %}">
+                <a class="lineform" href="{% url "advising:edit_visit_admin" visit_slug=visit.slug %}">
                     <button type='submit' class='btn' title="Edit visit">
                         <i class='fa fa-edit'></i>
                     </button>
-                </form>
+                </a>
                 {% endif %}
                 {% if mine and not visit.end_time %}
                 <form class="lineform" method="POST" action="{% url "advising:end_visit_mine" visit_slug=visit.slug %}">

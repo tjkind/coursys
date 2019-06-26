@@ -13,6 +13,7 @@ from coredata.queries import more_personal_info, SIMSProblem
 from courselib.auth import requires_role, has_role, ForbiddenResponse, user_passes_test
 from courselib.search import find_userid_or_emplid, get_query
 from grad.models import GradStudent, Scholarship
+from visas.models import Visa
 from log.models import LogEntry
 from dashboard.letters import ra_form, OfficialLetter, LetterContents
 from django import forms
@@ -516,7 +517,7 @@ class RADataJson(BaseDatatableView):
         srch = GET.get('sSearch', None)
         if srch:
             # get RA set from haystack, and use it to limit our query.
-            ra_qs = SearchQuerySet().models(RAAppointment).filter(text=srch)[:500]
+            ra_qs = SearchQuerySet().models(RAAppointment).filter(text__fuzzy=srch)[:500]
             ra_qs = [r for r in ra_qs if r is not None]
             if ra_qs:
                 # ignore very low scores: elasticsearch grabs too much sometimes
@@ -646,6 +647,29 @@ def person_info(request):
         except SIMSProblem as e:
             result['error'] = str(e)
 
+    return HttpResponse(json.dumps(result), content_type='application/json;charset=utf-8')
+
+
+@requires_role("FUND")
+def person_visas(request):
+    """
+    Get info on this person's current visas, for info in the new RA appointment form.
+    """
+    result = {'visas': []}
+    emplid = request.GET.get('emplid', None)
+    if not emplid or not emplid.isdigit() or len(emplid) != 9:
+        pass
+    else:
+        visas = []
+        personvisas = Visa.objects.visible().filter(person__emplid=emplid, unit__in=request.units)
+        for v in personvisas:
+            if v.is_current():
+                data = {
+                    'start': v.start_date.isoformat(),
+                    'status': v.status,
+                }
+                visas.append(data)
+        result['visas'] = visas
     return HttpResponse(json.dumps(result), content_type='application/json;charset=utf-8')
 
 
