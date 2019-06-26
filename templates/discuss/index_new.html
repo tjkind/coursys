@@ -1,5 +1,5 @@
 {% extends "base-wide.html" %}
-{% load static %}
+{% load static %}{% load compress %}
 
 {% block title %}{{ offering.subject }} {{ offering.number }} Discussion{% endblock %}
 {% block h1 %}{{ offering.subject }} {{ offering.number }} Discussion{% endblock %}
@@ -10,10 +10,12 @@ var discussion_api_url = "{% url 'api:DiscussionTopics' course_slug=offering.slu
 var discussion_base_url = "{% url 'offering:discussion:discussion_index' course_slug=offering.slug %}";
 </script>
 {% include 'pages/markup_view_head.html' %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js" integrity="sha256-chlNFSVx3TdcQ2Xlw7SvnbLAavAQLO0Y/LBiWX04viY=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/1.5.1/vue-resource.min.js" integrity="sha256-e9WxLR4DOP5XKMT4mflXVovZS4mVdiMkAFSDHF+6q80=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.0.6/vue-router.min.js" integrity="sha256-qWbGRKQmk3YxNsJymjkEIgwndQnomEoGwoe9wOy13r4=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="{% static "js/discussion.js" %}"></script>
+{% compress js %}
+<script src="{% static 'vue/dist/vue.min.js' %}"></script>
+<script src="{% static 'vue-resource/dist/vue-resource.min.js' %}"></script>
+<script src="{% static 'vue-router/dist/vue-router.min.js' %}"></script>
+<script src="{% static 'js/discussion.js' %}"></script>
+{% endcompress %}
 <link rel="stylesheet" href="{% static 'style/discussion.css' %}" />
 {% endblock %}
 
