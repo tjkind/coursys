@@ -11,9 +11,9 @@ var discussion_base_url = "{% url 'offering:discussion:discussion_index' course_
 </script>
 {% include 'pages/markup_view_head.html' %}
 {% compress js %}
-<script src="{% static 'vue/dist/vue.min.js' %}"></script>
-<script src="{% static 'vue-resource/dist/vue-resource.min.js' %}"></script>
-<script src="{% static 'vue-router/dist/vue-router.min.js' %}"></script>
+<script src="{% static 'vue/dist/vue.js' %}"></script>
+<script src="{% static 'vue-resource/dist/vue-resource.js' %}"></script>
+<script src="{% static 'vue-router/dist/vue-router.js' %}"></script>
 <script src="{% static 'js/discussion.js' %}"></script>
 {% endcompress %}
 <link rel="stylesheet" href="{% static 'style/discussion.css' %}" />

@@ -9,14 +9,13 @@ function create_components() {
 
     Vue.component('discussion-topic-listed', {
         props: ['topic'],
-        template: '<li><a v-on:click="set_current_topic(topic)" href="#">{{ topic.title }}</a>, {{ topic.author }}</li>'
-        // TODO: use vue-router and have useful URLs
+        template: '<li><router-link :to="{ name: \'main_topic\', params: { slug: topic.slug, topic: topic } }">{{ topic.title }}</router-link>, {{ topic.author }}</li>'
     });
 
     const main_topic = Vue.component('discussion-topic-main', {
         props: ['topic'],
         template:
-            '<section id="main-topic"><h2>{{ topic.title }}</h2>' +
+            '<section id="main-topic"><h2>{{ $route.params }}</h2>' +
             '<div id="discussion-topic-content" v-html="topic.content_html"' +
             '  v-bind:class="{ tex2jax_process: topic.math, tex2jax_ignore: !topic.math }"></div>' +
             '</section>',
@@ -47,9 +46,10 @@ function create_components() {
     });
 
     const router = new VueRouter({
+        //mode: 'history',
         routes: [
-            { path: '/', component: blank },
-            { path: '/:topic', component: main_topic }
+            { path: '/', component: blank, name: 'blank' },
+            { path: '/:slug', component: main_topic, name: 'main_topic' }
             ]
     });
 
@@ -85,8 +85,8 @@ function discussion_setup() {
     const router = create_components();
 
     app = new Vue({
+        router: router,
         el: '#discussion-container',
-        //router,
         data: {
             topics: [],
             current_topic: null,
