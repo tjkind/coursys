@@ -923,6 +923,12 @@ INSTR_MODE_CHOICES = [ # from ps_instruct_mode in reporting DB
     ]
 INSTR_MODE = dict(INSTR_MODE_CHOICES)
 
+DISCUSS_VERSION_CHOICES = [
+    ('OLD', 'Older Version'),
+    ('NEW', 'Newest Version'),
+]
+DISCUSS_VERSION = dict(DISCUSS_VERSION_CHOICES)
+
 class CourseOffering(models.Model, ConditionalSaveMixin):
     subject = models.CharField(max_length=8, null=False, db_index=True,
         help_text='Subject code, like "CMPT" or "FAN"')
@@ -948,6 +954,9 @@ class CourseOffering(models.Model, ConditionalSaveMixin):
     wait_tot = models.PositiveSmallIntegerField()
     units = models.PositiveSmallIntegerField(null=True, help_text='The number of credits received by (most?) students in the course')
     course = models.ForeignKey(Course, null=False, on_delete=models.PROTECT)
+
+    # which version of the forums should be used, should switch default to NEW at some points
+    discussion_version = models.CharField(max_length=3, null=False, choices=DISCUSS_VERSION_CHOICES, default='OLD')
 
     # WQB requirement flags
     flags = BitField(flags=OFFERING_FLAG_KEYS, default=0)
