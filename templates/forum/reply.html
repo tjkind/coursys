@@ -1,0 +1,73 @@
+{% load static %}{% load compress %}
+{% block headextra %}
+{% include 'pages/markup_view_head.html' %}
+{% include 'pages/markup_edit_head.html' %}
+<link rel="stylesheet" href="{% static 'style/forum.css' %}" media="all" />
+
+<script nonce="{{ CSP_NONCE }}">
+	$(document).ready(function() {
+        const reply_id = "{{content.reply.id}}"
+		{% if not form.errors %}
+			$("#forum-thread-reply-form").hide();
+			$(`#forum-${reply_id}-reply-form`).hide();
+		{% endif %}
+		{% if form.errors %}
+			$("#thread-reply-toggle").hide();
+			$('html, body').animate({scrollTop: $("#forum-thread-reply-form").offset().top});
+			$("#id_content").focus();
+		{% endif %}
+		$("#thread-reply-toggle").click(function() {
+			$("#thread-reply-toggle").hide();
+			$("#forum-thread-reply-form").show('slide');
+			$('html, body').animate({scrollTop: $(document).height()});
+			$("#id_content").focus();
+		});
+		$(`#${reply_id}-reply-toggle`).click(function() {
+            console.log('hey toria reply id', reply_id)
+			$(`#${reply_id}-reply-toggle`).hide();
+			$(`#forum-${reply_id}-reply-form`).show('slide');
+			$(`#forum-${reply_id}-reply-form > * > input[name=parent_id]`).val(reply_id)
+			$('html, body').animate({scrollTop: $(document).height()});
+		});
+	});
+</script>
+{% endblock %}
+
+{% block content %}
+<div>
+    <div class="forum-reply{% if content.reply.status == 'HID' %} fade-out{% endif %} {% if content.reply.math %}tex2jax_process{% else %}tex2jax_ignore{% endif %}" id="reply-content-{{content.reply.id}}">
+        <p class="reply-author ">
+            <span class="author">{{ content.reply.author.person.name_pref }} ({{content.reply.author.person.userid}})</span>, {{ content.reply.create_at_delta }}
+            {% if content.reply.was_edited %}*{% endif %}
+        </p>
+        {% if content.reply.status != 'HID' %}
+        <div class="forum-content">{{ content.reply.html_content }}</div>
+        <div class="reply-footer"><a href="#" id="{{content.reply.id}}-reply-toggle">Reply to comment</a></div>
+        <div id="forum-{{content.reply.id}}-reply-form">
+            <form action="{% url "offering:forum:view_thread" course_slug=course.slug thread_slug=thread.slug %}" method="post">
+                {% csrf_token %}
+                <div class="forum-thread-reply-errors">
+                    {% for error in form.content.errors %}
+                        <span>{{ error }}</span><br />
+                    {% endfor %}
+                </div>
+                {{ form.parent_id }}
+                {{ form.content }}<p class="helptext">{{form.content.help_text}}</p>
+                <div><input type="submit" value="Reply" /></div>
+            </form>
+        </div>
+        {% else %}
+            <p class="empty">This reply has been removed.</p>
+        {% endif %}
+    </div>
+    {% if content.children|length > 0 %}
+    <div class="fourm-reply-nested">
+        {% for reply in content.children %}
+            {%with content=reply template_name="forum/reply.html" %}
+                {%include template_name%}
+            {%endwith%}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

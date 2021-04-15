@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}{% load compress %}
+
+{% block title %}Discussion: {{ thread.title }}{% endblock %}
+
+{% block headextra %}
+{% include 'pages/markup_view_head.html' %}
+{% include 'pages/markup_edit_head.html' %}
+<link rel="stylesheet" href="{% static 'style/forum.css' %}" media="all" />
+{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url "offering:course_info" course_slug=course.slug %}">{{ course.name }}</a></li>
+<li><a href="{% url "offering:forum:forum_index" course_slug=course.slug %}">Discussion</a></li>
+<li>{{ thread.title }}</li>
+{% endblock %}
+
+{% block content %}
+
+{% if thread.status == 'HID' %}
+<p><span class="warning">This thread is currently hidden and cannot be seen by students.</span></p>
+{% endif %}
+
+<div class="thread-body">
+<p class="forum-author"><span class="author">{{ thread.author.person.name_pref }} ({{ thread.author.person.userid }})</span>, {{ thread.created_at_delta }}.</p>
+
+<div class="forum-content {% if content.math %}tex2jax_process{% else %}tex2jax_ignore{% endif %}" id="thread-content">
+{{ content.reply.html_content }}
+</div>
+</div>
+
+<h2 id="replies">Replies</h2>
+
+	{% if content.children|length_is:0 and thread.status != 'CLO' %}
+	<p class="empty">No replies yet.</p>
+	{% endif %}
+	{% if content.children|length > 0 %}
+	{% for reply in content.children %}
+		{% include "forum/reply.html" with content=reply %}
+   	{% endfor %}
+	{% endif %}
+	{% if thread.status == 'CLO' and view == 'student' %}
+	<p><span class="warning">Replies are currently disabled for this thread.</span></p>
+	{% endif %}
+	{% if thread.status == 'CLO' and view == 'staff' %}
+	<p><span class="warning">Thread is closed. Students may not post replies.</span></p>
+	{% endif %}
+
+
+{% if thread.status != 'CLO' or view == 'staff' %}
+<p><a href="#" id="thread-reply-toggle">Reply to thread</a></p>
+<div id="forum-thread-reply-form">
+	<form action="{% url "offering:forum:view_thread" course_slug=course.slug thread_slug=thread.slug %}" method="post">
+		{% csrf_token %}
+		<div class="forum-thread-reply-errors">
+			{% for error in form.content.errors %}
+			    <span>{{ error }}</span><br />
+			{% endfor %}
+		</div>
+		{{ form.content }}<p class="helptext">{{form.content.help_text}}</p>
+		<div><input type="submit" value="Reply" /></div>
+	</form>
+</div>
+{% endif %}
+
+{% endblock %}
+

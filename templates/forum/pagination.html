@@ -1,0 +1,13 @@
+{% if paginator.num_pages > 1 %}
+<div class="pagination">
+	<ul>
+		{% for p in paginator.page_range %}
+		  {% if p == page %}
+		  <li class="active"><a href="#">{{ p }}</a></li>
+		  {% else %}
+		  <li><a href="?page={{ p }}">{{ p }}</a></li>
+		  {% endif %}
+		{% endfor %}
+	</ul>
+</div>
+{% endif %}

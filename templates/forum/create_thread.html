@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load form_display %}
+{% load static %}
+{% block title %}{{ course.subject }} {{ course.number }} Discussion{% endblock %}
+{% block h1 %}{{ course.subject }} {{ course.number }} Discussion{% endblock %}
+
+{% block headextra %}
+{% include 'pages/markup_edit_head.html' %}
+{% endblock %}
+
+{% block subbreadcrumbs %}
+<li><a href="{% url "offering:course_info" course_slug=course.slug %}">{{ course.name }}</a></li>
+<li><a href="{% url "offering:forum:forum_index" course_slug=course.slug %}">Discussion</a></li>
+<li>New Thread</li>
+{% endblock %}
+
+{% block content %}
+<div class="form_container">
+	<form action="{% url "offering:forum:create_thread" course_slug=course.slug %}" method="post" class="close-warn">{% csrf_token %}
+		<fieldset>
+			<legend>New Discussion Thread</legend>
+			{{ form|as_dl_safe }}
+			<p><input class="submit" type="submit" value="Post" /></p>
+		</fieldset>
+	</form>
+</div>
+{% endblock %}
