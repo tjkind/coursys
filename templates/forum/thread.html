@@ -27,6 +27,10 @@
 <div class="forum-content {% if content.math %}tex2jax_process{% else %}tex2jax_ignore{% endif %}" id="thread-content">
 {{ content.reply.html_content }}
 </div>
+<div class="thread-footer">
+	{% if thread.status == 'ANS' %}<i class="fa fa-check" title="Answered"></i>
+	{% elif thread.thread_type == 'QUT'%}<i class="fa fa-question-circle" title="Question Type"></i>{% endif %}
+</div>
 </div>
 
 <h2 id="replies">Replies</h2>

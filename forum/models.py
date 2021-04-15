@@ -20,6 +20,11 @@ THREAD_STATUSES = (
                   ('HID', 'Hidden'),
                   )
 
+THREAD_TYPES = [
+    ('DFT', 'Default'),
+    ('QUT', 'Question'),
+]
+
 def _time_delta_to_string(time):
     td = datetime.datetime.now() - time
     days, hours, minutes, seconds = td.days, td.seconds / 3600, (td.seconds / 60) % 60, td.seconds
@@ -54,6 +59,8 @@ class ForumThread(models.Model):
     reply_count = models.IntegerField(default=0)
     status = models.CharField(max_length=3, choices=THREAD_STATUSES, default='OPN', help_text="The thread status: Closed: no replies allowed, Hidden: cannot be seen")
     author = models.ForeignKey(Member, on_delete=models.PROTECT)
+    thread_type = models.CharField(max_length=3, choices=THREAD_TYPES, default='DFT', help_text="The thread types: Default: No additional behaviour, Question: Request an instructor answer")
+
     def autoslug(self):
         return make_slug(self.title)
     slug = AutoSlugField(populate_from='autoslug', null=False, editable=False, unique_with=['offering'])

@@ -2,6 +2,7 @@
   max-width: 600px;
   padding: .6em;
   margin-top: 0.5em;
+  border: 2px solid #eee;
 }
 .forum-thread h3 {
   margin-top: 0.15em;
@@ -23,6 +24,9 @@
   border: 2px solid #eee;
   padding: 0.5em;
 }
+.thread-footer > i{
+	color: #a6192e;
+  }
 .forum-thread-content *:last-child {
   margin-bottom: 0;
 }

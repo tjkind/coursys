@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{{STATIC_URL}}style/forum.css" media="all" />
 <script nonce="{{ CSP_NONCE }}">
 	$(document).ready(function() {
-		$('.discussion-thread-title').hover(function() {
+		$('.forum-thread-title').hover(function() {
 			$(this).parent().addClass('discussion-highlight');
 		}, function() {
 			$(this).parent().removeClass('discussion-highlight');
@@ -36,10 +36,13 @@
 {% include 'forum/pagination.html' with paginator=paginator page=page %}
 {% for thread in threads.object_list %}
 {% if thread.status != 'HID' or view == 'staff' %}
-<div class="discussion-thread{% if thread.status == 'HID' %} fade-out{% endif %}" id="thread-{{ thread.pk }}">
+<div class="forum-thread{% if thread.status == 'HID' %} fade-out{% endif %}" id="thread-{{ thread.pk }}">
 	<h3><a href="{% url "offering:forum:view_thread" course_slug=course.slug thread_slug=thread.slug %}">
-		{% if thread.status == 'ANS' %}<i class="fa fa-check" title="Answered"></i>{% endif %}
 		{{ thread.title }}
+		<span class="last">
+			{% if thread.status == 'ANS' %}<i class="fa fa-check" title="Answered"></i>
+			{% elif thread.thread_type == 'QUT'%}<i class="fa fa-question-circle" title="Question Type"></i>{% endif %}
+		</span>
 	</a></h3>
 	<div>
 		<span class="author">{{ thread.author.person.name }} ({{thread.author.person.userid}})</span>

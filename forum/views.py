@@ -143,6 +143,7 @@ def view_thread(request, course_slug, thread_slug):
         form = ForumReplyForm()
         replies = ForumReply.objects.filter(thread=thread, parent__isnull=False).order_by('created_at')
         organized_replies=organize_replies(content, replies)
+
     context = {'course': course, 'thread': thread, 'content': organized_replies, 'view': view, 'form': form,
                'username': request.user.username}
     return render(request, 'forum/thread.html', context)
