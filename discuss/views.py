@@ -18,7 +18,7 @@ def _get_course_and_view(request, course_slug):
     Validates the request and returns the course object and view perspective ('student', 'staff')
     """
     course = get_object_or_404(CourseOffering, slug=course_slug)
-    if not course.discussion():
+    if not course.discussion() or course.discussion_version == 'NEW':
         raise Http404
     if is_course_student_by_slug(request, course_slug):
         return course, 'student'

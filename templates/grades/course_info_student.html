@@ -13,7 +13,7 @@
 	{% if any_group %}<li><a href="{% url "offering:groups:groupmanage" course_slug=course.slug %}">Manage Groups</a></li>{% endif %}
 	{% if course.discussion %}
     <li>
-    	<a href="{% url "offering:discussion:discussion_index" course_slug=course.slug %}">
+        <a href="{% if course.discussion_version == "OLD" %}{% url "offering:discussion:discussion_index" course_slug=course.slug %}{% else %}{% url "offering:forum:forum_index" course_slug=course.slug %}{% endif %}">
     		Course Discussion
     		{% if discussion_activity %}
             <i class="fa fa-comments infomessage"></i>

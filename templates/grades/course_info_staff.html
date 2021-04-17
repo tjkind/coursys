@@ -55,7 +55,7 @@ $(document).ready(function() {
 	<li><a href="{% url "offering:course_config" course_slug=course.slug %}"><i class="fa fa-li fa-wrench"></i> Edit Course Setup</a></li>
         <li><a href="{% url "offering:activity_choice" course_slug=course.slug %}"><i class="fa fa-li fa-plus"></i>Add Activity</a></li>
         {% if course.discussion %}
-        <li><a href="{% url "offering:discussion:discussion_index" course_slug=course.slug %}"><i class="fa fa-li fa-comment-o"></i> Course Discussion
+            <li><a href="{% if course.discussion_version == "OLD" %}{% url "offering:discussion:discussion_index" course_slug=course.slug %}{% else %}{% url "offering:forum:forum_index" course_slug=course.slug %}{% endif %}"><i class="fa fa-li fa-comment-o"></i> Course Discussion
         	{% if discussion_activity %}<i class="fa fa-comments infomessage"></i>{% endif %}
         	</a></li>
         {% endif %}
