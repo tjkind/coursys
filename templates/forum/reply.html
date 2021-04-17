@@ -35,9 +35,9 @@
         </td><td class="last">
                 {% if thread.endorsed_answer == reply %}<span>
                     Endorsed By: {{thread.endorsed_by.person.userid}}
-                    <a class="fa fa-times" title="Remove Endorsement" href="{% url "offering:forum:unendorse_reply" course_slug=course.slug thread_slug=thread.slug %}"></a>
+                    {% if view == 'staff' %}<a class="fa fa-times" title="Remove Endorsement" href="{% url "offering:forum:unendorse_reply" course_slug=course.slug thread_slug=thread.slug %}"></a>{% endif %}
                 </span>
-                {% else %}
+                {% elif view == 'staff' %}
                     <a href="{% url "offering:forum:endorse_reply" course_slug=course.slug thread_slug=thread.slug reply_slug=reply.slug %}">Endorse</a>
                 {% endif %}
         </td>
