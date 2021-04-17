@@ -43,8 +43,21 @@
 .forum-reply *:last-child {
   margin-bottom: 0;
 }
+.form-reply, .endorsed{
+	border-color: #92be2c;
+	background-color: rgba(146, 190, 44, 0.1);
+}
 .fourm-reply-nested {
 	margin-left: 50px;
+}
+
+.forum-reply > .table, .reply-header > * {
+	background: transparent;
+	background-color: transparent;
+	padding: 0;
+}
+.reply-header > .last{
+	float: right;
 }
 
 form.miniform {

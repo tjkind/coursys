@@ -147,3 +147,52 @@ def view_thread(request, course_slug, thread_slug):
     context = {'course': course, 'thread': thread, 'content': organized_replies, 'view': view, 'form': form,
                'username': request.user.username}
     return render(request, 'forum/thread.html', context)
+
+@uses_feature('forum')
+@login_required
+def endorse_reply(request, course_slug, thread_slug, reply_slug):
+    """
+    Call to endorse a reply
+    """
+    course, view = _get_course_and_view(request, course_slug)
+    if view is None:
+        # course is an HttpResponse in this case
+        return course
+    thread = get_object_or_404(ForumThread, slug=thread_slug, offering=course)
+    if view == 'student':
+        return HttpResponseRedirect(reverse('offering:forum:view_thread', kwargs={'course_slug': course_slug, 'thread_slug': thread_slug}))
+    
+    thread = ForumThread.objects.get(slug=thread_slug)
+    reply = ForumReply.objects.get(thread=thread, slug=reply_slug)
+    member = _get_member(request.user.username, view, course_slug)
+
+    thread.endorsed_answer = reply
+    thread.endorsed_by = member
+    thread.endorsed_on = datetime.datetime.now()
+    thread.save()
+    messages.add_message(request, messages.SUCCESS, 'Sucessfully endorsed')
+    return HttpResponseRedirect(reverse('offering:forum:view_thread', kwargs={'course_slug': course_slug, 'thread_slug': thread_slug}))
+
+@uses_feature('forum')
+@login_required
+def unendorse_reply(request, course_slug, thread_slug):
+    """
+    Call to unendorse a reply
+    """
+    course, view = _get_course_and_view(request, course_slug)
+    if view is None:
+        # course is an HttpResponse in this case
+        return course
+    thread = get_object_or_404(ForumThread, slug=thread_slug, offering=course)
+    if view == 'student':
+        return HttpResponseRedirect(reverse('offering:forum:view_thread', kwargs={'course_slug': course_slug, 'thread_slug': thread_slug}))
+    
+    thread = ForumThread.objects.get(slug=thread_slug)
+    member = _get_member(request.user.username, view, course_slug)
+
+    thread.endorsed_answer = None
+    thread.endorsed_by = None
+    thread.endorsed_on = None
+    thread.save()
+    messages.add_message(request, messages.SUCCESS, 'Sucessfully removed endorsement')
+    return HttpResponseRedirect(reverse('offering:forum:view_thread', kwargs={'course_slug': course_slug, 'thread_slug': thread_slug}))

@@ -7,6 +7,24 @@
 {% include 'pages/markup_view_head.html' %}
 {% include 'pages/markup_edit_head.html' %}
 <link rel="stylesheet" href="{% static 'style/forum.css' %}" media="all" />
+<script nonce="{{ CSP_NONCE }}">
+	$(document).ready(function() {
+		{% if not form.errors %}
+			$("#forum-thread-reply-form").hide();
+		{% endif %}
+		{% if form.errors %}
+			$("#thread-reply-toggle").hide();
+			$('html, body').animate({scrollTop: $("#forum-thread-reply-form").offset().top});
+			$("#id_content").focus();
+		{% endif %}
+		$("#thread-reply-toggle").click(function() {
+			$("#thread-reply-toggle").hide();
+			$("#forum-thread-reply-form").show('slide');
+			$('html, body').animate({scrollTop: $(document).height()});
+			$("#id_content").focus();
+		});
+	});
+</script>
 {% endblock %}
 
 {% block subbreadcrumbs %}
@@ -33,6 +51,11 @@
 </div>
 </div>
 
+{% if thread.endorsed_answer %}
+	<h2 id="replies">Endorsed Reply</h2>
+	{% include "forum/reply.html" with reply=thread.endorsed_answer thread=thread %}
+{% endif %}
+
 <h2 id="replies">Replies</h2>
 
 	{% if content.children|length_is:0 and thread.status != 'CLO' %}
@@ -40,7 +63,7 @@
 	{% endif %}
 	{% if content.children|length > 0 %}
 	{% for reply in content.children %}
-		{% include "forum/reply.html" with content=reply %}
+		{% include "forum/reply.html" with reply=reply.reply children=reply.children thread=thread show_children=True%}
    	{% endfor %}
 	{% endif %}
 	{% if thread.status == 'CLO' and view == 'student' %}

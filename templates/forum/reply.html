@@ -1,14 +1,10 @@
 {% load static %}{% load compress %}
 {% block headextra %}
-{% include 'pages/markup_view_head.html' %}
-{% include 'pages/markup_edit_head.html' %}
-<link rel="stylesheet" href="{% static 'style/forum.css' %}" media="all" />
 
 <script nonce="{{ CSP_NONCE }}">
 	$(document).ready(function() {
-        const reply_id = "{{content.reply.id}}"
+        const reply_id = "{{reply.id}}"
 		{% if not form.errors %}
-			$("#forum-thread-reply-form").hide();
 			$(`#forum-${reply_id}-reply-form`).hide();
 		{% endif %}
 		{% if form.errors %}
@@ -16,12 +12,6 @@
 			$('html, body').animate({scrollTop: $("#forum-thread-reply-form").offset().top});
 			$("#id_content").focus();
 		{% endif %}
-		$("#thread-reply-toggle").click(function() {
-			$("#thread-reply-toggle").hide();
-			$("#forum-thread-reply-form").show('slide');
-			$('html, body').animate({scrollTop: $(document).height()});
-			$("#id_content").focus();
-		});
 		$(`#${reply_id}-reply-toggle`).click(function() {
             console.log('hey toria reply id', reply_id)
 			$(`#${reply_id}-reply-toggle`).hide();
@@ -35,35 +25,49 @@
 
 {% block content %}
 <div>
-    <div class="forum-reply{% if content.reply.status == 'HID' %} fade-out{% endif %} {% if content.reply.math %}tex2jax_process{% else %}tex2jax_ignore{% endif %}" id="reply-content-{{content.reply.id}}">
-        <p class="reply-author ">
-            <span class="author">{{ content.reply.author.person.name_pref }} ({{content.reply.author.person.userid}})</span>, {{ content.reply.create_at_delta }}
-            {% if content.reply.was_edited %}*{% endif %}
-        </p>
-        {% if content.reply.status != 'HID' %}
-        <div class="forum-content">{{ content.reply.html_content }}</div>
-        <div class="reply-footer"><a href="#" id="{{content.reply.id}}-reply-toggle">Reply to comment</a></div>
-        <div id="forum-{{content.reply.id}}-reply-form">
+    <div class="forum-reply{% if thread.endorsed_answer == reply %} endorsed{% endif %} {% if reply.status == 'HID' %} fade-out{% endif %} {% if reply.math %}tex2jax_process{% else %}tex2jax_ignore{% endif %}" id="reply-content-{{reply.id}}">
+        <table><tr class="reply-header">
+        <td>
+            <p class="reply-author">
+                <span class="author">{{ reply.author.person.name_pref }} ({{reply.author.person.userid}})</span>, {{ reply.create_at_delta }}
+                {% if reply.was_edited %}*{% endif %}
+            </p>
+        </td><td class="last">
+                {% if thread.endorsed_answer == reply %}<span>
+                    Endorsed By: {{thread.endorsed_by.person.userid}}
+                    <a class="fa fa-times" title="Remove Endorsement" href="{% url "offering:forum:unendorse_reply" course_slug=course.slug thread_slug=thread.slug %}"></a>
+                </span>
+                {% else %}
+                    <a href="{% url "offering:forum:endorse_reply" course_slug=course.slug thread_slug=thread.slug reply_slug=reply.slug %}">Endorse</a>
+                {% endif %}
+        </td>
+        </tr></table>
+        {% if reply.status != 'HID'%}
+        <div class="forum-content">{{ reply.html_content }}</div>
+        {% if show_children == True %}
+        <div class="reply-footer"><a href="#" id="{{reply.id}}-reply-toggle">Reply to comment</a></div>
+        <div id="forum-{{reply.id}}-reply-form">
             <form action="{% url "offering:forum:view_thread" course_slug=course.slug thread_slug=thread.slug %}" method="post">
                 {% csrf_token %}
                 <div class="forum-thread-reply-errors">
-                    {% for error in form.content.errors %}
+                    {% for error in form.errors %}
                         <span>{{ error }}</span><br />
                     {% endfor %}
                 </div>
                 {{ form.parent_id }}
-                {{ form.content }}<p class="helptext">{{form.content.help_text}}</p>
+                {{ form.content }}<p class="helptext">{{form.help_text}}</p>
                 <div><input type="submit" value="Reply" /></div>
             </form>
         </div>
+        {% endif %}
         {% else %}
             <p class="empty">This reply has been removed.</p>
         {% endif %}
     </div>
-    {% if content.children|length > 0 %}
+    {% if children|length > 0 %}
     <div class="fourm-reply-nested">
-        {% for reply in content.children %}
-            {%with content=reply template_name="forum/reply.html" %}
+        {% for reply in children %}
+            {%with reply=reply.reply children=reply.children template_name="forum/reply.html" thread=thread show_children=True %}
                 {%include template_name%}
             {%endwith%}
         {% endfor %}

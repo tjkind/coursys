@@ -58,8 +58,12 @@ class ForumThread(models.Model):
     last_activity_at = models.DateTimeField(auto_now_add=True)
     reply_count = models.IntegerField(default=0)
     status = models.CharField(max_length=3, choices=THREAD_STATUSES, default='OPN', help_text="The thread status: Closed: no replies allowed, Hidden: cannot be seen")
-    author = models.ForeignKey(Member, on_delete=models.PROTECT)
+    author = models.ForeignKey(Member, on_delete=models.PROTECT, related_name='author')
     thread_type = models.CharField(max_length=3, choices=THREAD_TYPES, default='DFT', help_text="The thread types: Default: No additional behaviour, Question: Request an instructor answer")
+
+    endorsed_answer = models.ForeignKey('ForumReply', null=True, on_delete=models.SET_NULL)
+    endorsed_by = models.ForeignKey(Member, null=True, on_delete=models.SET_NULL, related_name='endorsed_by')
+    endorsed_on = models.DateTimeField(null=True)
 
     def autoslug(self):
         return make_slug(self.title)
@@ -151,3 +155,6 @@ class ForumReply(models.Model):
             "created": str(self.created_at),
             "modified": str(self.modified_at)
         }
+    
+    def create_at_delta(self):
+        return _time_delta_to_string(self.created_at)
