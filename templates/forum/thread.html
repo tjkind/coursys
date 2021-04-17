@@ -46,7 +46,7 @@
 {{ content.reply.html_content }}
 </div>
 <div class="thread-footer">
-	{% if thread.status == 'ANS' %}<i class="fa fa-check" title="Answered"></i>
+	{% if thread.endorsed_answer %}<i class="fa fa-check" title="Answered"></i>
 	{% elif thread.thread_type == 'QUT'%}<i class="fa fa-question-circle" title="Question Type"></i>{% endif %}
 </div>
 </div>

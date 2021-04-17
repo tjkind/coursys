@@ -40,7 +40,7 @@
 	<h3><a href="{% url "offering:forum:view_thread" course_slug=course.slug thread_slug=thread.slug %}">
 		{{ thread.title }}
 		<span class="last">
-			{% if thread.status == 'ANS' %}<i class="fa fa-check" title="Answered"></i>
+			{% if thread.endorsed_answer %}<i class="fa fa-check" title="Answered"></i>
 			{% elif thread.thread_type == 'QUT'%}<i class="fa fa-question-circle" title="Question Type"></i>{% endif %}
 		</span>
 	</a></h3>

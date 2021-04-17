@@ -15,7 +15,6 @@ import datetime
 
 THREAD_STATUSES = (
                   ('OPN', 'Open'),
-                  ('ANS', 'Answered'),
                   ('CLO', 'Closed'),
                   ('HID', 'Hidden'),
                   )
